@@ -8,13 +8,13 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) { }
+  ) {}
 
-  async findByUsername(username: string): Promise<User | undefined> {
-    return this.userRepository.findOne({ where: { username } });
+  async findByEmail(email: string): Promise<User | undefined> {
+    return this.userRepository.findOne({ where: { email } });
   }
 
-  async createUser(user: Partial<User>): Promise<User> {
+  async create(user: Partial<User>): Promise<User> {
     const newUser = this.userRepository.create(user);
     return this.userRepository.save(newUser);
   }

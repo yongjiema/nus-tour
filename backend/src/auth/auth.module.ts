@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -8,7 +8,7 @@ import { JwtStrategy } from './jwt.strategy';
 
 @Module({
   imports: [
-    UsersModule,
+    forwardRef(() => UsersModule), // Use forwardRef to break the circular dependency
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'defaultSecret',
@@ -17,5 +17,6 @@ import { JwtStrategy } from './jwt.strategy';
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
+  exports: [JwtModule, AuthService], // Export AuthService if UsersModule needs it
 })
-export class AuthModule { }
+export class AuthModule {}
