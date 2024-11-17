@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+# Dotenv
+if ! [ -e .devcontainer/.env ]; then
+  cp .devcontainer/.env.sample .devcontainer/.env
+fi
