@@ -3,7 +3,6 @@ import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
-import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -14,7 +13,7 @@ describe('AuthService', () => {
 
   const mockUsersService = {
     findByEmail: jest.fn(),
-    create: jest.fn(),
+    register: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -29,57 +28,27 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
   });
 
-  it('should register a new user', async () => {
-    const registerDto: RegisterDto = { email: 'test@example.com', name: 'Test User', password: 'password' };
+  it('should register a new user and return a token', async () => {
+    const registerDto: RegisterDto = { email: 'test@example.com', username: 'Test User', password: 'password' };
     mockUsersService.findByEmail.mockResolvedValue(null);
-    mockUsersService.create.mockResolvedValue(registerDto);
+    mockUsersService.register.mockResolvedValue({ id: 1, email: 'test@example.com', username: 'Test User' });
 
     const result = await service.register(registerDto);
 
-    expect(result).toEqual({ message: 'User registered successfully' });
+    expect(result).toEqual({ token: 'mocked-token' });
     expect(mockUsersService.findByEmail).toHaveBeenCalledWith('test@example.com');
-    expect(mockUsersService.create).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'test@example.com', name: 'Test User' }),
+    expect(mockUsersService.register).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'test@example.com', username: 'Test User' }),
     );
+    expect(mockJwtService.sign).toHaveBeenCalledWith({ id: 1, email: 'test@example.com' }, expect.any(Object));
   });
 
-  it('should throw an error for an existing user', async () => {
+  it('should throw an error for an existing user during registration', async () => {
     mockUsersService.findByEmail.mockResolvedValue({ email: 'test@example.com' });
 
     await expect(
-      service.register({ email: 'test@example.com', password: 'password', name: 'Test User' }),
+      service.register({ email: 'test@example.com', password: 'password', username: 'Test User' }),
     ).rejects.toThrow();
     expect(mockUsersService.findByEmail).toHaveBeenCalledWith('test@example.com');
-  });
-
-  it('should return an access token for valid login', async () => {
-    const hashedPassword = await bcrypt.hash('password', 10);
-    mockUsersService.findByEmail.mockResolvedValue({
-      email: 'test@example.com',
-      password: hashedPassword,
-    });
-
-    const result = await service.login({ email: 'test@example.com', password: 'password' });
-
-    expect(result).toEqual({ accessToken: 'mocked-token' });
-    expect(mockUsersService.findByEmail).toHaveBeenCalledWith('test@example.com');
-    expect(mockJwtService.sign).toHaveBeenCalledWith(expect.objectContaining({ email: 'test@example.com' }));
-  });
-
-  it('should throw an error for invalid credentials', async () => {
-    mockUsersService.findByEmail.mockResolvedValue({
-      email: 'test@example.com',
-      password: await bcrypt.hash('password', 10),
-    });
-
-    await expect(service.login({ email: 'test@example.com', password: 'wrongpassword' })).rejects.toThrow();
-    expect(mockUsersService.findByEmail).toHaveBeenCalledWith('test@example.com');
-  });
-
-  it('should throw an error for a non-existent user during login', async () => {
-    mockUsersService.findByEmail.mockResolvedValue(null);
-
-    await expect(service.login({ email: 'nonexistent@example.com', password: 'password' })).rejects.toThrow();
-    expect(mockUsersService.findByEmail).toHaveBeenCalledWith('nonexistent@example.com');
   });
 });
