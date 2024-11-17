@@ -14,17 +14,24 @@ Environment variables are required to configure the backend and frontend. Sample
 
 ### Backend `.env`
 
-```
+```sh
+# Database Configuration
 DB_HOST=<host>
 DB_PORT=<port>
 DB_NAME=<database>
 DB_USER=<user>
 DB_PASSWORD=<password>
+
+# CORS Configuration
+CORS_ORIGIN=http://localhost:5173
+CORS_CREDENTIALS=true
+CORS_METHODS=GET,POST,PUT,DELETE
+CORS_HEADERS=Content-Type,Authorization
 ```
 
 ### Frontend `.env`
 
-```
+```sh
 VITE_API_BASE_URL=http://localhost:3000
 ```
 
