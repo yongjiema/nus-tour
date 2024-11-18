@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import { Container, TextField, Button, Grid, Paper, Typography } from "@mui/material";
 
 export const BookingForm: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     date: "",
     groupSize: "",
+    deposit: 50,
   });
 
   useEffect(() => {
-    // Pre-fill form if query parameters exist
+    const storedData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
     setFormData({
-      name: searchParams.get("name") || "",
-      email: searchParams.get("email") || "",
-      date: searchParams.get("date") || "",
-      groupSize: searchParams.get("groupSize") || "",
+      name: storedData.name || "",
+      email: storedData.email || "",
+      date: storedData.date || "",
+      groupSize: storedData.groupSize || "",
+      deposit: 50,
     });
-  }, [searchParams]);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -28,14 +28,8 @@ export const BookingForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Redirect to Confirmation Page with booking details
-    const amount = "50"; // Replace with dynamic amount calculation if needed
-    window.location.href = `/booking/confirmation?name=${encodeURIComponent(
-      formData.name
-    )}&email=${encodeURIComponent(formData.email)}&date=${encodeURIComponent(
-      formData.date
-    )}&groupSize=${encodeURIComponent(formData.groupSize)}&amount=${amount}`;
+    sessionStorage.setItem("bookingData", JSON.stringify(formData));
+    window.location.href = "/booking/confirmation";
   };
 
   return (
@@ -95,6 +89,11 @@ export const BookingForm: React.FC = () => {
                 fullWidth
                 required
               />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="textSecondary">
+                A security deposit of SGD {formData.deposit} is required to confirm your booking. This deposit will be fully refunded within a few days after your visit.
+              </Typography>
             </Grid>
             <Grid item xs={12}>
               <Button
