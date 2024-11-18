@@ -1,4 +1,4 @@
-import { Authenticated, GitHubBanner, Refine } from "@refinedev/core";
+import { Authenticated, Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
@@ -21,6 +21,7 @@ import routerBindings, {
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import { authProvider } from "./authProvider";
 import { Header } from "./components/header";
+import { PublicHeader } from "./components/header/public";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import {
   BlogPostCreate,
@@ -37,6 +38,16 @@ import {
 import { ForgotPassword } from "./pages/forgotPassword";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
+import { Home } from "./pages/home";
+import {
+  InformationHome,
+  AcademicPrograms,
+  BusRoutes,
+  Canteens,
+  ConvenienceStores,
+} from "./pages/information";
+import { Booking } from "./pages/booking";
+import { Payment } from "./pages/payment";
 
 function App() {
   const API_URL = "https://api.nestjsx-crud.refine.dev";
@@ -44,7 +55,6 @@ function App() {
 
   return (
     <BrowserRouter>
-      <GitHubBanner />
       <RefineKbarProvider>
         <ColorModeContextProvider>
           <CssBaseline />
@@ -86,6 +96,16 @@ function App() {
                 }}
               >
                 <Routes>
+                  <Route element={<PublicHeader />}>
+                    <Route index path="/" element={<Home />} />
+                    <Route path="/information" element={<InformationHome />} />
+                    <Route path="/information/academic-programs" element={<AcademicPrograms />} />
+                    <Route path="/information/bus-routes" element={<BusRoutes />} />
+                    <Route path="/information/canteens" element={<Canteens />} />
+                    <Route path="/information/convenience-stores" element={<ConvenienceStores />} />
+                    <Route path="/booking" element={<Booking />} />
+                    <Route path="/payment" element={<Payment />} />
+                  </Route>
                   <Route
                     element={
                       <Authenticated
@@ -98,10 +118,6 @@ function App() {
                       </Authenticated>
                     }
                   >
-                    <Route
-                      index
-                      element={<NavigateToResource resource="blog_posts" />}
-                    />
                     <Route path="/blog-posts">
                       <Route index element={<BlogPostList />} />
                       <Route path="create" element={<BlogPostCreate />} />
