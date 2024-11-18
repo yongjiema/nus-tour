@@ -1,6 +1,7 @@
 import React from "react";
 import { AppBar, Toolbar, Typography, Button, Box, Container } from "@mui/material";
 import { Outlet } from "react-router-dom";
+import LoginButton from "../LoginButton";
 
 export const PublicHeader: React.FC = () => {
   return (
@@ -18,12 +19,9 @@ export const PublicHeader: React.FC = () => {
             >
               NUS Tour
             </Typography>
-            <Button color="inherit" href="/information" style={{ color: "#FFFFFF" }}>
-              Information
-            </Button>
-            <Button color="inherit" href="/booking" style={{ color: "#FFFFFF" }}>
-              Book a Tour
-            </Button>
+            <Box>
+              <LoginButton />
+            </Box>
           </Toolbar>
         </Container>
       </AppBar>

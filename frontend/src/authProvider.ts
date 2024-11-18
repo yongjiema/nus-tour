@@ -1,105 +1,63 @@
-import { Login } from "@mui/icons-material";
-import type { AuthProvider } from "@refinedev/core";
-import axios from "axios";
-
-export const TOKEN_KEY = "refine-auth";
-
-const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-const IS_DEVELOPMENT = true;
+import { AuthProvider } from '@refinedev/core';
+import axiosInstance from './axiosConfig';
 
 export const authProvider: AuthProvider = {
+  onError: (error) => {
+    console.error(error);
+    return Promise.resolve({ success: false, error });
+  },
   login: async ({ username, password }) => {
-    if (IS_DEVELOPMENT) {
-      // Mock login for development
-      localStorage.setItem(TOKEN_KEY, username);
-      return {
-        success: true,
-        redirectTo: "/",
-      };
-    }
-
-  // Real login logic
-    const response = await axios.post(`${BACKEND_URL}/auth/login`, {
-      username,
-      password,
-    });
-
-    if (response.status >= 200 && response.status < 300 && response.data.access_token) {
-      localStorage.setItem(TOKEN_KEY, username);
-      return {
-        success: true,
-        redirectTo: "/",
-      };
-    }
-
-    return {
-      success: false,
-      error: {
-        name: "LoginError",
-        message: "Invalid username or password",
-      },
-    };
-  },
-  logout: async () => {
-    localStorage.removeItem(TOKEN_KEY);
-    return {
-      success: true,
-      redirectTo: "/login",
-    };
-  },
-  check: async () => {
-    if (IS_DEVELOPMENT) {
-      // Mock authentication check for development
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (token) {
+    try {
+      const response = await axiosInstance.post('/auth/login', {
+        username,
+        password,
+      });
+      if (response.data.access_token) {
+        localStorage.setItem('access_token', response.data.access_token);
+        return { success: true, redirectTo: '/' };
+      } else {
         return {
-          authenticated: true,
+          success: false,
+          error: {
+            name: 'LoginError',
+            message: 'No access token received',
+          },
         };
       }
+    } catch (error) {
       return {
-        authenticated: false,
-        redirectTo: "/login",
+        success: false,
+        error: {
+          name: 'LoginError',
+          message: 'Invalid username or password',
+        },
       };
     }
-
-    // Real authentication check
-    const token = localStorage.getItem(TOKEN_KEY);
+  },
+  logout: async () => {
+    localStorage.removeItem('access_token');
+    return { success: true, redirectTo: '/login' };
+  },
+  check: async () => {
+    const token = localStorage.getItem('access_token');
     if (token) {
-      return {
-        authenticated: true,
-      };
+      try {
+        await axiosInstance.get('/auth/profile');
+        return { authenticated: true };
+      } catch {
+        localStorage.removeItem('access_token');
+        return { authenticated: false, redirectTo: '/login' };
+      }
     }
-
-    return {
-      authenticated: false,
-      redirectTo: "/login",
-    };
+    return { authenticated: false, redirectTo: '/login' };
   },
   getPermissions: async () => null,
   getIdentity: async () => {
-    if (IS_DEVELOPMENT) {
-      // Mock user identity for development
-      return {
-        id: 1,
-        name: "Mock Admin",
-        avatar: "https://i.pravatar.cc/300",
-      };
+    try {
+      const response = await axiosInstance.get('/auth/profile');
+      return response.data;
+    } catch {
+      return null;
     }
-
-    // Real user identity logic
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token) {
-      return {
-        id: 1,
-        name: "John Doe",
-        avatar: "https://i.pravatar.cc/300",
-      };
-    }
-    return null;
-  },
-  onError: async (error) => {
-    console.error(error);
-    return { error };
   },
 };

@@ -49,9 +49,9 @@ import {
   CategoryShow,
 } from "./pages/categories";
 import { ForgotPassword } from "./pages/forgotPassword";
-import { Login } from "./pages/login";
+import Login from "./pages/login";
 import { Register } from "./pages/register";
-import { Home } from "./pages/home";
+import {Home} from "./pages/home";
 import {
   InformationHome,
   AcademicPrograms,
@@ -61,20 +61,14 @@ import {
 } from "./pages/information";
 import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
+import PrivateRoute from './components/PrivateRoute';
 
 // Lazy load the Admin Dashboard component
 const AdminDashboard = lazy(() => import('./pages/admin-dashboard'));
 
-// Mock Authenticated component for development
-const MockAuthenticated: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <>{children}</>;
-};
-
 function App() {
   const API_URL = "https://api.nestjsx-crud.refine.dev";
   const dataProvider = nestjsxCrudDataProvider(API_URL);
-
-  const isDevelopment = true;
 
   return (
     <BrowserRouter>
@@ -133,6 +127,7 @@ function App() {
                 <Routes>
                   <Route element={<PublicHeader />}>
                     <Route index path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
                     <Route path="/information" element={<InformationHome />} />
                     <Route path="/information/academic-programs" element={<AcademicPrograms />} />
                     <Route path="/information/bus-routes" element={<BusRoutes />} />
@@ -143,48 +138,23 @@ function App() {
                     <Route path="/payment" element={<Payment />} />
                   </Route>
 
-                  {/* Authenticated or MockAuthenticated based on environment */}
-                  <Route
-                    path="/admin"
-                    element={
-                      isDevelopment ? (
-                        <MockAuthenticated>
-                          <ThemedLayoutV2 Header={Header}>
-                            <Outlet />
-                          </ThemedLayoutV2>
-                        </MockAuthenticated>
-                      ) : (
-                        <Authenticated
-                          key="authenticated-wrapper"
-                          fallback={<CatchAllNavigate to="/login" />}
-                          v3LegacyAuthProviderCompatible
-                        >
-                          <ThemedLayoutV2 Header={Header}>
-                            <Outlet />
-                          </ThemedLayoutV2>
-                        </Authenticated>
-                      )
-                    }
-                  >
-                    {/* Child Routes */}
-                  </Route>
-                  <Route
-                    element={
-                      <Authenticated
-                        key="authenticated-outer"
-                        fallback={<Outlet />}
-                      >
-                        <NavigateToResource />
-                      </Authenticated>
-                    }
-                  >
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                  {/* Protected Admin Routes */}
+                  <Route element={<PrivateRoute />}>
                     <Route
-                      path="/forgot-password"
-                      element={<ForgotPassword />}
+                      path="/admin"
+                      element={
+                        <ThemedLayoutV2 Header={Header}>
+                          <Suspense fallback={<div>Loading...</div>}>
+                            <AdminDashboard />
+                          </Suspense>
+                        </ThemedLayoutV2>
+                      }
                     />
                   </Route>
+
+                  {/* Authentication Routes */}
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Routes>
 
                 <RefineKbar />
