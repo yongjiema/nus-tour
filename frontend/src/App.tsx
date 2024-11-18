@@ -46,7 +46,7 @@ import {
   Canteens,
   ConvenienceStores,
 } from "./pages/information";
-import { Booking } from "./pages/booking";
+import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
 
 function App() {
@@ -103,7 +103,8 @@ function App() {
                     <Route path="/information/bus-routes" element={<BusRoutes />} />
                     <Route path="/information/canteens" element={<Canteens />} />
                     <Route path="/information/convenience-stores" element={<ConvenienceStores />} />
-                    <Route path="/booking" element={<Booking />} />
+                    <Route path="/booking" element={<BookingForm />} />
+                    <Route path="/booking/confirmation" element={<BookingConfirmation />} />
                     <Route path="/payment" element={<Payment />} />
                   </Route>
                   <Route
