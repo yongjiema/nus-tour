@@ -1,28 +1,41 @@
-import { Authenticated, Refine } from "@refinedev/core";
-import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
-import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
-
+import React, { Suspense, lazy } from 'react';
+import {
+  Refine,
+  Authenticated,
+} from '@refinedev/core';
+import {
+  DevtoolsPanel,
+  DevtoolsProvider,
+} from '@refinedev/devtools';
+import {
+  RefineKbar,
+  RefineKbarProvider,
+} from '@refinedev/kbar';
 import {
   ErrorComponent,
   notificationProvider,
   RefineSnackbarProvider,
   ThemedLayoutV2,
-} from "@refinedev/mui";
-
-import CssBaseline from "@mui/material/CssBaseline";
-import GlobalStyles from "@mui/material/GlobalStyles";
-import nestjsxCrudDataProvider from "@refinedev/nestjsx-crud";
+} from '@refinedev/mui';
+import CssBaseline from '@mui/material/CssBaseline';
+import GlobalStyles from '@mui/material/GlobalStyles';
+import nestjsxCrudDataProvider from '@refinedev/nestjsx-crud';
 import routerBindings, {
   CatchAllNavigate,
   DocumentTitleHandler,
   NavigateToResource,
   UnsavedChangesNotifier,
-} from "@refinedev/react-router-v6";
-import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
-import { authProvider } from "./authProvider";
-import { Header } from "./components/header";
-import { PublicHeader } from "./components/header/public";
-import { ColorModeContextProvider } from "./contexts/color-mode";
+} from '@refinedev/react-router-v6';
+import {
+  BrowserRouter,
+  Outlet,
+  Route,
+  Routes,
+} from 'react-router-dom';
+import { authProvider } from './authProvider';
+import { Header } from './components/header';
+import { PublicHeader } from './components/header/public';
+import { ColorModeContextProvider } from './contexts/color-mode';
 import {
   BlogPostCreate,
   BlogPostEdit,
@@ -49,9 +62,19 @@ import {
 import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
 
+// Lazy load the Admin Dashboard component
+const AdminDashboard = lazy(() => import('./pages/admin-dashboard'));
+
+// Mock Authenticated component for development
+const MockAuthenticated: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return <>{children}</>;
+};
+
 function App() {
   const API_URL = "https://api.nestjsx-crud.refine.dev";
   const dataProvider = nestjsxCrudDataProvider(API_URL);
+
+  const isDevelopment = true;
 
   return (
     <BrowserRouter>
@@ -87,6 +110,18 @@ function App() {
                       canDelete: true,
                     },
                   },
+                  {
+                    name: "bookings",
+                    list: "/admin/bookings",
+                    create: "/admin/bookings/create",
+                    edit: "/admin/bookings/edit/:id",
+                  },
+                  {
+                    name: "check_ins",
+                    list: "/admin/check-ins",
+                    create: "/admin/check-ins/create",
+                    edit: "/admin/check-ins/edit/:id",
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
@@ -107,31 +142,31 @@ function App() {
                     <Route path="/booking/confirmation" element={<BookingConfirmation />} />
                     <Route path="/payment" element={<Payment />} />
                   </Route>
+
+                  {/* Authenticated or MockAuthenticated based on environment */}
                   <Route
+                    path="/admin"
                     element={
-                      <Authenticated
-                        key="authenticated-inner"
-                        fallback={<CatchAllNavigate to="/login" />}
-                      >
-                        <ThemedLayoutV2 Header={Header}>
-                          <Outlet />
-                        </ThemedLayoutV2>
-                      </Authenticated>
+                      isDevelopment ? (
+                        <MockAuthenticated>
+                          <ThemedLayoutV2 Header={Header}>
+                            <Outlet />
+                          </ThemedLayoutV2>
+                        </MockAuthenticated>
+                      ) : (
+                        <Authenticated
+                          key="authenticated-wrapper"
+                          fallback={<CatchAllNavigate to="/login" />}
+                          v3LegacyAuthProviderCompatible
+                        >
+                          <ThemedLayoutV2 Header={Header}>
+                            <Outlet />
+                          </ThemedLayoutV2>
+                        </Authenticated>
+                      )
                     }
                   >
-                    <Route path="/blog-posts">
-                      <Route index element={<BlogPostList />} />
-                      <Route path="create" element={<BlogPostCreate />} />
-                      <Route path="edit/:id" element={<BlogPostEdit />} />
-                      <Route path="show/:id" element={<BlogPostShow />} />
-                    </Route>
-                    <Route path="/categories">
-                      <Route index element={<CategoryList />} />
-                      <Route path="create" element={<CategoryCreate />} />
-                      <Route path="edit/:id" element={<CategoryEdit />} />
-                      <Route path="show/:id" element={<CategoryShow />} />
-                    </Route>
-                    <Route path="*" element={<ErrorComponent />} />
+                    {/* Child Routes */}
                   </Route>
                   <Route
                     element={

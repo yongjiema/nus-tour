@@ -6,8 +6,20 @@ export const TOKEN_KEY = "refine-auth";
 
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
+const IS_DEVELOPMENT = true;
+
 export const authProvider: AuthProvider = {
-  login: async ({ username, email, password }) => {
+  login: async ({ username, password }) => {
+    if (IS_DEVELOPMENT) {
+      // Mock login for development
+      localStorage.setItem(TOKEN_KEY, username);
+      return {
+        success: true,
+        redirectTo: "/",
+      };
+    }
+
+  // Real login logic
     const response = await axios.post(`${BACKEND_URL}/auth/login`, {
       username,
       password,
@@ -37,6 +49,21 @@ export const authProvider: AuthProvider = {
     };
   },
   check: async () => {
+    if (IS_DEVELOPMENT) {
+      // Mock authentication check for development
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (token) {
+        return {
+          authenticated: true,
+        };
+      }
+      return {
+        authenticated: false,
+        redirectTo: "/login",
+      };
+    }
+
+    // Real authentication check
     const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
       return {
@@ -51,6 +78,16 @@ export const authProvider: AuthProvider = {
   },
   getPermissions: async () => null,
   getIdentity: async () => {
+    if (IS_DEVELOPMENT) {
+      // Mock user identity for development
+      return {
+        id: 1,
+        name: "Mock Admin",
+        avatar: "https://i.pravatar.cc/300",
+      };
+    }
+
+    // Real user identity logic
     const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
       return {
