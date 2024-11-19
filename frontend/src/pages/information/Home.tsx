@@ -10,31 +10,53 @@ import {
   CardMedia,
 } from "@mui/material";
 
+// Import your images from the assets folder
+import academicProgramsImage from "../../assets/images/academics.jpg";
+import busRoutesImage from "../../assets/images/BusRoutes.jpg";
+import canteensImage from "../../assets/images/canteens.jpg";
+import convenienceStoresImage from "../../assets/images/convenienceStores.jpg";
+import parkingImage from "../../assets/images/parking.jpg";
+import nusNewsImage from "../../assets/images/news.jpg";
+
 const informationData = [
   {
     title: "Academic Programs",
     description: "Explore a wide variety of faculties and academic programs at NUS.",
-    image: "https://placehold.co/600x400?text=Academic+Programs",
-    link: "/information/academic-programs",
+    image: academicProgramsImage,
+    link: "https://www.nus.edu.sg/nusbulletin/ay202223/programmes/",
   },
   {
     title: "Campus Bus Routes",
     description: "Navigate the campus with ease using our efficient bus system.",
-    image: "https://placehold.co/600x400?text=Bus+Routes",
-    link: "/information/bus-routes",
+    image: busRoutesImage,
+    link: "https://uci.nus.edu.sg/oca/mobilityservices/getting-around-nus/",
   },
   {
     title: "Nearby Canteens",
     description: "Enjoy a variety of food options at our campus canteens.",
-    image: "https://placehold.co/600x400?text=Canteens",
-    link: "/information/canteens",
+    image: canteensImage,
+    link: "https://uci.nus.edu.sg/oca/retail-dining/food-and-beverages/",
   },
   {
     title: "Convenience Stores",
     description: "Access essential items at our on-campus convenience stores.",
-    image: "https://placehold.co/600x400?text=Convenience+Stores",
-    link: "/information/convenience-stores",
+    image: convenienceStoresImage,
+    link: "https://uci.nus.edu.sg/oca/retail-dining/retail/",
   },
+
+  {
+    title: "Parking Information",
+    description: "Learn more about parking facilities and rates on campus.",
+    image: parkingImage,
+    link: "https://uci.nus.edu.sg/oca/mobilityservices/parking-information/",
+  },
+  {
+    title: "NUS news",
+    description: "Stay updated with the latest news and events happening at NUS.",
+    image: nusNewsImage,
+    link: "https://news.nus.edu.sg/",
+  }
+
 ];
 
 export const InformationHome: React.FC = () => {
