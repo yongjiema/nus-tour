@@ -17,6 +17,7 @@ import canteensImage from "../../assets/images/canteens.jpg";
 import convenienceStoresImage from "../../assets/images/convenienceStores.jpg";
 import parkingImage from "../../assets/images/parking.jpg";
 import nusNewsImage from "../../assets/images/news.jpg";
+import { title } from "process";
 
 const informationData = [
   {
@@ -56,7 +57,6 @@ const informationData = [
     image: nusNewsImage,
     link: "https://news.nus.edu.sg/",
   }
-
 ];
 
 export const InformationHome: React.FC = () => {
