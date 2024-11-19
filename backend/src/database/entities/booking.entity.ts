@@ -27,7 +27,7 @@ export class Booking {
   @Column({ default: 'pending' })
   paymentStatus: string;
 
-  @Column() // Using a string type for timeSlot
+  @Column()
   timeSlot: string;
 
   @BeforeInsert()

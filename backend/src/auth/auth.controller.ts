@@ -1,45 +1,41 @@
-import { Controller, Post, Body, Request, UseGuards, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Request,
+  UseGuards,
+  UnauthorizedException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UsersService } from '../users/users.service';
+import { User } from '../database/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  /**
-   * User Login
-   * Validates user credentials and issues a JWT token.
-   * @param loginDto - User credentials (email and password)
-   * @returns JWT token
-   */
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
-  /**
-   * User Registration
-   * Registers a new user and issues a JWT token upon successful registration.
-   * @param registerDto - New user details (email, username, password)
-   * @returns JWT token
-   */
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     try {
       return await this.authService.register(registerDto);
-    } catch {
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw new ConflictException('Email is already in use');
+      }
       throw new BadRequestException('Registration failed.');
     }
   }
 
-  /**
-   * User Logout
-   * Invalidates the current token.
-   * @param req - HTTP request containing the authorization header with the token
-   * @returns Logout confirmation message
-   */
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   async logout(@Request() req: any): Promise<{ message: string }> {
@@ -50,4 +46,23 @@ export class AuthController {
     await this.authService.logout(token);
     return { message: 'Logged out successfully' };
   }
+}
+
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Post('register')
+  async register(@Body() registerDto: RegisterDto): Promise<User> {
+    try {
+      return await this.usersService.register(registerDto);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw new ConflictException('Email is already in use');
+      }
+      throw error;
+    }
+  }
+
+  // Other endpoints...
 }

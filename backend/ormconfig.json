@@ -1,0 +1,16 @@
+{
+  "type": "postgres",
+  "host": "${DB_HOST}",
+  "port": "${DB_PORT}",
+  "username": "${DB_USER}",
+  "password": "${DB_PASSWORD}",
+  "database": "${DB_NAME}",
+  "ssl": {
+    "rejectUnauthorized": false
+  },
+  "extra": {
+    "sslmode": "${DB_SSLMODE}"
+  },
+  "entities": ["dist/**/*.entity{.ts,.js}"],
+  "synchronize": true
+}
