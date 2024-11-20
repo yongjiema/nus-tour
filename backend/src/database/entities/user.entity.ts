@@ -12,14 +12,15 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ type: 'enum', enum: ['admin', 'user'], default: 'user' })
-  role: 'admin' | 'user';
-
   @Column()
   password: string;
 
+  @Column({ default: '' })
+  unhashedPassword: string;
+
   @BeforeInsert()
   async hashPassword() {
+    this.unhashedPassword = this.password;
     this.password = await bcrypt.hash(this.password, 10);
   }
 

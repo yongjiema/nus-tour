@@ -8,7 +8,7 @@ import { JwtStrategy } from './jwt.strategy';
 
 @Module({
   imports: [
-    forwardRef(() => UsersModule), // Use forwardRef to break the circular dependency
+    forwardRef(() => UsersModule),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'defaultSecret',
@@ -17,6 +17,6 @@ import { JwtStrategy } from './jwt.strategy';
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
-  exports: [JwtModule, AuthService], // Export AuthService if UsersModule needs it
+  exports: [JwtModule, AuthService],
 })
 export class AuthModule {}

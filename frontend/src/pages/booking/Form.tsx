@@ -3,6 +3,7 @@ import { Container, TextField, Button, Grid, Paper, Typography, MenuItem, Circul
 
 export const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
+    bookingId: Math.random().toString(36).substr(2, 9), // Generate a random booking ID,
     name: "",
     email: "",
     date: "",
@@ -16,12 +17,13 @@ export const BookingForm: React.FC = () => {
   useEffect(() => {
     const storedData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
     setFormData({
+      bookingId: storedData.bookingId || Math.random().toString(36).substr(2, 9), // Ensure bookingId is set
       name: storedData.name || "",
       email: storedData.email || "",
       date: storedData.date || "",
       groupSize: storedData.groupSize || "",
       timeSlot: storedData.timeSlot || "",
-      deposit: 50,
+      deposit: storedData.deposit || 50, // Ensure deposit is set from stored data if available
     });
   }, []);
 
@@ -61,9 +63,9 @@ export const BookingForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Save form data to session storage and navigate to the confirmation page
+    // Save form data to session storage and navigate to the payment page
     sessionStorage.setItem("bookingData", JSON.stringify(formData));
-    window.location.href = "/booking/confirmation";
+    window.location.href = `/payment?bookingId=${formData.bookingId}&amount=${formData.deposit}`;
   };
 
   return (

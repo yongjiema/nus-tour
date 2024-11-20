@@ -1,56 +1,48 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+  CanActivate,
+  ExecutionContext,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { LoginDto } from '../auth/dto/login.dto';
 import { UpdateUserDto } from '../auth/dto/update-user.dto';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { JwtService } from '@nestjs/jwt';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private usersRepository: Repository<User>,
   ) {}
 
-  /**
-   * Find a user by email.
-   * @param email - The user's email
-   * @returns The user entity or undefined if not found
-   */
   async findByEmail(email: string): Promise<User | undefined> {
-    return this.userRepository.findOne({ where: { email } });
+    return this.usersRepository.findOne({ where: { email } });
   }
 
-  /**
-   * Register a new user.
-   * @param registerDto - The registration data
-   * @returns The newly created user entity
-   * @throws ConflictException if the email is already in use
-   */
   async register(registerDto: RegisterDto): Promise<User> {
     const { email, username, password } = registerDto;
 
-    // Check if email is already in use
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.usersRepository.findOne({ where: { email } });
     if (existingUser) {
       throw new ConflictException('Email is already in use');
     }
 
-    // Create and save user
-    const user = this.userRepository.create({ email, username, password });
-    return this.userRepository.save(user);
+    const user = this.usersRepository.create({ email, username, password });
+    return this.usersRepository.save(user);
   }
 
-  /**
-   * Validate a user's credentials.
-   * @param loginDto - The login data
-   * @returns The authenticated user entity
-   * @throws NotFoundException if credentials are invalid
-   */
   async validateUser(loginDto: LoginDto): Promise<User> {
     const { email, password } = loginDto;
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.usersRepository.findOne({ where: { email } });
 
     if (!user || !(await user.comparePassword(password))) {
       throw new NotFoundException('Invalid email or password');
@@ -59,50 +51,107 @@ export class UsersService {
     return user;
   }
 
-  /**
-   * Find a user by ID.
-   * @param id - The user's ID
-   * @returns The user entity
-   * @throws NotFoundException if the user is not found
-   */
   async findById(id: number): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
     return user;
   }
 
-  /**
-   * Update a user's profile.
-   * @param id - The user's ID
-   * @param updateUserDto - The data to update the user's profile
-   * @returns The updated user entity
-   */
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findById(id); // Ensure the user exists
-    Object.assign(user, updateUserDto); // Update only the fields provided
-    return this.userRepository.save(user);
+    const user = await this.findById(id);
+    Object.assign(user, updateUserDto);
+    return this.usersRepository.save(user);
   }
 
-  /**
-   * Soft delete a user's account.
-   * @param id - The user's ID
-   * @throws NotFoundException if the user is not found
-   */
   async delete(id: number): Promise<void> {
-    const user = await this.findById(id); // Ensure the user exists
+    const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    await this.userRepository.softDelete(id);
+    await this.usersRepository.softDelete(id);
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.find();
+  }
+}
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(private readonly usersService: UsersService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: process.env.JWT_SECRET,
+    });
+  }
+
+  async validate(payload: any): Promise<User> {
+    const user = await this.usersService.findByEmail(payload.email);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    return user;
+  }
+}
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly authService: AuthService, // Inject AuthService to check blacklisted tokens
+  ) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+
+    // Extract the token from the Authorization header
+    const token = this.extractTokenFromHeader(request);
+    if (!token) {
+      throw new UnauthorizedException('Token is missing or improperly formatted');
+    }
+
+    try {
+      // Check if the token is blacklisted
+      if (this.authService.isTokenBlacklisted(token)) {
+        throw new UnauthorizedException('Token has been blacklisted');
+      }
+
+      // Verify the token
+      const decoded = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET, // Explicitly use a configured secret key
+        algorithms: ['HS256'], // Ensure only allowed algorithms are used
+      });
+
+      // Attach the decoded payload to the request for further use
+      request.user = decoded;
+
+      return true;
+    } catch (error) {
+      console.error('Token verification error:', error.message);
+      throw new UnauthorizedException(`Invalid token: ${error.message}`);
+    }
   }
 
   /**
-   * Fetch all users.
-   * @returns A list of all user entities
+   * Extract the JWT token from the Authorization header.
+   * @param request - HTTP request object
+   * @returns Extracted token or throws an error if missing/invalid
    */
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find();
+  private extractTokenFromHeader(request: any): string | null {
+    const authHeader = request.headers.authorization;
+    if (!authHeader) {
+      throw new UnauthorizedException('Authorization header is missing');
+    }
+
+    const [bearer, token] = authHeader.split(' ');
+
+    if (bearer !== 'Bearer' || !token) {
+      throw new UnauthorizedException('Invalid token format. Expected "Bearer <token>".');
+    }
+
+    return token;
   }
 }
