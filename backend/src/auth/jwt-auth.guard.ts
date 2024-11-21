@@ -20,7 +20,6 @@ export class JwtAuthGuard implements CanActivate {
       if (this.authService.isTokenBlacklisted(token)) {
         throw new UnauthorizedException('Token has been blacklisted');
       }
-
       const decoded = this.jwtService.verify(token, {
         secret: process.env.JWT_SECRET,
         algorithms: ['HS256'],
@@ -29,7 +28,6 @@ export class JwtAuthGuard implements CanActivate {
       request.user = decoded;
       return true;
     } catch (error) {
-      console.error('Token verification error:', error.message);
       throw new UnauthorizedException(`Invalid token: ${error.message}`);
     }
   }
@@ -40,11 +38,16 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Authorization header is missing');
     }
 
-    const [bearer, token] = authHeader.split(' ');
-    if (bearer !== 'Bearer' || !token) {
+    if (typeof authHeader !== 'string') {
+      throw new UnauthorizedException('Authorization header is not a string');
+    }
+
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
       throw new UnauthorizedException('Invalid token format. Expected "Bearer <token>".');
     }
 
+    const token = parts[1];
     return token;
   }
 }

@@ -17,18 +17,19 @@ import canteensImage from "../../assets/images/canteens.jpg";
 import convenienceStoresImage from "../../assets/images/convenienceStores.jpg";
 import parkingImage from "../../assets/images/parking.jpg";
 import nusNewsImage from "../../assets/images/news.jpg";
-import { title } from "process";
 
 const informationData = [
   {
     title: "Academic Programs",
-    description: "Explore a wide variety of faculties and academic programs at NUS.",
+    description:
+      "Explore a wide variety of faculties and academic programs at NUS.",
     image: academicProgramsImage,
     link: "https://www.nus.edu.sg/nusbulletin/ay202223/programmes/",
   },
   {
     title: "Campus Bus Routes",
-    description: "Navigate the campus with ease using our efficient bus system.",
+    description:
+      "Navigate the campus with ease using our efficient bus system.",
     image: busRoutesImage,
     link: "https://uci.nus.edu.sg/oca/mobilityservices/getting-around-nus/",
   },
@@ -53,10 +54,11 @@ const informationData = [
   },
   {
     title: "NUS news",
-    description: "Stay updated with the latest news and events happening at NUS.",
+    description:
+      "Stay updated with the latest news and events happening at NUS.",
     image: nusNewsImage,
     link: "https://news.nus.edu.sg/",
-  }
+  },
 ];
 
 export const InformationHome: React.FC = () => {
@@ -77,8 +79,8 @@ export const InformationHome: React.FC = () => {
         gutterBottom
         style={{ color: "#FF6600" }}
       >
-        Learn more about what NUS has to offer, from academic programs to essential campus
-        facilities.
+        Learn more about what NUS has to offer, from academic programs to
+        essential campus facilities.
       </Typography>
       <Grid container spacing={4} style={{ marginTop: "30px" }}>
         {informationData.map((info, index) => (

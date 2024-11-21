@@ -1,7 +1,8 @@
-import React from 'react';
-import { Box, Grid, Paper, Typography, Button } from '@mui/material';
-import { styled } from '@mui/system';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from "react";
+import { Box, Grid, Paper, Typography, Button } from "@mui/material";
+import { styled } from "@mui/system";
+import { useNavigate } from "react-router-dom";
+import { authProvider } from "../../authProvider";
 
 const DashboardContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -9,12 +10,25 @@ const DashboardContainer = styled(Box)(({ theme }) => ({
 
 const StatCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
-  textAlign: 'center',
+  textAlign: "center",
   color: theme.palette.text.secondary,
 }));
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const result = await authProvider.check();
+      if (!result.authenticated) {
+        if (result.redirectTo) {
+          navigate(result.redirectTo);
+        }
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   return (
     <DashboardContainer>
@@ -56,7 +70,7 @@ const AdminDashboard: React.FC = () => {
             <Button
               variant="contained"
               color="primary"
-              onClick={() => navigate('/admin/bookings')}
+              onClick={() => navigate("/admin/bookings")}
             >
               Manage Bookings
             </Button>
@@ -65,7 +79,7 @@ const AdminDashboard: React.FC = () => {
             <Button
               variant="contained"
               color="secondary"
-              onClick={() => navigate('/admin/check-ins')}
+              onClick={() => navigate("/admin/check-ins")}
             >
               Manage Check-Ins
             </Button>
@@ -73,7 +87,7 @@ const AdminDashboard: React.FC = () => {
           <Grid item>
             <Button
               variant="contained"
-              onClick={() => navigate('/admin/policies')}
+              onClick={() => navigate("/admin/policies")}
             >
               Update Policies
             </Button>

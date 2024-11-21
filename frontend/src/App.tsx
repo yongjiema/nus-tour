@@ -1,57 +1,27 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from "react";
+import { Refine } from "@refinedev/core";
+import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
+import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import {
-  Refine,
-  Authenticated,
-} from '@refinedev/core';
-import {
-  DevtoolsPanel,
-  DevtoolsProvider,
-} from '@refinedev/devtools';
-import {
-  RefineKbar,
-  RefineKbarProvider,
-} from '@refinedev/kbar';
-import {
-  ErrorComponent,
   notificationProvider,
   RefineSnackbarProvider,
   ThemedLayoutV2,
-} from '@refinedev/mui';
-import CssBaseline from '@mui/material/CssBaseline';
-import GlobalStyles from '@mui/material/GlobalStyles';
-import nestjsxCrudDataProvider from '@refinedev/nestjsx-crud';
+} from "@refinedev/mui";
+import CssBaseline from "@mui/material/CssBaseline";
+import GlobalStyles from "@mui/material/GlobalStyles";
 import routerBindings, {
-  CatchAllNavigate,
   DocumentTitleHandler,
-  NavigateToResource,
   UnsavedChangesNotifier,
-} from '@refinedev/react-router-v6';
-import {
-  BrowserRouter,
-  Outlet,
-  Route,
-  Routes,
-} from 'react-router-dom';
-import { authProvider } from './authProvider';
-import { Header } from './components/header';
-import { PublicHeader } from './components/header/public';
-import { ColorModeContextProvider } from './contexts/color-mode';
-import {
-  BlogPostCreate,
-  BlogPostEdit,
-  BlogPostList,
-  BlogPostShow,
-} from "./pages/blog-posts";
-import {
-  CategoryCreate,
-  CategoryEdit,
-  CategoryList,
-  CategoryShow,
-} from "./pages/categories";
+} from "@refinedev/react-router-v6";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { authProvider } from "./authProvider";
+import { Header } from "./components/header";
+import { PublicHeader } from "./components/header/public";
+import { ColorModeContextProvider } from "./contexts/color-mode";
 import { ForgotPassword } from "./pages/forgotPassword";
 import Login from "./pages/login";
 import { Register } from "./pages/register";
-import {Home} from "./pages/home";
+import { Home } from "./pages/home";
 import {
   InformationHome,
   AcademicPrograms,
@@ -61,15 +31,13 @@ import {
 } from "./pages/information";
 import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
-import PrivateRoute from './components/PrivateRoute';
+import dataProvider from "./dataProvider";
+import PrivateRoute from "./components/PrivateRoute";
 
 // Lazy load the Admin Dashboard component
-const AdminDashboard = lazy(() => import('./pages/admin-dashboard'));
+const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
 function App() {
-  const API_URL = "https://api.nestjsx-crud.refine.dev";
-  const dataProvider = nestjsxCrudDataProvider(API_URL);
-
   return (
     <BrowserRouter>
       <RefineKbarProvider>
@@ -79,10 +47,10 @@ function App() {
           <RefineSnackbarProvider>
             <DevtoolsProvider>
               <Refine
+                authProvider={authProvider}
                 dataProvider={dataProvider}
                 notificationProvider={notificationProvider}
                 routerProvider={routerBindings}
-                authProvider={authProvider}
                 resources={[
                   {
                     name: "blog_posts",
@@ -129,16 +97,31 @@ function App() {
                     <Route index path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/information" element={<InformationHome />} />
-                    <Route path="/information/academic-programs" element={<AcademicPrograms />} />
-                    <Route path="/information/bus-routes" element={<BusRoutes />} />
-                    <Route path="/information/canteens" element={<Canteens />} />
-                    <Route path="/information/convenience-stores" element={<ConvenienceStores />} />
+                    <Route
+                      path="/information/academic-programs"
+                      element={<AcademicPrograms />}
+                    />
+                    <Route
+                      path="/information/bus-routes"
+                      element={<BusRoutes />}
+                    />
+                    <Route
+                      path="/information/canteens"
+                      element={<Canteens />}
+                    />
+                    <Route
+                      path="/information/convenience-stores"
+                      element={<ConvenienceStores />}
+                    />
                     <Route path="/booking" element={<BookingForm />} />
-                    <Route path="/booking/confirmation" element={<BookingConfirmation />} />
+                    <Route
+                      path="/booking/confirmation"
+                      element={<BookingConfirmation />}
+                    />
                     <Route path="/payment" element={<Payment />} />
                   </Route>
 
-                  {/* Protected Admin Routes */}
+                  {/* Privated Admin Routes */}
                   <Route element={<PrivateRoute />}>
                     <Route
                       path="/admin"

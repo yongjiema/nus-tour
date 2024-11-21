@@ -11,6 +11,18 @@ import {
 } from "@refinedev/mui";
 import React from "react";
 
+interface BlogPost {
+  id: number;
+  title: string;
+  content: string;
+  category: {
+    id: number;
+    title: string;
+  };
+  status: string;
+  createdAt: string;
+}
+
 export const BlogPostList = () => {
   const { dataGridProps } = useDataGrid({
     syncWithLocation: true,
@@ -20,7 +32,7 @@ export const BlogPostList = () => {
     resource: "categories",
     ids:
       dataGridProps?.rows
-        ?.map((item: any) => item?.category?.id)
+        ?.map((item: BlogPost) => item?.category?.id)
         .filter(Boolean) ?? [],
     queryOptions: {
       enabled: !!dataGridProps?.rows,
@@ -101,7 +113,7 @@ export const BlogPostList = () => {
         minWidth: 80,
       },
     ],
-    [categoryData]
+    [categoryData, categoryIsLoading]
   );
 
   return (

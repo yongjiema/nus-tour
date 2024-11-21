@@ -35,7 +35,6 @@ export const BookingConfirmation: React.FC = () => {
       // Navigate to the payment page
       navigate("/payment");
     } catch (error) {
-      console.error("Error saving booking data:", error);
       alert("There was an error saving your booking. Please try again.");
     }
   };
@@ -58,7 +57,9 @@ export const BookingConfirmation: React.FC = () => {
           gutterBottom
           style={{ marginBottom: "20px" }}
         >
-          Please review your booking details below. A security deposit of S${bookingData.deposit} is required to confirm your booking. This deposit will be refunded within a few days after your visit.
+          Please review your booking details below. A security deposit of S$
+          {bookingData.deposit} is required to confirm your booking. This
+          deposit will be refunded within a few days after your visit.
         </Typography>
 
         <Box style={{ marginBottom: "20px", textAlign: "left" }}>
@@ -82,7 +83,13 @@ export const BookingConfirmation: React.FC = () => {
           </Typography>
         </Box>
 
-        <Box style={{ display: "flex", justifyContent: "space-between", gap: "16px" }}>
+        <Box
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "16px",
+          }}
+        >
           <Button
             variant="outlined"
             fullWidth

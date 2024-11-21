@@ -4,7 +4,11 @@ import { Box, Typography, Button, Container, Grid } from "@mui/material";
 export const Home: React.FC = () => {
   return (
     <Container maxWidth="lg" style={{ marginTop: "50px", textAlign: "center" }}>
-      <Typography variant="h3" gutterBottom style={{ color: "#002147", fontWeight: "bold" }}>
+      <Typography
+        variant="h3"
+        gutterBottom
+        style={{ color: "#002147", fontWeight: "bold" }}
+      >
         Welcome to NUS Tour
       </Typography>
       <Typography
@@ -51,8 +55,8 @@ export const Home: React.FC = () => {
         }}
       >
         <Typography variant="body1" color="textSecondary">
-          Explore the scenic beauty, rich history, and cutting-edge facilities of NUS.
-          Start your journey today!
+          Explore the scenic beauty, rich history, and cutting-edge facilities
+          of NUS. Start your journey today!
         </Typography>
       </Box>
     </Container>

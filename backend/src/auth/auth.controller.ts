@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Request,
@@ -21,7 +22,12 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+    try {
+      const token = await this.authService.login(loginDto);
+      return { access_token: token.access_token };
+    } catch {
+      throw new UnauthorizedException('Login failed at AuthController');
+    }
   }
 
   @Post('register')
@@ -39,12 +45,24 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   async logout(@Request() req: any): Promise<{ message: string }> {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new UnauthorizedException('No token provided');
+    }
+
+    const token = authHeader.split(' ')[1];
     if (!token) {
       throw new UnauthorizedException('No token provided');
     }
+
     await this.authService.logout(token);
     return { message: 'Logged out successfully' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Request() req: any) {
+    return req.user;
   }
 }
 
@@ -63,6 +81,4 @@ export class UsersController {
       throw error;
     }
   }
-
-  // Other endpoints...
 }

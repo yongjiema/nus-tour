@@ -41,7 +41,9 @@
     "build": "tsc && refine build",
     "start": "refine start",
     "start:dev": "npm run dev",
-    "refine": "refine"
+    "refine": "refine",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write ."
   },
   "browserslist": {
     "production": [

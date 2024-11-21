@@ -20,9 +20,9 @@ export const Canteens: React.FC = () => {
       </Typography>
       <Box>
         <Typography variant="body2" color="textSecondary">
-          Enjoy a range of cuisines at our conveniently located canteens. From local
-          delicacies to international flavors, NUS canteens have something to suit every
-          taste and preference.
+          Enjoy a range of cuisines at our conveniently located canteens. From
+          local delicacies to international flavors, NUS canteens have something
+          to suit every taste and preference.
         </Typography>
       </Box>
     </Container>

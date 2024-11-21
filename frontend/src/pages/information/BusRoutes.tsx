@@ -20,9 +20,9 @@ export const BusRoutes: React.FC = () => {
       </Typography>
       <Box>
         <Typography variant="body2" color="textSecondary">
-          The campus bus system at NUS provides efficient and convenient transportation
-          across different faculties, residential areas, and key landmarks. Check the
-          schedule and plan your journey seamlessly.
+          The campus bus system at NUS provides efficient and convenient
+          transportation across different faculties, residential areas, and key
+          landmarks. Check the schedule and plan your journey seamlessly.
         </Typography>
       </Box>
     </Container>
