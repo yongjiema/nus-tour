@@ -1,7 +1,7 @@
 import { Autocomplete, Box, MenuItem, Select, TextField } from "@mui/material";
 import { Create, useAutocomplete } from "@refinedev/mui";
-import { useForm } from "@refinedev/react-hook-form";
-import { Controller } from "react-hook-form";
+import { useForm, FieldError } from "@refinedev/react-hook-form";
+import { Controller, FieldError } from "react-hook-form";
 
 export const BlogPostCreate = () => {
   const {
@@ -27,8 +27,8 @@ export const BlogPostCreate = () => {
           {...register("title", {
             required: "This field is required",
           })}
-          error={!!(errors as any)?.title}
-          helperText={(errors as any)?.title?.message}
+          error={!!(errors as FieldError)?.title}
+          helperText={(errors as FieldError)?.title?.message}
           margin="normal"
           fullWidth
           InputLabelProps={{ shrink: true }}
@@ -40,8 +40,8 @@ export const BlogPostCreate = () => {
           {...register("content", {
             required: "This field is required",
           })}
-          error={!!(errors as any)?.content}
-          helperText={(errors as any)?.content?.message}
+          error={!!(errors as FieldError)?.content}
+          helperText={(errors as FieldError)?.content?.message}
           margin="normal"
           fullWidth
           InputLabelProps={{ shrink: true }}
@@ -88,8 +88,8 @@ export const BlogPostCreate = () => {
                   label={"Category"}
                   margin="normal"
                   variant="outlined"
-                  error={!!(errors as any)?.category?.id}
-                  helperText={(errors as any)?.category?.id?.message}
+                  error={!!(errors as FieldError)?.category?.id}
+                  helperText={(errors as FieldError)?.category?.id?.message}
                   required
                 />
               )}

@@ -20,8 +20,8 @@ export const ConvenienceStores: React.FC = () => {
       </Typography>
       <Box>
         <Typography variant="body2" color="textSecondary">
-          NUS convenience stores provide quick access to daily essentials, snacks, and
-          more. Perfect for students, staff, and visitors alike.
+          NUS convenience stores provide quick access to daily essentials,
+          snacks, and more. Perfect for students, staff, and visitors alike.
         </Typography>
       </Box>
     </Container>

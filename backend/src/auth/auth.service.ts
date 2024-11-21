@@ -13,11 +13,11 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(loginDto: LoginDto): Promise<{ token: string }> {
+  async login(loginDto: LoginDto): Promise<{ access_token: string }> {
     const user = await this.usersService.validateUser(loginDto);
-    const payload = { id: user.id, email: user.email };
-    const token = this.jwtService.sign(payload, { expiresIn: '1h' });
-    return { token };
+    const payload = { email: user.email, id: user.id };
+    const access_token = this.jwtService.sign(payload);
+    return { access_token };
   }
 
   async register(registerDto: RegisterDto): Promise<{ token: string }> {
@@ -32,7 +32,7 @@ export class AuthService {
   }
 
   async logout(token: string): Promise<void> {
-    this.jwtBlacklist.add(token); // Blacklist the token
+    this.jwtBlacklist.add(token);
   }
 
   isTokenBlacklisted(token: string): boolean {

@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, UseGuards, Request, Body, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Put, Delete, UseGuards, Request, Body } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from '../auth/dto/update-user.dto';
@@ -7,20 +7,6 @@ import { UserResponseDto } from '../auth/dto/user-response.dto';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  async getProfile(@Request() req: any): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(req.user.id);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-    };
-  }
 
   @UseGuards(JwtAuthGuard)
   @Put('profile')

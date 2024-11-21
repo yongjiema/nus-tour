@@ -1,8 +1,17 @@
-import React from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
-import { TextField, Button, Box, Typography, Alert, Link, Container, Paper, Grid } from '@mui/material';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+import {
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  Link,
+  Container,
+  Paper,
+  Grid,
+} from "@mui/material";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 interface LoginFormInputs {
   username: string;
@@ -10,19 +19,36 @@ interface LoginFormInputs {
 }
 
 const Login = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormInputs>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormInputs>();
   const [error, setError] = React.useState<string | null>(null);
   const navigate = useNavigate();
 
   const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
     try {
-      const response = await axios.post('http://localhost:3000/auth/login', data);
-      if (response.data.token) {
-        localStorage.setItem('access_token', response.data.token);
-        navigate('/admin');
+      const response = await axios.post(
+        "http://localhost:3000/auth/login",
+        data
+      );
+      if (response.data.access_token) {
+        localStorage.setItem("access_token", response.data.access_token);
+        navigate("/admin");
       }
     } catch (err) {
-      setError('Invalid username or password');
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError("Invalid username or password");
+        } else if (err.response?.status === 400) {
+          setError("Bad request. Please check your input.");
+        } else {
+          setError("Login failed. Please try again.");
+        }
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
     }
   };
 
@@ -44,10 +70,11 @@ const Login = () => {
             <Grid item xs={12}>
               <TextField
                 label="Username"
+                type="username"
                 fullWidth
                 required
                 variant="outlined"
-                {...register('username', { required: 'Username is required' })}
+                {...register("username", { required: "Username is required" })}
                 error={!!errors.username}
                 helperText={errors.username?.message}
               />
@@ -59,7 +86,7 @@ const Login = () => {
                 fullWidth
                 required
                 variant="outlined"
-                {...register('password', { required: 'Password is required' })}
+                {...register("password", { required: "Password is required" })}
                 error={!!errors.password}
                 helperText={errors.password?.message}
               />
@@ -69,7 +96,12 @@ const Login = () => {
                 type="submit"
                 variant="contained"
                 fullWidth
-                style={{ backgroundColor: "#FF6600", color: "#FFFFFF", padding: "10px", fontSize: "16px" }}
+                style={{
+                  backgroundColor: "#FF6600",
+                  color: "#FFFFFF",
+                  padding: "10px",
+                  fontSize: "16px",
+                }}
               >
                 Login
               </Button>

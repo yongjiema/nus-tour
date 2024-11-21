@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Container, TextField, Button, Grid, Paper, Typography, MenuItem, CircularProgress } from "@mui/material";
+import {
+  Container,
+  TextField,
+  Button,
+  Grid,
+  Paper,
+  Typography,
+  MenuItem,
+  CircularProgress,
+} from "@mui/material";
 
 export const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -11,13 +20,18 @@ export const BookingForm: React.FC = () => {
     timeSlot: "",
     deposit: 50,
   });
-  const [timeSlots, setTimeSlots] = useState<{ slot: string; available: number }[]>([]);
+  const [timeSlots, setTimeSlots] = useState<
+    { slot: string; available: number }[]
+  >([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const storedData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
+    const storedData = JSON.parse(
+      sessionStorage.getItem("bookingData") || "{}"
+    );
     setFormData({
-      bookingId: storedData.bookingId || Math.random().toString(36).substr(2, 9), // Ensure bookingId is set
+      bookingId:
+        storedData.bookingId || Math.random().toString(36).substr(2, 9), // Ensure bookingId is set
       name: storedData.name || "",
       email: storedData.email || "",
       date: storedData.date || "",
@@ -34,15 +48,15 @@ export const BookingForm: React.FC = () => {
   async function fetchAvailableTimeSlots(date: string) {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/bookings/available-slots?date=${date}`);
+      const response = await fetch(
+        `http://localhost:3000/bookings/available-slots?date=${date}`
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch available time slots");
       }
       const data = await response.json();
-      console.log("Available Time Slots:", data);
       setTimeSlots(data);
     } catch (error) {
-      console.error("Error fetching time slots:", error);
       alert("Failed to load available time slots. Please try again later.");
     } finally {
       setLoading(false);
@@ -53,7 +67,8 @@ export const BookingForm: React.FC = () => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === "groupSize" ? Math.max(1, parseInt(value, 10) || 1) : value,
+      [name]:
+        name === "groupSize" ? Math.max(1, parseInt(value, 10) || 1) : value,
     });
 
     if (name === "date") {
@@ -154,24 +169,35 @@ export const BookingForm: React.FC = () => {
                     : "Please select a time slot"
                 }
               >
-                {timeSlots.length > 0 ? (
-                  timeSlots.map(({ slot, available }) => (
-                    <MenuItem key={slot} value={slot}>
-                      {slot} (Available: {available})
-                    </MenuItem>
-                  ))
-                ) : null}
+                {timeSlots.length > 0
+                  ? timeSlots.map(({ slot, available }) => (
+                      <MenuItem key={slot} value={slot}>
+                        {slot} (Available: {available})
+                      </MenuItem>
+                    ))
+                  : null}
               </TextField>
               {loading && (
                 <CircularProgress
                   size={24}
-                  style={{ marginTop: "10px", display: "block", marginLeft: "auto", marginRight: "auto" }}
+                  style={{
+                    marginTop: "10px",
+                    display: "block",
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                  }}
                 />
               )}
             </Grid>
             <Grid item xs={12}>
-              <Typography variant="body2" color="textSecondary" style={{ textAlign: "center" }}>
-                A security deposit of SGD {formData.deposit} is required to confirm your booking. This deposit will be fully refunded within a few days after your visit.
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                style={{ textAlign: "center" }}
+              >
+                A security deposit of SGD {formData.deposit} is required to
+                confirm your booking. This deposit will be fully refunded within
+                a few days after your visit.
               </Typography>
             </Grid>
             <Grid item xs={12}>
@@ -179,7 +205,12 @@ export const BookingForm: React.FC = () => {
                 type="submit"
                 variant="contained"
                 fullWidth
-                style={{ backgroundColor: "#FF6600", color: "#FFFFFF", padding: "10px", fontSize: "16px" }}
+                style={{
+                  backgroundColor: "#FF6600",
+                  color: "#FFFFFF",
+                  padding: "10px",
+                  fontSize: "16px",
+                }}
               >
                 Confirm Booking
               </Button>
