@@ -10,7 +10,6 @@ import {
   CardMedia,
 } from "@mui/material";
 
-// Import your images from the assets folder
 import academicProgramsImage from "../../assets/images/academics.jpg";
 import busRoutesImage from "../../assets/images/BusRoutes.jpg";
 import canteensImage from "../../assets/images/canteens.jpg";
@@ -116,6 +115,8 @@ export const InformationHome: React.FC = () => {
                     variant="contained"
                     size="small"
                     href={info.link}
+                    target="_blank" // Opens link in a new tab
+                    rel="noopener noreferrer" // Improves security
                     style={{ backgroundColor: "#FF6600", color: "#FFFFFF" }}
                   >
                     Learn More
