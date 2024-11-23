@@ -48,7 +48,7 @@ const PaymentPage = () => {
   };
 
   if (loading) {
-    return <CircularProgress />;
+    return <div>Loading...</div>;
   }
 
   if (!bookingDetails.bookingId || !bookingDetails.amount) {
@@ -144,4 +144,5 @@ const PaymentPage = () => {
   );
 };
 
+export { PaymentPage as Payment };
 export default PaymentPage;
