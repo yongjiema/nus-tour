@@ -11,32 +11,22 @@ export const BookingConfirmation: React.FC = () => {
     return null;
   }
 
-  const handleConfirm = async () => {
-    try {
-      // Make an API call to store the booking data in the database
-      const response = await fetch("http://localhost:3000/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...bookingData,
-          paymentStatus: "pending", // Set the payment status to pending
-        }),
+  const handleConfirm = () => {
+    const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
+  
+    // Simulate saving to the database and include bookingId
+    fetch("http://localhost:3000/bookings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bookingData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        sessionStorage.setItem("bookingId", data.bookingId); // Save bookingId
+        window.location.href = `/payment?bookingId=${data.bookingId}&amount=50`;
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to save booking data");
-      }
-
-      // Clear booking data from sessionStorage after saving to the database
-      sessionStorage.removeItem("bookingData");
-
-      // Navigate to the payment page
-      navigate("/payment");
-    } catch (error) {
-      alert("There was an error saving your booking. Please try again.");
-    }
   };
 
   const handleEdit = () => navigate("/booking");
