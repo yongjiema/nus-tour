@@ -35,7 +35,7 @@ CORS_HEADERS=Content-Type,Authorization
 VITE_API_BASE_URL=http://localhost:3000
 ```
 
-## Run the Web Application
+## Running the Web Application Locally
 
 To set up and run the web application locally, follow these steps:
 
@@ -49,3 +49,15 @@ The application will be running at:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000
 
+## Running the Backend with Docker
+
+If you'd like to run the backend inside a Docker container, follow these steps:
+
+- **Build the Docker Image**:
+  - Unix-like: `docker build -t nus-tour-backend -f ./backend/Dockerfile ./backend`
+  - Windows: `docker build -t nus-tour-backend -f .\backend\Dockerfile .\backend`
+- **Run the Docker Container**:
+  - Unix-like: `docker run -it -p 0.0.0.0:3000:3000 --env-file ./backend/.env nus-tour-backend`
+  - Windows: `docker run -it -p 0.0.0.0:3000:3000 --env-file .\backend\.env nus-tour-backend`
+
+The backend will be running at: http://localhost:3000
