@@ -9,6 +9,7 @@ import {
   MenuItem,
   CircularProgress,
 } from "@mui/material";
+import * as dataProviders from "../../dataProviders";
 
 export const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -32,13 +33,14 @@ export const BookingForm: React.FC = () => {
   async function fetchAvailableTimeSlots(date: string) {
     try {
       setLoading(true);
-      const response = await fetch(
-        `http://localhost:3000/bookings/available-slots?date=${date}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch available time slots");
-      }
-      const data = await response.json();
+      const response = await dataProviders.backend.custom({
+        url: `/bookings/available-slots`,
+        method: "get",
+        payload: {
+          date
+        }
+      });
+      const data = response.data as any;
       setTimeSlots(data);
     } catch (error) {
       console.error(error);

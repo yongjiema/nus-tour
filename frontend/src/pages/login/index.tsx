@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import * as dataProviders from "../../dataProviders";
 
 interface LoginFormInputs {
   username: string;
@@ -29,10 +30,11 @@ const Login = () => {
 
   const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
     try {
-      const response = await axios.post(
-        "http://localhost:3000/auth/login",
-        data
-      );
+      const response = await dataProviders.backend.custom({
+        url: "/auth/login",
+        method: "post",
+        payload: data,
+      });
       if (response.data.access_token) {
         localStorage.setItem("access_token", response.data.access_token);
         navigate("/admin");

@@ -31,7 +31,7 @@ import {
 } from "./pages/information";
 import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
-import dataProvider from "./dataProvider";
+import * as dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
 
 // Lazy load the Admin Dashboard component
@@ -48,7 +48,7 @@ function App() {
             <DevtoolsProvider>
               <Refine
                 authProvider={authProvider}
-                dataProvider={dataProvider}
+                dataProvider={dataProviders.backend}
                 notificationProvider={notificationProvider}
                 routerProvider={routerBindings}
                 resources={[
