@@ -42,8 +42,10 @@
     "start": "refine start",
     "start:dev": "npm run dev",
     "refine": "refine",
+    "check": "npm run lint && npm test",
     "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": ""
   },
   "browserslist": {
     "production": [
