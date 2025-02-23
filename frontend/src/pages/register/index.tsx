@@ -13,6 +13,7 @@ import {
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { PublicHeader } from "./../../components/header/public";
+import * as dataProviders from "../../dataProviders";
 
 interface RegisterFormInputs {
   username: string;
@@ -38,15 +39,17 @@ export const Register: React.FC = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/auth/register", {
-        username: data.username,
-        email: data.email,
-        password: data.password,
+      await dataProviders.backend.custom({
+        url: "/auth/register",
+        method: "post",
+        payload: {
+          username: data.username,
+          email: data.email,
+          password: data.password,
+        },
       });
-      if (response.status === 201) {
-        alert("Registration successful!");
-        navigate("/login");
-      }
+      alert("Registration successful!");
+      navigate("/login");
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 409) {
@@ -93,8 +96,6 @@ export const Register: React.FC = () => {
                   variant="outlined"
                   {...register("username", {
                     required: "Username is required",
-                    validate: (value) =>
-                      value.trim() !== "" || "Username cannot be empty",
                   })}
                   error={!!errors.username}
                   helperText={errors.username?.message}
@@ -107,13 +108,7 @@ export const Register: React.FC = () => {
                   fullWidth
                   required
                   variant="outlined"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
-                      message: "Invalid email format",
-                    },
-                  })}
+                  {...register("email", { required: "Email is required" })}
                   error={!!errors.email}
                   helperText={errors.email?.message}
                 />

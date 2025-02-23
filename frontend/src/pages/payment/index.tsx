@@ -17,7 +17,6 @@ const PaymentPage = () => {
     amount: "",
   });
   const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const bookingId = searchParams.get("bookingId");
@@ -25,22 +24,11 @@ const PaymentPage = () => {
 
     if (!bookingId || !amount) {
       console.error("Invalid booking details.");
-      setErrorMessage("Missing booking details. Please try again.");
-      setLoading(false);
       return;
     }
 
     if (isNaN(Number(amount))) {
       console.error("Invalid amount format.");
-      setErrorMessage("Amount must be a valid number.");
-      setLoading(false);
-      return;
-    }
-
-    if (Number(amount) <= 0) {
-      console.error("Amount must be greater than 0.");
-      setErrorMessage("Invalid amount. It must be greater than 0.");
-      setLoading(false);
       return;
     }
 
@@ -60,7 +48,7 @@ const PaymentPage = () => {
   };
 
   if (loading) {
-    return <CircularProgress />;
+    return <div>Loading...</div>;
   }
 
   if (!bookingDetails.bookingId || !bookingDetails.amount) {
@@ -71,7 +59,7 @@ const PaymentPage = () => {
             variant="h6"
             style={{ color: "red", textAlign: "center" }}
           >
-            {errorMessage || "Missing or invalid booking details. Please try again."}
+            Missing or invalid booking details. Please try again.
           </Typography>
         </Paper>
       </Container>
@@ -156,4 +144,5 @@ const PaymentPage = () => {
   );
 };
 
+export { PaymentPage as Payment };
 export default PaymentPage;

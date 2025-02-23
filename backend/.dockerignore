@@ -1,0 +1,13 @@
+# Ignore Git files
+.git
+.gitignore
+
+# Dotenv
+.env*
+
+# Ignore editors' settings
+.editorconfig
+
+# Ignore compiled output
+node_modules
+dist

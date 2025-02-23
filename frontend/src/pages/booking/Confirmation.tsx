@@ -1,6 +1,7 @@
 import React from "react";
 import { Container, Box, Typography, Button, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import * as dataProviders from "../../dataProviders";
 
 export const BookingConfirmation: React.FC = () => {
   const navigate = useNavigate();
@@ -12,31 +13,17 @@ export const BookingConfirmation: React.FC = () => {
   }
 
   const handleConfirm = async () => {
-    try {
-      // Make an API call to store the booking data in the database
-      const response = await fetch("http://localhost:3000/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...bookingData,
-          paymentStatus: "pending", // Set the payment status to pending
-        }),
-      });
+    const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
 
-      if (!response.ok) {
-        throw new Error("Failed to save booking data");
-      }
-
-      // Clear booking data from sessionStorage after saving to the database
-      sessionStorage.removeItem("bookingData");
-
-      // Navigate to the payment page
-      navigate("/payment");
-    } catch (error) {
-      alert("There was an error saving your booking. Please try again.");
-    }
+    // Simulate saving to the database and include bookingId
+    const response = await dataProviders.backend.custom({
+      url: "/bookings",
+      method: "post",
+      payload: bookingData,
+    });
+    const data = response.data as any;
+    sessionStorage.setItem("bookingId", data.bookingId); // Save bookingId
+    window.location.href = `/payment?bookingId=${data.bookingId}&amount=50`;
   };
 
   const handleEdit = () => navigate("/booking");
