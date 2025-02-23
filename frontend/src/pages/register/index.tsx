@@ -93,6 +93,8 @@ export const Register: React.FC = () => {
                   variant="outlined"
                   {...register("username", {
                     required: "Username is required",
+                    validate: (value) =>
+                      value.trim() !== "" || "Username cannot be empty",
                   })}
                   error={!!errors.username}
                   helperText={errors.username?.message}
@@ -105,7 +107,13 @@ export const Register: React.FC = () => {
                   fullWidth
                   required
                   variant="outlined"
-                  {...register("email", { required: "Email is required" })}
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+                      message: "Invalid email format",
+                    },
+                  })}
                   error={!!errors.email}
                   helperText={errors.email?.message}
                 />

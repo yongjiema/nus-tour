@@ -16,7 +16,7 @@ export const BookingForm: React.FC = () => {
     name: "",
     email: "",
     date: "",
-    groupSize: "",
+    groupSize: 1,
     timeSlot: "",
     deposit: 50,
   });
@@ -43,7 +43,9 @@ export const BookingForm: React.FC = () => {
 
   // Get today's date in YYYY-MM-DD format
   const today = new Date();
+  const sixMonthsLater = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
   const formattedToday = today.toISOString().split("T")[0];
+  const formattedSixMonths = sixMonthsLater.toISOString().split("T")[0];
 
   async function fetchAvailableTimeSlots(date: string) {
     try {
@@ -68,7 +70,7 @@ export const BookingForm: React.FC = () => {
     setFormData({
       ...formData,
       [name]:
-        name === "groupSize" ? Math.max(1, parseInt(value, 10) || 1) : value,
+        name === "groupSize" ? Math.max(1, Math.min(50, parseInt(value, 10) || 1)) : value,
     });
 
     if (name === "date") {
@@ -132,7 +134,8 @@ export const BookingForm: React.FC = () => {
                   shrink: true,
                 }}
                 inputProps={{
-                  min: formattedToday, // Restrict selection to today or future dates
+                  min: formattedToday,      // No past dates
+                  max: formattedSixMonths,   // No dates beyond 6 months
                 }}
               />
             </Grid>
@@ -165,16 +168,16 @@ export const BookingForm: React.FC = () => {
                   loading
                     ? "Loading available time slots..."
                     : !timeSlots.length
-                    ? "No available slots"
-                    : "Please select a time slot"
+                      ? "No available slots"
+                      : "Please select a time slot"
                 }
               >
                 {timeSlots.length > 0
                   ? timeSlots.map(({ slot, available }) => (
-                      <MenuItem key={slot} value={slot}>
-                        {slot} (Available: {available})
-                      </MenuItem>
-                    ))
+                    <MenuItem key={slot} value={slot}>
+                      {slot} (Available: {available})
+                    </MenuItem>
+                  ))
                   : null}
               </TextField>
               {loading && (
