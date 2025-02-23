@@ -2,14 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert, Check } from 'typ
 import * as bcrypt from 'bcrypt';
 
 @Entity()
-@Check(
-  "CHK_email_format",
-  "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"
-)
-@Check(
-  "CHK_username_not_empty",
-  "username <> ''"
-)
+@Check('CHK_email_format', "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'")
+@Check('CHK_username_not_empty', "username <> ''")
 export class User {
   @PrimaryGeneratedColumn()
   id: number;

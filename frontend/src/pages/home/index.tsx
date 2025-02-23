@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, Typography, Button, Container, Grid } from "@mui/material";
-import NUSPhoto from "../../assets/images/nus-campus.jpg"; 
+import { Box, Typography, Button, Container } from "@mui/material";
+import NUSPhoto from "../../assets/images/nus-campus.jpg";
 
 export const Home: React.FC = () => {
   return (
