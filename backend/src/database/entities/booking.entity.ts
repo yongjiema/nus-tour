@@ -30,6 +30,9 @@ export class Booking {
   @Column()
   timeSlot: string;
 
+  @Column({ default: false })
+  checkedIn: boolean;
+
   @BeforeInsert()
   generateBookingId() {
     this.bookingId = uuidv4();

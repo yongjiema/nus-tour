@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: number;
 
   @Column()
@@ -17,6 +17,9 @@ export class User {
 
   @Column({ default: '' })
   unhashedPassword: string;
+
+  @Column({ default: 'User' })
+  role: string;
 
   @BeforeInsert()
   async hashPassword() {

@@ -15,13 +15,17 @@ export const BookingConfirmation: React.FC = () => {
   const handleConfirm = async () => {
     const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
 
+    interface BookingResponse {
+      bookingId: string;
+    }
+
     // Simulate saving to the database and include bookingId
     const response = await dataProviders.backend.custom({
       url: "/bookings",
       method: "post",
       payload: bookingData,
     });
-    const data = response.data as any;
+    const data: BookingResponse = response.data as unknown as BookingResponse;
     sessionStorage.setItem("bookingId", data.bookingId); // Save bookingId
     window.location.href = `/payment?bookingId=${data.bookingId}&amount=50`;
   };
