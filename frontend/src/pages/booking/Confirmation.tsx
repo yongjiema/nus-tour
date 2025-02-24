@@ -19,10 +19,6 @@ export const BookingConfirmation: React.FC = () => {
   const handleConfirm = async () => {
     const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
 
-    interface BookingResponse {
-      bookingId: string;
-    }
-
     // Simulate saving to the database and include bookingId
     const response = await dataProviders.backend.custom({
       url: "/bookings",
