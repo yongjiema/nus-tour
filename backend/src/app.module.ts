@@ -8,17 +8,25 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BookingModule } from './booking/booking.module';
 import { PaymentsModule } from './payments/payments.module';
+import { Booking } from './database/entities/booking.entity';
+import { Payment } from './database/entities/payments.entity';
+import { CheckinModule } from './checkin/checkin.module';
 import config from '../ormconfig';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    TypeOrmModule.forRoot(config),
+    TypeOrmModule.forRoot({
+      ...config,
+      entities: [Booking, Payment /* ... other entities */],
+    }),
+    TypeOrmModule.forFeature([Booking]),
     DatabaseModule,
     AuthModule,
     UsersModule,
     BookingModule,
     PaymentsModule,
+    CheckinModule,
   ],
   controllers: [AppController],
   providers: [AppService],

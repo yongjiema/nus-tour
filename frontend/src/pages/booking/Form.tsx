@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import * as dataProviders from "../../dataProviders";
 
-interface TimeSlot {
+interface AvailableTimeSlot {
   slot: string;
   available: number;
 }
@@ -25,7 +25,7 @@ export const BookingForm: React.FC = () => {
     timeSlot: "",
     deposit: 50,
   });
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [timeSlots, setTimeSlots] = useState<AvailableTimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Restrict date selection to today and beyond
@@ -43,7 +43,7 @@ export const BookingForm: React.FC = () => {
           date
         }
       });
-      const data = response.data as TimeSlot[];
+      const data = response.data as AvailableTimeSlot[];
       setTimeSlots(data);
     } catch (error) {
       console.error(error);

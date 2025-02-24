@@ -17,6 +17,11 @@ export class BookingService {
     }
 
     const booking = this.bookingRepository.create(createBookingDto);
+
+    if (createBookingDto.groupSize < 1 || createBookingDto.groupSize > 20) {
+      throw new BadRequestException('Invalid group size. Please provide a value between 1 and 50.');
+    }
+
     return await this.bookingRepository.save(booking);
   }
 

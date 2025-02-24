@@ -3,6 +3,10 @@ import { Container, Box, Typography, Button, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import * as dataProviders from "../../dataProviders";
 
+interface BookingResponse {
+  bookingId: string;
+}
+
 export const BookingConfirmation: React.FC = () => {
   const navigate = useNavigate();
   const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
