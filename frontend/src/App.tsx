@@ -31,10 +31,10 @@ import {
 } from "./pages/information";
 import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
+import Checkin from "./pages/checkin";
 import * as dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
 
-// Lazy load the Admin Dashboard component
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
 function App() {
@@ -81,27 +81,18 @@ function App() {
                       path="/information/academic-programs"
                       element={<AcademicPrograms />}
                     />
-                    <Route
-                      path="/information/bus-routes"
-                      element={<BusRoutes />}
-                    />
-                    <Route
-                      path="/information/canteens"
-                      element={<Canteens />}
-                    />
+                    <Route path="/information/bus-routes" element={<BusRoutes />} />
+                    <Route path="/information/canteens" element={<Canteens />} />
                     <Route
                       path="/information/convenience-stores"
                       element={<ConvenienceStores />}
                     />
                     <Route path="/booking" element={<BookingForm />} />
-                    <Route
-                      path="/booking/confirmation"
-                      element={<BookingConfirmation />}
-                    />
+                    <Route path="/booking/confirmation" element={<BookingConfirmation />} />
                     <Route path="/payment" element={<Payment />} />
+                    <Route path="/checkin" element={<Checkin />} />
                   </Route>
 
-                  {/* Privated Admin Routes */}
                   <Route element={<PrivateRoute />}>
                     <Route
                       path="/admin"
@@ -115,7 +106,6 @@ function App() {
                     />
                   </Route>
 
-                  {/* Authentication Routes */}
                   <Route path="/register" element={<Register />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Routes>
