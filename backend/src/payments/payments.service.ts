@@ -20,7 +20,7 @@ export class PaymentsService {
     if (!payment) {
       throw new Error('Payment not found');
     }
-    payment.status = 'Paid';
+    payment.paymentStatus = 'Paid';
     return this.paymentsRepository.save(payment);
   }
 }

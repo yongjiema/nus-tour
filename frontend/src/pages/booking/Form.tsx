@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Container,
   TextField,
@@ -11,6 +11,11 @@ import {
 } from "@mui/material";
 import * as dataProviders from "../../dataProviders";
 
+interface AvailableTimeSlot {
+  slot: string;
+  available: number;
+}
+
 export const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -20,9 +25,7 @@ export const BookingForm: React.FC = () => {
     timeSlot: "",
     deposit: 50,
   });
-  const [timeSlots, setTimeSlots] = useState<
-    { slot: string; available: number }[]
-  >([]);
+  const [timeSlots, setTimeSlots] = useState<AvailableTimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Restrict date selection to today and beyond
@@ -40,7 +43,7 @@ export const BookingForm: React.FC = () => {
           date
         }
       });
-      const data = response.data as any;
+      const data = response.data as AvailableTimeSlot[];
       setTimeSlots(data);
     } catch (error) {
       console.error(error);

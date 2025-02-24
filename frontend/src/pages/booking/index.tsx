@@ -1,2 +1,2 @@
-export * from "./Form";
-export * from "./Confirmation";
+export { BookingForm } from "./Form";
+export { BookingConfirmation } from "./Confirmation";

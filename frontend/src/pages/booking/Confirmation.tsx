@@ -3,6 +3,10 @@ import { Container, Box, Typography, Button, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import * as dataProviders from "../../dataProviders";
 
+interface BookingResponse {
+  bookingId: string;
+}
+
 export const BookingConfirmation: React.FC = () => {
   const navigate = useNavigate();
   const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
@@ -21,7 +25,7 @@ export const BookingConfirmation: React.FC = () => {
       method: "post",
       payload: bookingData,
     });
-    const data = response.data as any;
+    const data = response.data as BookingResponse;
     sessionStorage.setItem("bookingId", data.bookingId); // Save bookingId
     window.location.href = `/payment?bookingId=${data.bookingId}&amount=50`;
   };

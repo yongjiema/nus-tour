@@ -1,20 +1,29 @@
 import React from "react";
-import { Box, Typography, Button, Container, Grid } from "@mui/material";
-import NUSPhoto from "../../assets/images/nus-campus.jpg"; 
+import { Box, Typography, Button, Container, useTheme } from "@mui/material";
+import NUSPhoto from "../../assets/images/nus-campus.jpg";
 
 export const Home: React.FC = () => {
+  const theme = useTheme();
   return (
-    <Container maxWidth="lg" style={{ marginTop: "50px", textAlign: "center" }}>
+    <Container
+      maxWidth="lg"
+      sx={{
+        mt: 6,
+        textAlign: "center",
+        px: { xs: 2, md: 0 },
+      }}
+    >
       {/* Photo Section */}
-      <Box style={{ marginBottom: "30px" }}>
-        <img
+      <Box sx={{ mb: 4 }}>
+        <Box
+          component="img"
           src={NUSPhoto}
           alt="NUS Campus"
-          style={{
-            maxWidth: "100%",
+          sx={{
+            width: "100%",
             height: "auto",
-            borderRadius: "8px",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+            borderRadius: 2,
+            boxShadow: 3,
           }}
         />
       </Box>
@@ -23,25 +32,26 @@ export const Home: React.FC = () => {
       <Typography
         variant="h3"
         gutterBottom
-        style={{ color: "#002147", fontWeight: "bold" }}
+        sx={{
+          color: theme.palette.primary.main,
+          fontWeight: "bold",
+        }}
       >
         Welcome to NUS Tour
       </Typography>
       <Typography
         variant="h6"
-        color="textSecondary"
         gutterBottom
-        style={{ color: "#FF6600", marginBottom: "20px" }}
+        sx={{ color: theme.palette.secondary.main, mb: 2 }}
       >
         Discover, Learn, and Experience NUS through our guided campus tours.
       </Typography>
       <Typography
         variant="body1"
-        color="textSecondary"
-        style={{
-          marginBottom: "40px",
+        sx={{
+          mb: 5,
           fontSize: "18px",
-          lineHeight: "1.8",
+          lineHeight: 1.8,
           textAlign: "justify",
         }}
       >
@@ -57,25 +67,27 @@ export const Home: React.FC = () => {
 
       {/* Call-to-Action Section */}
       <Box
-        style={{
+        sx={{
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          gap: "20px",
-          marginTop: "30px",
+          gap: 2,
+          flexWrap: "wrap",
         }}
       >
         <Button
           variant="contained"
-          style={{
-            backgroundColor: "#002147",
+          size="large"
+          sx={{
+            backgroundColor: theme.palette.primary.main,
             color: "#FFFFFF",
-            padding: "10px 30px",
+            px: 3,
+            py: 1.5,
             fontSize: "18px",
-            borderRadius: "0", // Make edges sharp
+            borderRadius: 0,
             boxShadow: "none",
             textTransform: "capitalize",
-            width: "300px",
+            width: { xs: "100%", sm: "300px" },
             height: "60px",
           }}
           href="/information"
@@ -84,20 +96,41 @@ export const Home: React.FC = () => {
         </Button>
         <Button
           variant="contained"
-          style={{
+          size="large"
+          sx={{
             backgroundColor: "#FF6600",
             color: "#FFFFFF",
-            padding: "10px 30px",
+            px: 3,
+            py: 1.5,
             fontSize: "18px",
-            borderRadius: "0", // Make edges sharp
+            borderRadius: 0,
             boxShadow: "none",
             textTransform: "capitalize",
-            width: "300px",
+            width: { xs: "100%", sm: "300px" },
             height: "60px",
           }}
           href="/booking"
         >
           Book a Campus Tour
+        </Button>
+        <Button
+          variant="contained"
+          size="large"
+          sx={{
+            backgroundColor: theme.palette.success.main,
+            color: "#FFFFFF",
+            px: 3,
+            py: 1.5,
+            fontSize: "18px",
+            borderRadius: 0,
+            boxShadow: "none",
+            textTransform: "capitalize",
+            width: { xs: "100%", sm: "300px" },
+            height: "60px",
+          }}
+          href="/checkin"
+        >
+          Check In
         </Button>
       </Box>
     </Container>
