@@ -25,7 +25,7 @@ export const BookingConfirmation: React.FC = () => {
       method: "post",
       payload: bookingData,
     });
-    const data = response.data as BookingResponse;
+    const data: BookingResponse = response.data as unknown as BookingResponse;
     sessionStorage.setItem("bookingId", data.bookingId); // Save bookingId
     window.location.href = `/payment?bookingId=${data.bookingId}&amount=50`;
   };

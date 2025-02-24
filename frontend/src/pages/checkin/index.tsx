@@ -24,7 +24,7 @@ const Checkin = () => {
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/checkin`, formData);
       setSuccess("Check-in successful!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         console.error("Axios error:", err.response?.data || err.message);
       } else {

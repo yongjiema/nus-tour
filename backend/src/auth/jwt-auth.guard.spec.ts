@@ -15,8 +15,11 @@ describe('JwtAuthGuard', () => {
     authService = {
       isTokenBlacklisted: jest.fn(),
     } as any;
-
     jwtAuthGuard = new JwtAuthGuard(jwtService, authService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should throw UnauthorizedException if Authorization header is missing', () => {
@@ -29,12 +32,30 @@ describe('JwtAuthGuard', () => {
     expect(() => jwtAuthGuard.canActivate(context)).toThrow(UnauthorizedException);
   });
 
-  it('should throw UnauthorizedException if token format is invalid', () => {
+  it('should throw UnauthorizedException if Authorization header is not a string', () => {
     const context = {
       switchToHttp: () => ({
-        getRequest: () => ({
-          headers: { authorization: 'InvalidHeader' },
-        }),
+        getRequest: () => ({ headers: { authorization: 123 } }),
+      }),
+    } as any;
+
+    expect(() => jwtAuthGuard.canActivate(context)).toThrow(UnauthorizedException);
+  });
+
+  it('should throw UnauthorizedException if token format is invalid (missing Bearer)', () => {
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => ({ headers: { authorization: 'InvalidHeader' } }),
+      }),
+    } as any;
+
+    expect(() => jwtAuthGuard.canActivate(context)).toThrow(UnauthorizedException);
+  });
+
+  it('should throw UnauthorizedException if token format is invalid (Bearer but no token)', () => {
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => ({ headers: { authorization: 'Bearer' } }),
       }),
     } as any;
 
@@ -46,9 +67,7 @@ describe('JwtAuthGuard', () => {
 
     const context = {
       switchToHttp: () => ({
-        getRequest: () => ({
-          headers: { authorization: 'Bearer blacklistedtoken' },
-        }),
+        getRequest: () => ({ headers: { authorization: 'Bearer blacklistedtoken' } }),
       }),
     } as any;
 
@@ -56,23 +75,21 @@ describe('JwtAuthGuard', () => {
     expect(authService.isTokenBlacklisted).toHaveBeenCalledWith('blacklistedtoken');
   });
 
-  it('should throw UnauthorizedException for an invalid token', () => {
+  it('should throw UnauthorizedException if jwtService.verify throws an error', () => {
     jest.spyOn(jwtService, 'verify').mockImplementation(() => {
       throw new Error('Invalid token');
     });
 
     const context = {
       switchToHttp: () => ({
-        getRequest: () => ({
-          headers: { authorization: 'Bearer invalidtoken' },
-        }),
+        getRequest: () => ({ headers: { authorization: 'Bearer invalidtoken' } }),
       }),
     } as any;
 
     expect(() => jwtAuthGuard.canActivate(context)).toThrow(UnauthorizedException);
   });
 
-  it('should allow valid token and attach user to request', () => {
+  it('should allow valid token and attach decoded user to request', () => {
     const mockDecoded = { sub: 1, email: 'test@example.com' };
     jest.spyOn(jwtService, 'verify').mockReturnValue(mockDecoded);
     jest.spyOn(authService, 'isTokenBlacklisted').mockReturnValue(false);

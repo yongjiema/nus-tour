@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import * as dataProviders from "../../dataProviders";
 
 interface LoginFormInputs {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -42,7 +42,7 @@ const Login = () => {
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
-          setError("Invalid username or password");
+          setError("Invalid email or password");
         } else if (err.response?.status === 400) {
           setError("Bad request. Please check your input.");
         } else {
@@ -71,14 +71,14 @@ const Login = () => {
             </Grid>
             <Grid item xs={12}>
               <TextField
-                label="Username"
-                type="username"
+                label="Email"
+                type="Email"
                 fullWidth
                 required
                 variant="outlined"
-                {...register("username", { required: "Username is required" })}
-                error={!!errors.username}
-                helperText={errors.username?.message}
+                {...register("email", { required: "Email is required" })}
+                error={!!errors.email}
+                helperText={errors.email?.message}
               />
             </Grid>
             <Grid item xs={12}>

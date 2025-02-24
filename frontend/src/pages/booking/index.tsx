@@ -1,2 +1,3 @@
-export { BookingForm } from "./Form";
-export { BookingConfirmation } from "./Confirmation";
+/* eslint-disable react-refresh/only-export-components */
+export * from "./Form";
+export * from "./Confirmation";

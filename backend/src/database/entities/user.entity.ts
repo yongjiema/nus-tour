@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 @Check('CHK_email_format', "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'")
 @Check('CHK_username_not_empty', "username <> ''")
 export class User {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: number;
 
   @Column()
@@ -19,6 +19,9 @@ export class User {
 
   @Column({ default: '' })
   unhashedPassword: string;
+
+  @Column({ default: 'User' })
+  role: string;
 
   @BeforeInsert()
   async hashPassword() {

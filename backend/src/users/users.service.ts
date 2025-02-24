@@ -46,8 +46,8 @@ export class UsersService {
   }
 
   async validateUser(loginDto: LoginDto): Promise<User> {
-    const { username, password } = loginDto;
-    const user = await this.usersRepository.findOne({ where: { username } });
+    const { email, password } = loginDto;
+    const user = await this.usersRepository.findOne({ where: { email } });
 
     if (!user || !(await user.comparePassword(password))) {
       throw new NotFoundException('Invalid username or password');
