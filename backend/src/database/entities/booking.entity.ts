@@ -21,9 +21,6 @@ export class Booking {
   @Column()
   email: string;
 
-  @Column({ default: false })
-  checkedIn: boolean;
-
   @Column({ type: 'date' })
   date: string;
 
