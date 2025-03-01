@@ -1,21 +1,23 @@
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { TokenBlacklistService } from './token-blacklist.service';
 
 describe('JwtAuthGuard', () => {
   let jwtAuthGuard: JwtAuthGuard;
   let jwtService: JwtService;
-  let authService: AuthService;
+  let tokenBlacklistService: TokenBlacklistService;
 
   beforeEach(() => {
     jwtService = new JwtService({
       secret: 'test-secret',
     });
-    authService = {
-      isTokenBlacklisted: jest.fn(),
+
+    tokenBlacklistService = {
+      isBlacklisted: jest.fn(),
+      addToBlacklist: jest.fn(),
     } as any;
-    jwtAuthGuard = new JwtAuthGuard(jwtService, authService);
+    jwtAuthGuard = new JwtAuthGuard(jwtService, tokenBlacklistService);
   });
 
   afterEach(() => {
@@ -63,7 +65,7 @@ describe('JwtAuthGuard', () => {
   });
 
   it('should throw UnauthorizedException for a blacklisted token', () => {
-    jest.spyOn(authService, 'isTokenBlacklisted').mockReturnValue(true);
+    jest.spyOn(tokenBlacklistService, 'isBlacklisted').mockReturnValue(true);
 
     const context = {
       switchToHttp: () => ({
@@ -72,7 +74,7 @@ describe('JwtAuthGuard', () => {
     } as any;
 
     expect(() => jwtAuthGuard.canActivate(context)).toThrow(UnauthorizedException);
-    expect(authService.isTokenBlacklisted).toHaveBeenCalledWith('blacklistedtoken');
+    expect(tokenBlacklistService.isBlacklisted).toHaveBeenCalledWith('blacklistedtoken');
   });
 
   it('should throw UnauthorizedException if jwtService.verify throws an error', () => {
@@ -92,7 +94,7 @@ describe('JwtAuthGuard', () => {
   it('should allow valid token and attach decoded user to request', () => {
     const mockDecoded = { sub: 1, email: 'test@example.com' };
     jest.spyOn(jwtService, 'verify').mockReturnValue(mockDecoded);
-    jest.spyOn(authService, 'isTokenBlacklisted').mockReturnValue(false);
+    jest.spyOn(tokenBlacklistService, 'isBlacklisted').mockReturnValue(false);
 
     const mockRequest = {
       headers: { authorization: 'Bearer validtoken' },

@@ -39,30 +39,37 @@ export const Register: React.FC = () => {
     }
 
     try {
-      await dataProviders.backend.custom({
+      const response = await dataProviders.backend.custom({
         url: "/auth/register",
         method: "post",
         payload: {
           username: data.username,
           email: data.email,
           password: data.password,
+          confirmPassword: data.confirmPassword,
         },
       });
+      console.log("Registration successful response:", response);
       alert("Registration successful!");
       navigate("/login");
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error("Registration error:",
+        axios.isAxiosError(err)
+          ? err.response?.data
+          : (err instanceof Error ? err.message : String(err))
+      );
+
       if (axios.isAxiosError(err)) {
+        // This type guard is correct and working as expected
         if (err.response?.status === 409) {
-          setError(
-            "Email is already registered. Please use a different email."
-          );
+          setError("Email is already registered. Please use a different email.");
         } else if (err.response?.status === 400) {
           setError("Bad request. Please check your input.");
         } else {
           setError("Registration failed. Please try again.");
         }
       } else {
-        setError("An unexpected error occurred. Please try again.");
+        setError("An unexpected error occurred.");
       }
     }
   };

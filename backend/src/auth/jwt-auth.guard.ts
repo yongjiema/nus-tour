@@ -1,27 +1,29 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
+import { TokenBlacklistService } from './token-blacklist.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly authService: AuthService,
+    private readonly tokenBlacklistService: TokenBlacklistService,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
+
     if (!token) {
       throw new UnauthorizedException('Token is missing or improperly formatted');
     }
 
     try {
-      if (this.authService.isTokenBlacklisted(token)) {
+      if (this.tokenBlacklistService.isBlacklisted(token)) {
         throw new UnauthorizedException('Token has been blacklisted');
       }
+
       const decoded = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET,
+        secret: process.env.JWT_SECRET || 'secret',
         algorithms: ['HS256'],
       });
 
@@ -39,15 +41,15 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     if (typeof authHeader !== 'string') {
-      throw new UnauthorizedException('Authorization header is not a string');
+      throw new UnauthorizedException('Authorization header must be a string');
     }
 
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    const [bearer, token] = authHeader.split(' ');
+
+    if (bearer !== 'Bearer' || !token) {
       throw new UnauthorizedException('Invalid token format. Expected "Bearer <token>".');
     }
 
-    const token = parts[1];
     return token;
   }
 }

@@ -4,10 +4,11 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
-import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { PaymentsModule } from './payments/payments.module';
+import { User } from './database/entities/user.entity';
 import { Booking } from './database/entities/booking.entity';
 import { Payment } from './database/entities/payments.entity';
 import { CheckinModule } from './checkin/checkin.module';
@@ -18,12 +19,12 @@ import config from '../ormconfig';
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       ...config,
-      entities: [Booking, Payment /* ... other entities */],
+      entities: [User, Booking, Payment],
     }),
-    TypeOrmModule.forFeature([Booking]),
     DatabaseModule,
-    AuthModule,
     UsersModule,
+    AuthModule,
+    TypeOrmModule.forFeature([Booking]),
     BookingModule,
     PaymentsModule,
     CheckinModule,
