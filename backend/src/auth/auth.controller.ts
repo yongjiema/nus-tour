@@ -1,44 +1,44 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Request,
   UseGuards,
-  UnauthorizedException,
-  BadRequestException,
+  Request,
+  Get,
   ConflictException,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { UsersService } from '../users/users.service';
+import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 import { User } from '../database/entities/user.entity';
+import { UsersService } from '../users/users.service';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    try {
-      const token = await this.authService.login(loginDto);
-      return { access_token: token.access_token };
-    } catch {
-      throw new UnauthorizedException('Login failed at AuthController');
-    }
+    return this.authService.login(loginDto);
   }
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     try {
-      return await this.authService.register(registerDto);
+      this.logger.log(`Register endpoint called with: ${JSON.stringify(registerDto)}`);
+      const result = await this.authService.register(registerDto);
+      return result;
     } catch (error) {
       if (error instanceof ConflictException) {
         throw new ConflictException('Email is already in use');
       }
-      throw new BadRequestException('Registration failed.');
+      this.logger.error(`Registration failed: ${error.message}`, error.stack);
+      throw new BadRequestException(`Registration failed: ${error.message}`);
     }
   }
 
@@ -47,12 +47,12 @@ export class AuthController {
   async logout(@Request() req: any): Promise<{ message: string }> {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      throw new UnauthorizedException('No token provided');
+      throw new BadRequestException('No authorization header found');
     }
 
     const token = authHeader.split(' ')[1];
     if (!token) {
-      throw new UnauthorizedException('No token provided');
+      throw new BadRequestException('No token provided');
     }
 
     await this.authService.logout(token);
@@ -68,6 +68,8 @@ export class AuthController {
 
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(private readonly usersService: UsersService) {}
 
   @Post('register')
@@ -78,7 +80,10 @@ export class UsersController {
       if (error instanceof ConflictException) {
         throw new ConflictException('Email is already in use');
       }
-      throw error;
+
+      this.logger.error('Registration failed:', error.stack, 'RegisterDto:', registerDto);
+
+      throw new BadRequestException('Registration failed.');
     }
   }
 }
