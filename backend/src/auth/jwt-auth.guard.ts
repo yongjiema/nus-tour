@@ -12,6 +12,7 @@ export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
+
     if (!token) {
       throw new UnauthorizedException('Token is missing or improperly formatted');
     }
@@ -22,7 +23,7 @@ export class JwtAuthGuard implements CanActivate {
       }
 
       const decoded = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET,
+        secret: process.env.JWT_SECRET || 'secret',
         algorithms: ['HS256'],
       });
 
@@ -37,6 +38,10 @@ export class JwtAuthGuard implements CanActivate {
     const authHeader = request.headers.authorization;
     if (!authHeader) {
       throw new UnauthorizedException('Authorization header is missing');
+    }
+
+    if (typeof authHeader !== 'string') {
+      throw new UnauthorizedException('Authorization header must be a string');
     }
 
     const [bearer, token] = authHeader.split(' ');

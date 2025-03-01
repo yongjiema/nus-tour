@@ -8,6 +8,7 @@ import {
   ConflictException,
   BadRequestException,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -47,12 +48,12 @@ export class AuthController {
   async logout(@Request() req: any): Promise<{ message: string }> {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      throw new BadRequestException('No authorization header found');
+      throw new UnauthorizedException('No authorization header found'); // Changed from BadRequestException
     }
 
     const token = authHeader.split(' ')[1];
     if (!token) {
-      throw new BadRequestException('No token provided');
+      throw new UnauthorizedException('No token provided'); // Also changed this for consistency
     }
 
     await this.authService.logout(token);

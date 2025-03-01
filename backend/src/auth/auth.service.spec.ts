@@ -5,6 +5,7 @@ import { UsersService } from '../users/users.service';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { TokenBlacklistService } from './token-blacklist.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -19,12 +20,18 @@ describe('AuthService', () => {
     validateUser: jest.fn(),
   };
 
+  const mockTokenBlacklistService = {
+    addToBlacklist: jest.fn(),
+    isBlacklisted: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: JwtService, useValue: mockJwtService },
         { provide: UsersService, useValue: mockUsersService },
+        { provide: TokenBlacklistService, useValue: mockTokenBlacklistService },
       ],
     }).compile();
 
@@ -89,11 +96,10 @@ describe('AuthService', () => {
   describe('logout and token blacklisting', () => {
     it('should add a token to the blacklist on logout', async () => {
       const token = 'test-token';
-      // Initially, the token should not be blacklisted.
-      expect(service.isTokenBlacklisted(token)).toBe(false);
       await service.logout(token);
-      // After logout, the token should be blacklisted.
-      expect(service.isTokenBlacklisted(token)).toBe(true);
+      service.isTokenBlacklisted(token);
+      expect(mockTokenBlacklistService.addToBlacklist).toHaveBeenCalledWith(token);
+      expect(mockTokenBlacklistService.isBlacklisted).toHaveBeenCalledWith(token);
     });
   });
 });

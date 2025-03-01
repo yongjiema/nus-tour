@@ -20,7 +20,7 @@ export class AuthService {
     };
   }
 
-  async register(registerDto: RegisterDto): Promise<any> {
+  async register(registerDto: RegisterDto): Promise<{ token: string }> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword: _confirmPassword, ...userData } = registerDto as any;
@@ -33,9 +33,9 @@ export class AuthService {
       const newUser = await this.usersService.register(userData);
       console.log('User created in auth service:', newUser);
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _password, ...result } = newUser;
-      return result;
+      const token = this.jwtService.sign({ id: newUser.id, email: newUser.email }, { expiresIn: '60m' });
+
+      return { token };
     } catch (error) {
       console.error('Registration error details:', error);
       if (error instanceof ConflictException) {
