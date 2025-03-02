@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -13,17 +13,32 @@ export class AuthService {
     private readonly tokenBlacklistService: TokenBlacklistService,
   ) {}
 
-  async login(loginDto: LoginDto): Promise<{ access_token: string }> {
+  async login(loginDto: LoginDto): Promise<{ access_token: string; user: any }> {
     const user = await this.usersService.validateUser(loginDto);
+
+    // Include username in the token payload
+    const access_token = this.jwtService.sign(
+      {
+        email: user.email,
+        id: user.id,
+        username: user.username,
+      },
+      { expiresIn: '60m' },
+    );
+
     return {
-      access_token: this.jwtService.sign({ email: user.email, id: user.id }, { expiresIn: '60m' }),
+      access_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
     };
   }
 
-  async register(registerDto: RegisterDto): Promise<{ token: string }> {
+  async register(registerDto: RegisterDto): Promise<{ access_token: string; user: any }> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { confirmPassword: _confirmPassword, ...userData } = registerDto as any;
+      const { ...userData } = registerDto as any;
 
       const existingUser = await this.usersService.findByEmail(userData.email);
       if (existingUser) {
@@ -31,11 +46,22 @@ export class AuthService {
       }
 
       const newUser = await this.usersService.register(userData);
-      console.log('User created in auth service:', newUser);
+      const { ...userWithoutPassword } = newUser;
 
-      const token = this.jwtService.sign({ id: newUser.id, email: newUser.email }, { expiresIn: '60m' });
+      // Include username in the token payload
+      const access_token = this.jwtService.sign(
+        {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+        },
+        { expiresIn: '60m' },
+      );
 
-      return { token };
+      return {
+        access_token,
+        user: userWithoutPassword,
+      };
     } catch (error) {
       console.error('Registration error details:', error);
       if (error instanceof ConflictException) {
@@ -51,5 +77,43 @@ export class AuthService {
 
   isTokenBlacklisted(token: string): boolean {
     return this.tokenBlacklistService.isBlacklisted(token);
+  }
+
+  async refreshToken(token: string): Promise<{ access_token: string }> {
+    try {
+      // Check if token is blacklisted
+      if (this.isTokenBlacklisted(token)) {
+        throw new UnauthorizedException('Token is invalid or has been revoked');
+      }
+
+      // Verify and decode the token
+      const decoded = this.jwtService.verify(token);
+
+      // Get the user
+      const user = await this.usersService.findById(decoded.sub || decoded.id);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Generate a new token
+      return this.createToken(user);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Invalid token or token has expired');
+    }
+  }
+
+  async createToken(user: any) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      username: user.username, // Add username to payload
+    };
+    return {
+      access_token: this.jwtService.sign(payload, { expiresIn: '60m' }),
+    };
   }
 }

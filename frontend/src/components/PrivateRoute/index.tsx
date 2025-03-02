@@ -1,29 +1,55 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
+import { useIsAuthenticated } from "@refinedev/core";
 import { authProvider } from "../../authProvider";
+import { CircularProgress, Box } from "@mui/material";
 
-const PrivateRoute: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+const PrivateRoute: React.FC<{ requiredRole?: "admin" | "user" }> = ({
+  requiredRole
+}) => {
+  const { isLoading, data: isAuthenticated } = useIsAuthenticated();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [checkingRole, setCheckingRole] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkUserRole = async () => {
       try {
-        const result = await authProvider.check();
-        setIsAuthenticated(result.authenticated);
+        const { role } = await authProvider.check();
+        setUserRole(role);
       } catch (error) {
-        setIsAuthenticated(false);
+        console.error("Error checking role:", error);
+      } finally {
+        setCheckingRole(false);
       }
     };
 
-    checkAuth();
-  }, []);
+    if (isAuthenticated) {
+      checkUserRole();
+    } else {
+      setCheckingRole(false);
+    }
+  }, [isAuthenticated]);
 
-  if (isAuthenticated === null) {
-    return <div>Loading...</div>;
-    // Or a loading spinner
+  if (isLoading || checkingRole) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  // Check role-specific access if requiredRole is provided
+  if (requiredRole && userRole !== requiredRole) {
+    return userRole === "admin"
+      ? <Navigate to="/admin" />
+      : <Navigate to="/dashboard" />;
+  }
+
+  return <Outlet />;
 };
 
 export default PrivateRoute;

@@ -1,112 +1,161 @@
 import React from "react";
-import { Container, Box, Typography, Button, Paper } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import * as dataProviders from "../../dataProviders";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Button,
+  styled,
+  Divider,
+  CircularProgress,
+} from "@mui/material";
+import { CheckCircle } from "@mui/icons-material";
+import { useOne } from "@refinedev/core";
+import { PublicHeader } from "../../components/header/public";
 
-interface BookingResponse {
-  bookingId: string;
-}
+const ConfirmationPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(4),
+  marginTop: theme.spacing(3),
+  borderRadius: "8px",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+}));
 
-export const BookingConfirmation: React.FC = () => {
+const SuccessIcon = styled(CheckCircle)(({ theme }) => ({
+  fontSize: 64,
+  color: theme.palette.success.main,
+  marginBottom: theme.spacing(2),
+}));
+
+const DetailsRow = styled(Box)(({ theme }) => ({
+  display: "flex",
+  justifyContent: "space-between",
+  padding: theme.spacing(1, 0),
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  marginTop: theme.spacing(3),
+  padding: theme.spacing(1.5, 4),
+  backgroundColor: "#002147",
+  "&:hover": {
+    backgroundColor: "#001a38",
+  },
+}));
+
+const BookingConfirmation: React.FC = () => {
+  const { bookingId } = useParams();
   const navigate = useNavigate();
-  const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
 
-  if (!bookingData.name || !bookingData.email) {
-    navigate("/booking");
-    return null;
+  const { data, isLoading } = useOne({
+    resource: "bookings",
+    id: bookingId,
+  });
+
+  if (isLoading) {
+    return (
+      <Container maxWidth="sm" sx={{ mt: 6, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
+      </Container>
+    );
   }
 
-  const handleConfirm = async () => {
-    const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
+  if (!data?.data) {
+    return (
+      <Container maxWidth="sm" sx={{ mt: 6 }}>
+        <ConfirmationPaper>
+          <Typography variant="h6" color="error" align="center">
+            Booking not found. Please check your booking details.
+          </Typography>
+          <Box sx={{ textAlign: "center", mt: 2 }}>
+            <ActionButton
+              variant="contained"
+              onClick={() => navigate("/booking")}
+            >
+              Return to Booking
+            </ActionButton>
+          </Box>
+        </ConfirmationPaper>
+      </Container>
+    );
+  }
 
-    // Simulate saving to the database and include bookingId
-    const response = await dataProviders.backend.custom({
-      url: "/bookings",
-      method: "post",
-      payload: bookingData,
-    });
-    const data: BookingResponse = response.data as unknown as BookingResponse;
-    sessionStorage.setItem("bookingId", data.bookingId); // Save bookingId
-    window.location.href = `/payment?bookingId=${data.bookingId}&amount=50`;
-  };
-
-  const handleEdit = () => navigate("/booking");
+  const booking = data.data;
 
   return (
-    <Container maxWidth="sm" style={{ marginTop: "50px" }}>
-      <Paper elevation={3} style={{ padding: "30px", textAlign: "center" }}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          style={{ color: "#002147", fontWeight: "bold" }}
-        >
-          Confirm Your Booking
-        </Typography>
-        <Typography
-          variant="body1"
-          color="textSecondary"
-          gutterBottom
-          style={{ marginBottom: "20px" }}
-        >
-          Please review your booking details below. A security deposit of S$
-          {bookingData.deposit} is required to confirm your booking. This
-          deposit will be refunded within a few days after your visit.
-        </Typography>
+    <>
+      <PublicHeader />
+      <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
+        <ConfirmationPaper>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+            <SuccessIcon />
+            <Typography variant="h4" align="center" gutterBottom>
+              Booking Confirmed!
+            </Typography>
+            <Typography variant="body1" align="center" color="textSecondary">
+              Your payment has been received and your booking is confirmed.
+            </Typography>
+          </Box>
 
-        <Box style={{ marginBottom: "20px", textAlign: "left" }}>
-          <Typography variant="body2" style={{ marginBottom: "10px" }}>
-            <strong>Name:</strong> {bookingData.name}
-          </Typography>
-          <Typography variant="body2" style={{ marginBottom: "10px" }}>
-            <strong>Email:</strong> {bookingData.email}
-          </Typography>
-          <Typography variant="body2" style={{ marginBottom: "10px" }}>
-            <strong>Tour Date:</strong> {bookingData.date}
-          </Typography>
-          <Typography variant="body2" style={{ marginBottom: "10px" }}>
-            <strong>Group Size:</strong> {bookingData.groupSize}
-          </Typography>
-          <Typography variant="body2" style={{ marginBottom: "10px" }}>
-            <strong>Time Slot:</strong> {bookingData.timeSlot}
-          </Typography>
-          <Typography variant="body2" style={{ marginBottom: "10px" }}>
-            <strong>Deposit Amount:</strong> S${bookingData.deposit}
-          </Typography>
-        </Box>
+          <Divider sx={{ mb: 3 }} />
 
-        <Box
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "16px",
-          }}
-        >
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={handleEdit}
-            style={{
-              borderColor: "#002147",
-              color: "#002147",
-              fontWeight: "bold",
-            }}
-          >
-            Edit Details
-          </Button>
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={handleConfirm}
-            style={{
-              backgroundColor: "#FF6600",
-              color: "#FFFFFF",
-              fontWeight: "bold",
-            }}
-          >
-            Confirm & Proceed to Payment
-          </Button>
-        </Box>
-      </Paper>
-    </Container>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+            Booking Details
+          </Typography>
+
+          <DetailsRow>
+            <Typography variant="body2" color="textSecondary">Booking ID</Typography>
+            <Typography variant="body2">{booking.bookingId}</Typography>
+          </DetailsRow>
+
+          <DetailsRow>
+            <Typography variant="body2" color="textSecondary">Name</Typography>
+            <Typography variant="body2">{booking.name}</Typography>
+          </DetailsRow>
+
+          <DetailsRow>
+            <Typography variant="body2" color="textSecondary">Email</Typography>
+            <Typography variant="body2">{booking.email}</Typography>
+          </DetailsRow>
+
+          <DetailsRow>
+            <Typography variant="body2" color="textSecondary">Date</Typography>
+            <Typography variant="body2">{booking.date}</Typography>
+          </DetailsRow>
+
+          <DetailsRow>
+            <Typography variant="body2" color="textSecondary">Time</Typography>
+            <Typography variant="body2">{booking.timeSlot}</Typography>
+          </DetailsRow>
+
+          <DetailsRow>
+            <Typography variant="body2" color="textSecondary">Group Size</Typography>
+            <Typography variant="body2">{booking.groupSize} people</Typography>
+          </DetailsRow>
+
+          <DetailsRow>
+            <Typography variant="body2" color="textSecondary">Amount Paid</Typography>
+            <Typography variant="body2">SGD {booking.deposit}</Typography>
+          </DetailsRow>
+
+          <DetailsRow>
+            <Typography variant="body2" color="textSecondary">Payment Status</Typography>
+            <Typography variant="body2" sx={{ color: booking.paymentStatus === 'completed' ? 'success.main' : 'warning.main' }}>
+              {booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)}
+            </Typography>
+          </DetailsRow>
+
+          <Box sx={{ textAlign: "center", mt: 3 }}>
+            <ActionButton
+              variant="contained"
+              onClick={() => navigate("/")}
+            >
+              Return to Home
+            </ActionButton>
+          </Box>
+        </ConfirmationPaper>
+      </Container>
+    </>
   );
 };
+
+export default BookingConfirmation;

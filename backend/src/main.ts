@@ -9,7 +9,7 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:5173'), // Default to localhost
+    origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:5173'),
     credentials: configService.get<boolean>('CORS_CREDENTIALS', true),
     methods: configService.get<string>('CORS_METHODS', 'GET,POST,PUT,DELETE')?.split(','),
     allowedHeaders: configService.get<string>('CORS_HEADERS', 'Content-Type,Authorization')?.split(','),

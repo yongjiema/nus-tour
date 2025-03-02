@@ -1,12 +1,32 @@
 import React, { useState } from "react";
-import { Container, Paper, Typography, TextField, Button, Box } from "@mui/material";
-import axios from "axios";
+import { Container, Typography, TextField, Box, Alert } from "@mui/material";
+import { styled } from '@mui/material/styles';
+import { useCustomMutation, useNotification } from "@refinedev/core";
+import { useErrorHandler } from "../../utils/errorHandler";
+import { AuthPaper, PageTitle, SubmitButton } from '../../components/styled';
 
-const Checkin = () => {
-  const [formData, setFormData] = useState({ bookingId: "", email: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+// Styled components for consistent UI
+const FormContainer = styled(Box)(({ theme }) => ({
+  marginTop: theme.spacing(2),
+}));
+
+const SuccessAlert = styled(Alert)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+}));
+
+interface CheckinFormData {
+  bookingId: string;
+  email: string;
+}
+
+const Checkin: React.FC = () => {
+  const [formData, setFormData] = useState<CheckinFormData>({ bookingId: "", email: "" });
+  const { open } = useNotification();
+  const { handleError } = useErrorHandler();
+
+  // Use Refine's custom mutation hook instead of direct axios
+  const { mutate, isLoading } = useCustomMutation();
+  const [checkinSuccess, setCheckinSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -17,35 +37,50 @@ const Checkin = () => {
 
   const handleCheckin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
+    setCheckinSuccess(false);
 
     try {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/checkin`, formData);
-      setSuccess("Check-in successful!");
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        console.error("Axios error:", err.response?.data || err.message);
-      } else {
-        console.error("Unexpected error:", err);
-      }
-      setError("Check-in failed. Please verify your details and try again.");
-    }
+      await mutate({
+        url: "checkins",
+        method: "post",
+        values: formData
+      });
 
-    setLoading(false);
+      setCheckinSuccess(true);
+      setFormData({ bookingId: "", email: "" });
+
+      open?.({
+        message: "Check-in successful!",
+        type: "success",
+        description: "Your attendance has been recorded.",
+      });
+    } catch (error) {
+      handleError(error);
+    }
   };
 
   return (
-    <Container maxWidth="sm" style={{ marginTop: "50px" }}>
-      <Paper elevation={3} style={{ padding: "30px" }}>
-        <Typography variant="h4" gutterBottom style={{ color: "#002147", fontWeight: "bold", textAlign: "center" }}>
+    <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
+      <AuthPaper>
+        <PageTitle variant="h4" gutterBottom>
           Participant Check-In
-        </Typography>
-        <Typography variant="body1" gutterBottom style={{ marginBottom: "20px", textAlign: "center" }}>
+        </PageTitle>
+
+        <Typography
+          variant="body1"
+          gutterBottom
+          sx={{ mb: 3, textAlign: "center" }}
+        >
           Please enter your Booking ID and Email Address to check in.
         </Typography>
-        <form onSubmit={handleCheckin}>
+
+        {checkinSuccess && (
+          <SuccessAlert severity="success">
+            Check-in successful! Thank you for joining our tour.
+          </SuccessAlert>
+        )}
+
+        <FormContainer component="form" onSubmit={handleCheckin}>
           <Box mb={2}>
             <TextField
               label="Booking ID"
@@ -57,7 +92,8 @@ const Checkin = () => {
               variant="outlined"
             />
           </Box>
-          <Box mb={2}>
+
+          <Box mb={3}>
             <TextField
               label="Email Address"
               name="email"
@@ -69,21 +105,12 @@ const Checkin = () => {
               variant="outlined"
             />
           </Box>
-          {error && (
-            <Typography variant="body2" style={{ color: "red", marginBottom: "16px" }}>
-              {error}
-            </Typography>
-          )}
-          {success && (
-            <Typography variant="body2" style={{ color: "green", marginBottom: "16px" }}>
-              {success}
-            </Typography>
-          )}
-          <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading}>
-            {loading ? "Processing..." : "Check-In"}
-          </Button>
-        </form>
-      </Paper>
+
+          <SubmitButton type="submit" variant="contained" color="primary" fullWidth disabled={isLoading}>
+            {isLoading ? "Processing..." : "Check-In"}
+          </SubmitButton>
+        </FormContainer>
+      </AuthPaper>
     </Container>
   );
 };
