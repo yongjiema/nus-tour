@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, Check } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, Check, OneToOne, CreateDateColumn } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+import { Checkin } from './checkin.entity';
 
 @Entity()
 @Check('CHK_email_format', "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'")
@@ -22,7 +23,7 @@ export class Booking {
   email: string;
 
   @Column({ type: 'date' })
-  date: string;
+  date: Date; // The date of the booking itself
 
   @Column()
   groupSize: number;
@@ -37,7 +38,13 @@ export class Booking {
   timeSlot: string;
 
   @Column({ default: false })
-  checkedIn: boolean;
+  hasFeedback: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date; // When the booking record was created
+
+  @OneToOne(() => Checkin, (checkin) => checkin.booking, { nullable: true })
+  checkin: Checkin;
 
   @BeforeInsert()
   generateBookingId() {

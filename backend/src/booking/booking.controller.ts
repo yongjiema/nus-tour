@@ -1,7 +1,9 @@
 // src/booking/booking.controller.ts
-import { Controller, Post, Body, Get, Param, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Booking } from '../database/entities/booking.entity';
 
 @Controller('bookings')
 export class BookingController {
@@ -20,6 +22,12 @@ export class BookingController {
   @Get()
   async getAllBookings() {
     return this.bookingService.getAllBookings();
+  }
+
+  @Get('user')
+  @UseGuards(JwtAuthGuard)
+  async getUserBookings(@Request() req): Promise<Booking[]> {
+    return this.bookingService.getAllBookingByEmail(req.user.email);
   }
 
   @Get(':id')

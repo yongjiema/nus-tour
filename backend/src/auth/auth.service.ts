@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -51,5 +51,38 @@ export class AuthService {
 
   isTokenBlacklisted(token: string): boolean {
     return this.tokenBlacklistService.isBlacklisted(token);
+  }
+
+  async refreshToken(token: string): Promise<{ access_token: string }> {
+    try {
+      // Check if token is blacklisted
+      if (this.isTokenBlacklisted(token)) {
+        throw new UnauthorizedException('Token is invalid or has been revoked');
+      }
+
+      // Verify and decode the token
+      const decoded = this.jwtService.verify(token);
+
+      // Get the user
+      const user = await this.usersService.findById(decoded.sub || decoded.id);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Generate a new token
+      return this.createToken(user);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Invalid token or token has expired');
+    }
+  }
+
+  async createToken(user: any) {
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    return {
+      access_token: this.jwtService.sign(payload, { expiresIn: '60m' }),
+    };
   }
 }

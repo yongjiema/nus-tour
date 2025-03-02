@@ -1,214 +1,204 @@
 import React, { useState } from "react";
+import { useForm } from "@refinedev/react-hook-form";
+import { Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
 import {
-  Container,
-  TextField,
-  Button,
-  Grid,
-  Paper,
-  Typography,
-  MenuItem,
-  CircularProgress,
+  Box, Button, TextField, MenuItem, FormHelperText, Alert
 } from "@mui/material";
-import * as dataProviders from "../../dataProviders";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { useApiUrl } from "@refinedev/core";
+import axios from "axios";
+import { handleSubmissionError } from "../../utils/errorHandler";
+import { format, isValid, parseISO } from "date-fns";
 
-interface AvailableTimeSlot {
-  slot: string;
-  available: number;
-}
+// Define validation schema
+const bookingSchema = yup.object({
+  date: yup
+    .date()
+    .transform((value, originalValue) => {
+      // Handle date transformation during validation
+      if (originalValue && typeof originalValue === 'string') {
+        const parsedDate = parseISO(originalValue);
+        return isValid(parsedDate) ? parsedDate : null;
+      }
+      return isValid(value) ? value : null;
+    })
+    .min(new Date(), "Booking date must be in the future")
+    .required("Booking date is required")
+    .typeError("Please select a valid date"),
+  timeSlot: yup
+    .string()
+    .oneOf([
+      '09:00 AM - 10:00 AM',
+      '10:00 AM - 11:00 AM',
+      '11:00 AM - 12:00 PM',
+      '01:00 PM - 02:00 PM',
+      '02:00 PM - 03:00 PM',
+      '03:00 PM - 04:00 PM'
+    ], "Please select a valid time slot")
+    .required("Time slot is required"),
+  groupSize: yup
+    .number()
+    .min(1, "Group size must be at least 1")
+    .max(50, "Group size cannot exceed 50")
+    .integer("Group size must be a whole number")
+    .required("Group size is required"),
+  specialRequests: yup
+    .string()
+    .max(500, "Special requests cannot exceed 500 characters"),
+}).required();
 
-export const BookingForm: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    date: "",
-    groupSize: "",
-    timeSlot: "",
-    deposit: 50,
+type BookingFormData = yup.InferType<typeof bookingSchema>;
+
+const BookingForm: React.FC = () => {
+  const apiUrl = useApiUrl();
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const {
+    refineCore: { onFinish, formLoading },
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+    reset
+  } = useForm<BookingFormData>({
+    resolver: yupResolver(bookingSchema),
+    defaultValues: {
+      groupSize: 1,
+      timeSlot: '09:00 AM - 10:00 AM'
+    },
+    refineCoreProps: {
+      resource: "bookings",
+      action: "create",
+      redirect: "show"
+    }
   });
-  const [timeSlots, setTimeSlots] = useState<AvailableTimeSlot[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  // Restrict date selection to today and beyond
-  const today = new Date();
-  const formattedToday = today.toISOString().split("T")[0];
+  const onSubmit = async (data: BookingFormData) => {
+    setError("");
+    setSuccess(false);
 
-  // Fetch available time slots when the date changes
-  async function fetchAvailableTimeSlots(date: string) {
     try {
-      setLoading(true);
-      const response = await dataProviders.backend.custom({
-        url: `/bookings/available-slots`,
-        method: "get",
-        payload: {
-          date
-        }
-      });
-      const data = response.data as AvailableTimeSlot[];
-      setTimeSlots(data);
+      // Make sure we have a valid date
+      if (!data.date || !isValid(data.date)) {
+        setError("Invalid date. Please select a valid date.");
+        return;
+      }
+
+      // Format the date properly before submission
+      const formattedData = {
+        ...data,
+        // Format as YYYY-MM-DD string for PostgreSQL
+        date: format(data.date, 'yyyy-MM-dd')
+      };
+
+      console.log("Submitting with formatted date:", formattedData.date);
+
+      await onFinish(formattedData);
+      setSuccess(true);
+      reset();
     } catch (error) {
-      console.error(error);
-      alert("Failed to load available time slots. Please try again later.");
-    } finally {
-      setLoading(false);
+      console.error("Submission error:", error);
+      handleSubmissionError(error, setError);
     }
-  }
-
-  // Handle form input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]:
-        name === "groupSize" ? Math.max(1, parseInt(value, 10) || 1) : value,
-    });
-
-    if (name === "date") {
-      fetchAvailableTimeSlots(value);
-    }
-  };
-
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Save form data in session storage
-    sessionStorage.setItem("bookingData", JSON.stringify(formData));
-    // Redirect to Confirmation Page
-    window.location.href = "/booking/confirmation";
   };
 
   return (
-    <Container maxWidth="sm" style={{ marginTop: "50px" }}>
-      <Paper elevation={5} style={{ padding: "40px", borderRadius: "12px" }}>
-        <Typography variant="h4" gutterBottom style={{ textAlign: "center" }}>
-          Book a Campus Tour
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            {/* Name */}
-            <Grid item xs={12}>
-              <TextField
-                label="Full Name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="outlined"
-              />
-            </Grid>
-            {/* Email */}
-            <Grid item xs={12}>
-              <TextField
-                label="Email Address"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="outlined"
-              />
-            </Grid>
-            {/* Date */}
-            <Grid item xs={12}>
-              <TextField
-                label="Preferred Date"
-                name="date"
-                type="date"
-                value={formData.date}
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="outlined"
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                inputProps={{
-                  min: formattedToday, // Prevent selecting past dates
-                }}
-              />
-            </Grid>
-            {/* Group Size */}
-            <Grid item xs={12}>
-              <TextField
-                label="Group Size"
-                name="groupSize"
-                type="number"
-                value={formData.groupSize || ""}
-                placeholder="Enter number of people"
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="outlined"
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
-            {/* Time Slot */}
-            <Grid item xs={12}>
-              <TextField
-                select
-                label="Select Time Slot"
-                name="timeSlot"
-                value={formData.timeSlot}
-                onChange={handleChange}
-                fullWidth
-                required
-                variant="outlined"
-                disabled={loading || !timeSlots.length}
-                helperText={
-                  loading
-                    ? "Loading available time slots..."
-                    : !timeSlots.length
-                    ? "No available slots"
-                    : "Please select a time slot"
-                }
-              >
-                {timeSlots.map(({ slot, available }) => (
-                  <MenuItem key={slot} value={slot}>
-                    {slot} (Available: {available})
-                  </MenuItem>
-                ))}
-              </TextField>
-              {loading && (
-                <CircularProgress
-                  size={24}
-                  style={{
-                    marginTop: "10px",
-                    display: "block",
-                    marginLeft: "auto",
-                    marginRight: "auto",
-                  }}
-                />
-              )}
-            </Grid>
-            <Grid item xs={12}>
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                style={{ textAlign: "center" }}
-              >
-                A security deposit of SGD {formData.deposit} is required to
-                confirm your booking. This deposit will be fully refunded within
-                a few days after your visit.
-              </Typography>
-            </Grid>
-            {/* Submit Button */}
-            <Grid item xs={12}>
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                style={{
-                  backgroundColor: "#FF6600",
-                  color: "#FFFFFF",
-                }}
-              >
-                Proceed to Confirmation
-              </Button>
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
-    </Container>
+    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ maxWidth: 600, margin: '0 auto' }}>
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Booking created successfully!
+        </Alert>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Controller
+        name="date"
+        control={control}
+        render={({ field }) => (
+          <DatePicker
+            label="Booking Date"
+            value={field.value}
+            onChange={(newValue) => {
+              // Ensure we're setting a valid date object
+              if (newValue && isValid(newValue)) {
+                field.onChange(newValue);
+              } else {
+                // If invalid, set to null
+                field.onChange(null);
+              }
+            }}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                margin: "normal",
+                error: !!errors.date,
+                helperText: errors.date?.message
+              }
+            }}
+            disablePast
+          />
+        )}
+      />
+
+      <TextField
+        select
+        label="Time Slot"
+        {...register("timeSlot")}
+        error={!!errors.timeSlot}
+        helperText={errors.timeSlot?.message}
+        fullWidth
+        margin="normal"
+      >
+        <MenuItem value="09:00 AM - 10:00 AM">09:00 AM - 10:00 AM</MenuItem>
+        <MenuItem value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</MenuItem>
+        <MenuItem value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</MenuItem>
+        <MenuItem value="01:00 PM - 02:00 PM">01:00 PM - 02:00 PM</MenuItem>
+        <MenuItem value="02:00 PM - 03:00 PM">02:00 PM - 03:00 PM</MenuItem>
+        <MenuItem value="03:00 PM - 04:00 PM">03:00 PM - 04:00 PM</MenuItem>
+      </TextField>
+
+      <TextField
+        label="Group Size"
+        type="number"
+        {...register("groupSize")}
+        error={!!errors.groupSize}
+        helperText={errors.groupSize?.message}
+        fullWidth
+        margin="normal"
+        InputProps={{ inputProps: { min: 1, max: 50 } }}
+      />
+
+      <TextField
+        label="Special Requests (Optional)"
+        multiline
+        rows={4}
+        {...register("specialRequests")}
+        error={!!errors.specialRequests}
+        helperText={errors.specialRequests?.message || "Any special accommodations needed?"}
+        fullWidth
+        margin="normal"
+      />
+
+      <Button
+        type="submit"
+        variant="contained"
+        color="primary"
+        fullWidth
+        sx={{ mt: 3 }}
+        disabled={formLoading}
+      >
+        {formLoading ? "Submitting..." : "Book Tour"}
+      </Button>
+    </Box>
   );
 };
+
+export { BookingForm };

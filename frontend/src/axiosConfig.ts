@@ -3,6 +3,9 @@ import config from "./config";
 
 const axiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 axiosInstance.interceptors.request.use(

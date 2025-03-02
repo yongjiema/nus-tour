@@ -65,6 +65,17 @@ export class AuthController {
   getProfile(@Request() req: any) {
     return req.user;
   }
+
+  @Post('refresh')
+  @UseGuards(JwtAuthGuard)
+  async refreshToken(@Request() req) {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedException('Token not provided');
+    }
+
+    return await this.authService.refreshToken(token);
+  }
 }
 
 @Controller('users')

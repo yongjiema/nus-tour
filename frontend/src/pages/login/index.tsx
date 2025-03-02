@@ -1,86 +1,91 @@
-import React from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import React, { useState } from "react";
+import { useForm } from "@refinedev/react-hook-form";
+import { useLogin } from "@refinedev/core";
 import {
   TextField,
-  Button,
   Typography,
   Alert,
   Link,
   Container,
-  Paper,
   Grid,
 } from "@mui/material";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import * as dataProviders from "../../dataProviders";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { AuthPaper, PageTitle, SubmitButton } from '../../components/styled';
+import { useErrorHandler } from "../../utils/errorHandler";
 
 interface LoginFormInputs {
   email: string;
   password: string;
 }
 
-const Login = () => {
+// Validation schema for login form
+const validationSchema = yup.object({
+  email: yup
+    .string()
+    .required("Email is required")
+    .email("Invalid email format"),
+  password: yup
+    .string()
+    .required("Password is required")
+});
+
+const Login: React.FC = () => {
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { handleError } = useErrorHandler();
+
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormInputs>();
-  const [error, setError] = React.useState<string | null>(null);
-  const navigate = useNavigate();
+    formState: { errors, isSubmitting },
+    refineCore: { onFinish, formLoading }
+  } = useForm<LoginFormInputs>({
+    resolver: yupResolver(validationSchema),
+    refineCoreProps: {
+      action: "login"
+    }
+  });
 
-  const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
+  const onSubmit = async (data: LoginFormInputs) => {
+    setError(null);
+
     try {
-      const response = await dataProviders.backend.custom({
-        url: "/auth/login",
-        method: "post",
-        payload: data,
-      });
-      if (response.data.access_token) {
-        localStorage.setItem("access_token", response.data.access_token);
-        navigate("/admin");
-      }
+      await onFinish(data);
+      // AuthProvider's login will handle the redirect
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 401) {
-          setError("Invalid email or password");
-        } else if (err.response?.status === 400) {
-          setError("Bad request. Please check your input.");
-        } else {
-          setError("Login failed. Please try again.");
-        }
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
+      setError(handleError(err));
     }
   };
 
   return (
-    <Container maxWidth="sm" style={{ marginTop: "50px" }}>
-      <Paper elevation={5} style={{ padding: "40px", borderRadius: "12px" }}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          style={{ color: "#002147", fontWeight: "bold", textAlign: "center" }}
-        >
+    <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
+      <AuthPaper>
+        <PageTitle variant="h4" gutterBottom>
           Login
-        </Typography>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        </PageTitle>
+
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               {error && <Alert severity="error">{error}</Alert>}
             </Grid>
+
             <Grid item xs={12}>
               <TextField
                 label="Email"
-                type="Email"
+                type="email"
                 fullWidth
                 required
                 variant="outlined"
-                {...register("email", { required: "Email is required" })}
+                autoComplete="email"
+                {...register("email")}
                 error={!!errors.email}
                 helperText={errors.email?.message}
               />
             </Grid>
+
             <Grid item xs={12}>
               <TextField
                 label="Password"
@@ -88,26 +93,24 @@ const Login = () => {
                 fullWidth
                 required
                 variant="outlined"
-                {...register("password", { required: "Password is required" })}
+                autoComplete="current-password"
+                {...register("password")}
                 error={!!errors.password}
                 helperText={errors.password?.message}
               />
             </Grid>
+
             <Grid item xs={12}>
-              <Button
+              <SubmitButton
                 type="submit"
                 variant="contained"
                 fullWidth
-                style={{
-                  backgroundColor: "#FF6600",
-                  color: "#FFFFFF",
-                  padding: "10px",
-                  fontSize: "16px",
-                }}
+                disabled={formLoading || isSubmitting}
               >
-                Login
-              </Button>
+                {formLoading || isSubmitting ? "Logging in..." : "Login"}
+              </SubmitButton>
             </Grid>
+
             <Grid item xs={12}>
               <Typography variant="body2" align="center">
                 Don't have an account? <Link href="/register">Register</Link>
@@ -115,7 +118,7 @@ const Login = () => {
             </Grid>
           </Grid>
         </form>
-      </Paper>
+      </AuthPaper>
     </Container>
   );
 };

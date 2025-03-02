@@ -1,5 +1,7 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Request, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Payment } from '../database/entities/payments.entity';
 
 @Controller('payments')
 export class PaymentsController {
@@ -15,5 +17,11 @@ export class PaymentsController {
   async confirmPayment(@Body() confirmPaymentDto: { bookingId: string }) {
     const { bookingId } = confirmPaymentDto;
     return this.paymentsService.confirmPayment(bookingId);
+  }
+
+  @Get('user')
+  @UseGuards(JwtAuthGuard)
+  async getUserPayments(@Request() req): Promise<Payment[]> {
+    return this.paymentsService.getPaymentsByUserId(req.user.id);
   }
 }

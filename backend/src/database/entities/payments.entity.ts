@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Check } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Check, ManyToOne, JoinColumn } from 'typeorm';
+import { Booking } from './booking.entity';
 
 @Entity()
 @Check('CHK_payment_status_valid', "\"paymentStatus\" IN ('Pending', 'Paid', 'Failed')")
@@ -7,10 +8,11 @@ export class Payment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  bookingId: string;
+  @ManyToOne(() => Booking)
+  @JoinColumn({ name: 'bookingId' })
+  booking: Booking;
 
-  @Column('decimal')
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 
   @Column({ name: 'paymentStatus', default: 'Pending' })

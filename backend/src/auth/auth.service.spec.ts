@@ -2,41 +2,66 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
 import { TokenBlacklistService } from './token-blacklist.service';
+import { UnauthorizedException } from '@nestjs/common';
+import { User } from '../database/entities/user.entity';
+import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let jwtService: JwtService;
+  let usersService: UsersService;
+  let tokenBlacklistService: TokenBlacklistService;
 
-  const mockJwtService = {
-    sign: jest.fn(() => 'mocked-token'),
-  };
-
-  const mockUsersService = {
-    findByEmail: jest.fn(),
-    register: jest.fn(),
-    validateUser: jest.fn(),
-  };
-
-  const mockTokenBlacklistService = {
-    addToBlacklist: jest.fn(),
-    isBlacklisted: jest.fn(),
-  };
+  const mockUser = {
+    id: 1,
+    email: 'test@example.com',
+    password: 'hashedPassword',
+    role: 'user',
+  } as User;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: JwtService, useValue: mockJwtService },
-        { provide: UsersService, useValue: mockUsersService },
-        { provide: TokenBlacklistService, useValue: mockTokenBlacklistService },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn().mockReturnValue('test-token'),
+            verify: jest.fn(),
+          },
+        },
+        {
+          provide: UsersService,
+          useValue: {
+            findByEmail: jest.fn(),
+            findById: jest.fn(),
+            register: jest.fn(),
+          },
+        },
+        {
+          provide: TokenBlacklistService,
+          useValue: {
+            addToBlacklist: jest.fn(),
+            isBlacklisted: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    jest.clearAllMocks();
+    jwtService = module.get<JwtService>(JwtService);
+    usersService = module.get<UsersService>(UsersService);
+    tokenBlacklistService = module.get<TokenBlacklistService>(TokenBlacklistService);
+
+    // Mock bcrypt.compare function
+    jest.spyOn(bcrypt, 'compare').mockImplementation((password) => {
+      return Promise.resolve(password === 'correctPassword');
+    });
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('register', () => {
@@ -73,33 +98,80 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should login a user and return an access token', async () => {
-      const loginDto: LoginDto = { email: 'test@example.com', password: 'password' };
-      const user = { id: 1, email: 'test@example.com', username: 'Test User' };
-      mockUsersService.validateUser.mockResolvedValue(user);
+    it('should return a JWT token when login is successful', async () => {
+      // Arrange
+      jest.spyOn(usersService, 'findByEmail').mockResolvedValue(mockUser);
 
-      const result = await service.login(loginDto);
-      expect(result).toEqual({ access_token: 'mocked-token' });
-      expect(mockUsersService.validateUser).toHaveBeenCalledWith(loginDto);
-      expect(mockJwtService.sign).toHaveBeenCalledWith({ email: user.email, id: user.id }, expect.any(Object));
+      // Act
+      const result = await service.login({
+        email: 'test@example.com',
+        password: 'correctPassword',
+      });
+
+      // Assert
+      expect(result).toHaveProperty('access_token');
+      expect(jwtService.sign).toHaveBeenCalled();
+      expect(usersService.findByEmail).toHaveBeenCalledWith('test@example.com');
     });
 
-    it('should throw UnauthorizedException if validation fails during login', async () => {
-      const loginDto: LoginDto = { email: 'test@example.com', password: 'wrongpassword' };
-      mockUsersService.validateUser.mockRejectedValue(new UnauthorizedException('Invalid credentials'));
+    it('should throw UnauthorizedException when user is not found', async () => {
+      // Arrange
+      jest.spyOn(usersService, 'findByEmail').mockResolvedValue(null);
 
-      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
-      expect(mockUsersService.validateUser).toHaveBeenCalledWith(loginDto);
+      // Act & Assert
+      await expect(
+        service.login({
+          email: 'nonexistent@example.com',
+          password: 'anyPassword',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException when password is incorrect', async () => {
+      // Arrange
+      jest.spyOn(usersService, 'findByEmail').mockResolvedValue(mockUser);
+
+      // Act & Assert
+      await expect(
+        service.login({
+          email: 'test@example.com',
+          password: 'wrongPassword',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
-  describe('logout and token blacklisting', () => {
-    it('should add a token to the blacklist on logout', async () => {
-      const token = 'test-token';
-      await service.logout(token);
-      service.isTokenBlacklisted(token);
-      expect(mockTokenBlacklistService.addToBlacklist).toHaveBeenCalledWith(token);
-      expect(mockTokenBlacklistService.isBlacklisted).toHaveBeenCalledWith(token);
+  describe('logout', () => {
+    it('should add token to blacklist when logout is called', async () => {
+      // Act
+      await service.logout('test-token');
+
+      // Assert
+      expect(tokenBlacklistService.addToBlacklist).toHaveBeenCalledWith('test-token');
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('should throw UnauthorizedException when token is blacklisted', async () => {
+      // Arrange
+      jest.spyOn(tokenBlacklistService, 'isBlacklisted').mockReturnValue(true);
+
+      // Act & Assert
+      await expect(service.refreshToken('blacklisted-token')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should return a new token when refresh is successful', async () => {
+      // Arrange
+      jest.spyOn(tokenBlacklistService, 'isBlacklisted').mockReturnValue(false);
+      jest.spyOn(jwtService, 'verify').mockReturnValue({ sub: 1 });
+      jest.spyOn(usersService, 'findById').mockResolvedValue(mockUser);
+
+      // Act
+      const result = await service.refreshToken('valid-token');
+
+      // Assert
+      expect(result).toHaveProperty('access_token');
+      expect(jwtService.sign).toHaveBeenCalled();
     });
   });
 });
