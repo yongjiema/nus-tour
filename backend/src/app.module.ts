@@ -12,21 +12,28 @@ import { Booking } from './database/entities/booking.entity';
 import { Payment } from './database/entities/payments.entity';
 import { CheckinModule } from './checkin/checkin.module';
 import config from '../ormconfig';
+import { InformationModule } from './information/information.module';
+import { Information } from './database/entities/information.entity';
+import { TourInformationModule } from './tourinformation/tourinformation.module';
+import { TourInformation } from './database/entities/tourinformation.entity';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       ...config,
-      entities: [Booking, Payment /* ... other entities */],
+      entities: [Booking, Payment, Information /* ... other entities */],
+      synchronize: true,
     }),
-    TypeOrmModule.forFeature([Booking]),
+    TypeOrmModule.forFeature([Booking, Information]), // Add Information entity here
     DatabaseModule,
     AuthModule,
     UsersModule,
     BookingModule,
     PaymentsModule,
     CheckinModule,
+    InformationModule,
+    TourInformationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
