@@ -33,6 +33,7 @@ import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
 import dataProvider from "./dataProvider";
 import PrivateRoute from "./components/PrivateRoute";
+import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";
 
 // Lazy load the Admin Dashboard component
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
@@ -133,6 +134,16 @@ function App() {
                         </ThemedLayoutV2>
                       }
                     />
+                      <Route
+                        path="/admin/bookings"
+                        element={
+                          <ThemedLayoutV2 Header={Header}>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <BookingManagement />
+                            </Suspense>
+                          </ThemedLayoutV2>
+                        }
+                      />
                   </Route>
 
                   {/* Authentication Routes */}

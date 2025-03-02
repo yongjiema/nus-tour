@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BookingModule } from './booking/booking.module';
 import { PaymentsModule } from './payments/payments.module';
+import { BookingManagementModule } from './admin/bookingManagement/booking.module';
 import config from '../ormconfig';
 
 @Module({
@@ -19,6 +20,7 @@ import config from '../ormconfig';
     UsersModule,
     BookingModule,
     PaymentsModule,
+    BookingManagementModule,
   ],
   controllers: [AppController],
   providers: [AppService],

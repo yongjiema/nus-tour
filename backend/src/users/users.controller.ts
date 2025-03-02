@@ -13,7 +13,7 @@ export class UsersController {
   async updateProfile(@Request() req: any, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     const updatedUser = await this.usersService.update(req.user.id, updateUserDto);
     return {
-      id: updatedUser.id,
+      id: Number(updatedUser.id),
       username: updatedUser.username,
       email: updatedUser.email,
     };
@@ -31,7 +31,7 @@ export class UsersController {
   async getAllUsers(): Promise<UserResponseDto[]> {
     const users = await this.usersService.findAll();
     return users.map((user) => ({
-      id: user.id,
+      id: Number(user.id),
       username: user.username,
       email: user.email,
     }));

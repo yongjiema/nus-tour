@@ -1,0 +1,365 @@
+import React, { useEffect, useState } from "react";
+import {
+  Container, Typography, TextField, Button, MenuItem, Grid, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Select, FormControl, InputLabel, Alert
+} from "@mui/material";
+import { styled } from "@mui/material/styles"; // Use styled from @mui/material/styles
+// import { API_URL } from "../../../dataProvider"; // Correctly import API_URL
+
+const API_URL = "http://localhost:3000";
+const RemoveButton = styled(Button)({
+  backgroundColor: "red",
+  color: "white",
+  "&:hover": {
+    backgroundColor: "darkred",
+  },
+});
+
+const ChangeTimeSlotButton = styled(Button)({
+  backgroundColor: "Green",
+  color: "white",
+  "&:hover": {
+    backgroundColor: "darkblue",
+  },
+});
+
+const CheckInButton = styled(Button)({
+  backgroundColor: "green",
+  color: "white",
+  "&:hover": {
+    backgroundColor: "darkgreen",
+  },
+});
+
+const CheckOutButton = styled(Button)({
+  backgroundColor: "orange",
+  color: "white",
+  "&:hover": {
+    backgroundColor: "darkorange",
+  },
+});
+
+const BookingManagement = () => {
+  interface Booking {
+    bookingId: string;
+    name: string;
+    email: string;
+    date: string;
+    timeSlot: string;
+    groupSize: number;
+    deposit: number;
+    checkedIn: boolean;
+    paymentStatus: string;
+  }
+
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchBookings();
+    const interval = setInterval(fetchBookings, 100000); // Poll every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const getToken = () => localStorage.getItem("access_token"); // Fetch token from local storage
+
+  const fetchBookings = async () => {
+    try {
+      const response = await fetch(`${API_URL}/admin/bookings/findAll`, {
+        headers: {
+          "Authorization": `Bearer ${getToken()}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status === 401) {
+        console.log(localStorage.getItem("token"));
+        setError("Unauthorized: Please log in again.");
+        return;
+      }
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Error fetching bookings:", text);
+        setError("Failed to load bookings.");
+        return;
+      }
+
+      const data = await response.json();
+      setBookings(data);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      setError("Failed to load bookings.");
+    }
+  };
+
+  const filterBookings = async () => {
+    try {
+      let query = `?search=${search}&status=${statusFilter}&date=${dateFilter}`;
+      const response = await fetch(`${API_URL}/admin/bookings${query}`, {
+        headers: {
+          "Authorization": `Bearer ${getToken()}`, // Attach JWT token
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status === 401) {
+        setError("Unauthorized: Please log in again.");
+        return;
+      }
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Error fetching bookings:", text);
+        setError("Failed to load bookings.");
+        return;
+      }
+
+      const data = await response.json();
+      setBookings(data);
+      setError(null); // Clear error on successful fetch
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      setError("Failed to load bookings.");
+    }
+  };
+
+  const updateBookingStatus = async (id: string, status: string) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/bookings/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${getToken()}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.status === 401) {
+        setError("Unauthorized: Please log in again.");
+        return;
+      }
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Error updating booking:", text);
+        setError("Failed to update booking.");
+        return;
+      }
+
+      fetchBookings();
+    } catch (error) {
+      console.error("Error updating booking:", error);
+      setError("Failed to update booking.");
+    }
+  };
+
+  const removeBooking = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/bookings/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${getToken()}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status === 401) {
+        setError("Unauthorized: Please log in again.");
+        return;
+      }
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Error removing booking:", text);
+        setError("Failed to remove booking.");
+        return;
+      }
+
+      fetchBookings();
+    } catch (error) {
+      console.error("Error removing booking:", error);
+      setError("Failed to remove booking.");
+    }
+  };
+
+  const changeTimeSlot = (id: string) => {
+    // Implement the logic to change the time slot
+    console.log(`Change time slot for booking ID: ${id}`);
+  };
+
+  const checkInBooking = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/bookings/${id}/checkin`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${getToken()}`,
+          "Content-Type": "application/json"
+        },
+      });
+
+      if (response.status === 401) {
+        setError("Unauthorized: Please log in again.");
+        return;
+      }
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Error checking in booking:", text);
+        setError("Failed to check in booking.");
+        return;
+      }
+
+      fetchBookings();
+    } catch (error) {
+      console.error("Error checking in booking:", error);
+      setError("Failed to check in booking.");
+    }
+  };
+
+  const checkOutBooking = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/bookings/${id}/checkout`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${getToken()}`,
+          "Content-Type": "application/json"
+        },
+      });
+
+      if (response.status === 401) {
+        setError("Unauthorized: Please log in again.");
+        return;
+      }
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Error checking out booking:", text);
+        setError("Failed to check out booking.");
+        return;
+      }
+
+      fetchBookings();
+    } catch (error) {
+      console.error("Error checking out booking:", error);
+      setError("Failed to check out booking.");
+    }
+  };
+
+  return (
+    <Container maxWidth="xl">
+      <Typography variant="h4" gutterBottom>
+        Admin Booking Management
+      </Typography>
+
+      {/* Error Message Display */}
+      {error && <Alert severity="error">{error}</Alert>}
+
+      {/* Search and Filters */}
+      <Grid container spacing={4} marginBottom={4}>
+        <Grid item xs={4}>
+          <TextField
+            fullWidth
+            label="Search by Booking ID or Name"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={4}>
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="Pending">Pending</MenuItem>
+              <MenuItem value="Confirmed">Confirmed</MenuItem>
+              <MenuItem value="Canceled">Canceled</MenuItem>
+              <MenuItem value="Checked-In">Checked-In</MenuItem>
+              <MenuItem value="Success">Success</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={4}>
+          <TextField
+            fullWidth
+            type="date"
+            label="Filter by Date"
+            InputLabelProps={{ shrink: true }}
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <Button variant="contained" color="primary" onClick={filterBookings}>
+            Apply Filters
+          </Button>
+        </Grid>
+      </Grid>
+
+      {/* Bookings Table */}
+      <Paper>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Booking ID</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Time Slot</TableCell>
+                <TableCell>Group Size</TableCell>
+                <TableCell>Payment Status</TableCell>
+                <TableCell>Checked In</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {bookings.map((booking) => (
+                <TableRow key={booking.bookingId}>
+                  <TableCell>{booking.bookingId}</TableCell>
+                  <TableCell>{booking.name}</TableCell>
+                  <TableCell>{booking.email}</TableCell>
+                  <TableCell>{booking.date}</TableCell>
+                  <TableCell>{booking.timeSlot}</TableCell>
+                  <TableCell>{booking.groupSize}</TableCell>
+                  <TableCell>{booking.paymentStatus}</TableCell>
+                  <TableCell>{booking.checkedIn ? "Yes" : "No"}</TableCell>
+                  <TableCell>
+                    {booking.paymentStatus === "pending" && (
+                      <RemoveButton onClick={() => removeBooking(booking.bookingId)}>
+                        Remove
+                      </RemoveButton>
+                    )}
+                    {booking.paymentStatus === "success" && !booking.checkedIn && (
+                      <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>
+                        Check In
+                      </CheckInButton>
+                    )}
+                    {booking.checkedIn && (
+                      <CheckOutButton onClick={() => checkOutBooking(booking.bookingId)}>
+                        Check Out
+                      </CheckOutButton>
+                    )}
+                    {booking.paymentStatus === "success" && !booking.checkedIn && (
+                      <ChangeTimeSlotButton onClick={() => changeTimeSlot(booking.bookingId)}>
+                        Change Time Slot
+                      </ChangeTimeSlotButton>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </Container>
+  );
+};
+
+export default BookingManagement;

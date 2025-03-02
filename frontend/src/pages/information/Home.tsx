@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 
 import academicProgramsImage from "../../assets/images/academics.jpg";
-import busRoutesImage from "../../assets/images/BusRoutes.jpg";
+import busRoutesImage from "../../assets/images/busRoutes.jpg";
 import canteensImage from "../../assets/images/canteens.jpg";
 import convenienceStoresImage from "../../assets/images/convenienceStores.jpg";
 import parkingImage from "../../assets/images/parking.jpg";
