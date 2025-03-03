@@ -45,6 +45,9 @@ export class Booking {
   @Column({ default: 'pending' })
   paymentStatus: string;
 
+  @Column({ default: false })
+  checkedIn: boolean;
+
   @BeforeInsert()
   generateBookingId() {
     this.bookingId = uuidv4();

@@ -52,6 +52,7 @@ const BookingManagement = () => {
     bookingStatus: string;
     createdAt: Date;
     paymentStatus: string;
+    checkedIn: boolean;
   }
 
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -329,6 +330,7 @@ const BookingManagement = () => {
                   <TableCell>{booking.paymentStatus}</TableCell>
                   <TableCell>{booking.bookingStatus}</TableCell>
                   <TableCell>{booking.hasFeedback ? "Yes" : "NA"}</TableCell>
+                  <TableCell>{booking.checkedIn ? "Yes" : "No"}</TableCell>
                   <TableCell>
                     {booking.paymentStatus === "pending" && (
                       <RemoveButton onClick={() => removeBooking(booking.bookingId)}>
