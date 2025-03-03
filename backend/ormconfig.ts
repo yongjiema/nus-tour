@@ -7,14 +7,12 @@ const config: TypeOrmModuleOptions = {
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-  extra: {
-    sslmode: process.env.DB_SSLMODE,
-  },
+  ssl: process.env.DB_SSL === 'true' ? {
+    rejectUnauthorized: false
+  } : false,
   entities: [__dirname + '/**/*.entity{.ts,.js}'],
   synchronize: true,
+  logging: true
 };
 
 export default config;
