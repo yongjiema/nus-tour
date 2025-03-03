@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Container, Typography, TextField, Button, MenuItem, Grid, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Select, FormControl, InputLabel, Alert
@@ -61,15 +61,9 @@ const BookingManagement = () => {
   const [dateFilter, setDateFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchBookings();
-    const interval = setInterval(fetchBookings, 100000); // Poll every 10 seconds
-    return () => clearInterval(interval);
-  }, []);
-
   const getToken = () => localStorage.getItem("access_token"); // Fetch token from local storage
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/admin/bookings/findAll`, {
         headers: {
@@ -98,11 +92,17 @@ const BookingManagement = () => {
       console.error("Error fetching bookings:", error);
       setError("Failed to load bookings.");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchBookings();
+    const interval = setInterval(fetchBookings, 100000); // Poll every 10 seconds
+    return () => clearInterval(interval);
+  }, [fetchBookings]);
 
   const filterBookings = async () => {
     try {
-      let query = `?search=${search}&status=${statusFilter}&date=${dateFilter}`;
+      const query = `?search=${search}&status=${statusFilter}&date=${dateFilter}`;
       const response = await fetch(`${API_URL}/admin/bookings${query}`, {
         headers: {
           "Authorization": `Bearer ${getToken()}`, // Attach JWT token
@@ -139,7 +139,7 @@ const BookingManagement = () => {
           "Authorization": `Bearer ${getToken()}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: bookingStatus }), // Use bookingStatus here
       });
 
       if (response.status === 401) {
