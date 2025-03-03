@@ -25,7 +25,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV NODE_ENV=production
 
 HEALTHCHECK --interval=1m --timeout=3s \
-    CMD curl -f http://localhost:3000 || exit 1
+    CMD curl -f http://localhost:3456 || exit 1
 
 COPY . /app/nus-tour/backend
 COPY --from=builder /project/nus-tour/backend/dist /app/nus-tour/backend/dist

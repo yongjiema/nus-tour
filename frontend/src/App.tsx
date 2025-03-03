@@ -5,7 +5,6 @@ import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import {
   notificationProvider,
   RefineSnackbarProvider,
-  ThemedLayoutV2,
 } from "@refinedev/mui";
 import CssBaseline from "@mui/material/CssBaseline";
 import GlobalStyles from "@mui/material/GlobalStyles";
@@ -13,11 +12,12 @@ import routerBindings, {
   DocumentTitleHandler,
   UnsavedChangesNotifier,
 } from "@refinedev/react-router-v6";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { authProvider } from "./authProvider";
 import { Header } from "./components/header";
 import { PublicHeader } from "./components/header/public";
 import { ColorModeContextProvider } from "./contexts/color-mode";
+import { CustomLayout } from "./components/layout";
 import { ForgotPassword } from "./pages/forgotPassword";
 import Login from "./pages/login";
 import { Register } from "./pages/register";
@@ -34,7 +34,7 @@ import { Payment } from "./pages/payment";
 import Checkin from "./pages/checkin";
 import * as dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
-import { TourInformationPage } from "./pages/information/tourinformation";
+import { TourInformation } from "./pages/tour-information";
 
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
@@ -65,6 +65,10 @@ function App() {
                     create: "/admin/check-ins/create",
                     edit: "/admin/check-ins/edit/:id",
                   },
+                  {
+                    name: "information",
+                    list: "/information",
+                  }
                 ]}
                 options={{
                   syncWithLocation: true,
@@ -74,36 +78,42 @@ function App() {
                 }}
               >
                 <Routes>
-                  <Route element={<PublicHeader />}>
-                    <Route index path="/" element={<Home />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/information" element={<InformationHome />} />
-                    <Route
-                      path="/information/academic-programs"
-                      element={<AcademicPrograms />}
-                    />
-                    <Route path="/information/bus-routes" element={<BusRoutes />} />
-                    <Route path="/information/tour-information" element={<TourInformationPage />} />
-                    <Route path="/information/canteens" element={<Canteens />} />
-                    <Route
-                      path="/information/convenience-stores"
-                      element={<ConvenienceStores />}
-                    />
-                    <Route path="/booking" element={<BookingForm />} />
-                    <Route path="/booking/confirmation" element={<BookingConfirmation />} />
+                  <Route
+                    element={
+                      <CustomLayout Header={() => <PublicHeader />}>
+                        <Suspense fallback={<div>Loading...</div>}>
+                          <Outlet />
+                        </Suspense>
+                      </CustomLayout>
+                    }
+                  >
+                    <Route index element={<Home />} />
+                    <Route path="/information">
+                      <Route index element={<InformationHome />} />
+                      <Route path="academic-programs" element={<AcademicPrograms />} />
+                      <Route path="bus-routes" element={<BusRoutes />} />
+                      <Route path="canteens" element={<Canteens />} />
+                      <Route path="convenience-stores" element={<ConvenienceStores />} />
+                    </Route>
+                    <Route path="/tour-information" element={<TourInformation />} />
+                    <Route path="/booking">
+                      <Route index element={<BookingForm />} />
+                      <Route path="confirmation" element={<BookingConfirmation />} />
+                    </Route>
                     <Route path="/payment" element={<Payment />} />
                     <Route path="/checkin" element={<Checkin />} />
+                    <Route path="/login" element={<Login />} />
                   </Route>
 
                   <Route element={<PrivateRoute />}>
                     <Route
                       path="/admin"
                       element={
-                        <ThemedLayoutV2 Header={Header}>
+                        <CustomLayout Header={Header}>
                           <Suspense fallback={<div>Loading...</div>}>
                             <AdminDashboard />
                           </Suspense>
-                        </ThemedLayoutV2>
+                        </CustomLayout>
                       }
                     />
                   </Route>

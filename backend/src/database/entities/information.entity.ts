@@ -22,7 +22,7 @@ export class Information {
   @Column({ nullable: true }) // Allow NULL values
   image: string;
 
-  @Column({ default: 'YongJie' })
+  @Column({ default: 'YongJie', name: 'modifiedby' })
   modifiedBy: string;
 
   @CreateDateColumn()
