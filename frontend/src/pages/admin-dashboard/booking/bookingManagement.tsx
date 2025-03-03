@@ -48,7 +48,9 @@ const BookingManagement = () => {
     timeSlot: string;
     groupSize: number;
     deposit: number;
-    checkedIn: boolean;
+    hasFeedback: boolean;
+    bookingStatus: string;
+    createdAt: Date;
     paymentStatus: string;
   }
 
@@ -128,7 +130,7 @@ const BookingManagement = () => {
     }
   };
 
-  const updateBookingStatus = async (id: string, status: string) => {
+  const updateBookingStatus = async (id: string, bookingStatus: string) => {
     try {
       const response = await fetch(`${API_URL}/admin/bookings/${id}`, {
         method: "PATCH",
@@ -185,11 +187,6 @@ const BookingManagement = () => {
       console.error("Error removing booking:", error);
       setError("Failed to remove booking.");
     }
-  };
-
-  const changeTimeSlot = (id: string) => {
-    // Implement the logic to change the time slot
-    console.log(`Change time slot for booking ID: ${id}`);
   };
 
   const checkInBooking = async (id: string) => {
@@ -315,7 +312,8 @@ const BookingManagement = () => {
                 <TableCell>Time Slot</TableCell>
                 <TableCell>Group Size</TableCell>
                 <TableCell>Payment Status</TableCell>
-                <TableCell>Checked In</TableCell>
+                <TableCell>Booking Status</TableCell>
+                <TableCell>Feedback</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -329,27 +327,31 @@ const BookingManagement = () => {
                   <TableCell>{booking.timeSlot}</TableCell>
                   <TableCell>{booking.groupSize}</TableCell>
                   <TableCell>{booking.paymentStatus}</TableCell>
-                  <TableCell>{booking.checkedIn ? "Yes" : "No"}</TableCell>
+                  <TableCell>{booking.bookingStatus}</TableCell>
+                  <TableCell>{booking.hasFeedback ? "Yes" : "NA"}</TableCell>
                   <TableCell>
                     {booking.paymentStatus === "pending" && (
                       <RemoveButton onClick={() => removeBooking(booking.bookingId)}>
                         Remove
                       </RemoveButton>
                     )}
-                    {booking.paymentStatus === "success" && !booking.checkedIn && (
+
+                    {booking.paymentStatus === "pending" && (
+                      <ChangeTimeSlotButton onClick={() => updateBookingStatus(booking.bookingId, "confirmed")}>
+                        Confirm
+                      </ChangeTimeSlotButton>
+                    )}
+
+                    {booking.paymentStatus === "success"&& (
                       <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>
                         Check In
                       </CheckInButton>
                     )}
-                    {booking.checkedIn && (
+
+                    {booking.paymentStatus === "checked-in" && (
                       <CheckOutButton onClick={() => checkOutBooking(booking.bookingId)}>
                         Check Out
                       </CheckOutButton>
-                    )}
-                    {booking.paymentStatus === "success" && !booking.checkedIn && (
-                      <ChangeTimeSlotButton onClick={() => changeTimeSlot(booking.bookingId)}>
-                        Change Time Slot
-                      </ChangeTimeSlotButton>
                     )}
                   </TableCell>
                 </TableRow>

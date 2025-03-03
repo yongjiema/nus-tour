@@ -30,14 +30,14 @@ export class BookingService {
     return this.bookingRepository.find();
   }
 
-  async updateBookingStatus(id: string, status: string) {
+  async updateBookingStatus(id: string, bookingStatus: string) {
     const booking = await this.bookingRepository.findOne({ where: { bookingId: id } });
 
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
 
-    // booking.status = status;
+    booking.bookingStatus = bookingStatus;
     return this.bookingRepository.save(booking);
   }
 }

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, Timestamp } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 @Entity()
@@ -27,8 +27,14 @@ export class Booking {
   @Column()
   timeSlot: string;
 
-  @Column()
-  checkedIn: boolean;
+  @Column({ default: false })
+  hasFeedback: boolean;
+
+  @Column({ default: 'pending' })
+  bookingStatus: string;
+
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
 
   @Column({ default: 'pending' })
   paymentStatus: string;
