@@ -31,11 +31,11 @@ import {
 } from "./pages/information";
 import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
-import dataProvider from "./dataProvider";
+import Checkin from "./pages/checkin";
+import * as dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
 import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";
 
-// Lazy load the Admin Dashboard component
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
 function App() {
@@ -49,30 +49,10 @@ function App() {
             <DevtoolsProvider>
               <Refine
                 authProvider={authProvider}
-                dataProvider={dataProvider}
+                dataProvider={dataProviders.backend}
                 notificationProvider={notificationProvider}
                 routerProvider={routerBindings}
                 resources={[
-                  {
-                    name: "blog_posts",
-                    list: "/blog-posts",
-                    create: "/blog-posts/create",
-                    edit: "/blog-posts/edit/:id",
-                    show: "/blog-posts/show/:id",
-                    meta: {
-                      canDelete: true,
-                    },
-                  },
-                  {
-                    name: "categories",
-                    list: "/categories",
-                    create: "/categories/create",
-                    edit: "/categories/edit/:id",
-                    show: "/categories/show/:id",
-                    meta: {
-                      canDelete: true,
-                    },
-                  },
                   {
                     name: "bookings",
                     list: "/admin/bookings",
@@ -102,27 +82,18 @@ function App() {
                       path="/information/academic-programs"
                       element={<AcademicPrograms />}
                     />
-                    <Route
-                      path="/information/bus-routes"
-                      element={<BusRoutes />}
-                    />
-                    <Route
-                      path="/information/canteens"
-                      element={<Canteens />}
-                    />
+                    <Route path="/information/bus-routes" element={<BusRoutes />} />
+                    <Route path="/information/canteens" element={<Canteens />} />
                     <Route
                       path="/information/convenience-stores"
                       element={<ConvenienceStores />}
                     />
                     <Route path="/booking" element={<BookingForm />} />
-                    <Route
-                      path="/booking/confirmation"
-                      element={<BookingConfirmation />}
-                    />
+                    <Route path="/booking/confirmation" element={<BookingConfirmation />} />
                     <Route path="/payment" element={<Payment />} />
+                    <Route path="/checkin" element={<Checkin />} />
                   </Route>
 
-                  {/* Privated Admin Routes */}
                   <Route element={<PrivateRoute />}>
                     <Route
                       path="/admin"
@@ -146,7 +117,6 @@ function App() {
                       />
                   </Route>
 
-                  {/* Authentication Routes */}
                   <Route path="/register" element={<Register />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Routes>

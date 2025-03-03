@@ -1,6 +1,11 @@
 import React from "react";
 import { Container, Box, Typography, Button, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import * as dataProviders from "../../dataProviders";
+
+interface BookingResponse {
+  bookingId: string;
+}
 
 export const BookingConfirmation: React.FC = () => {
   const navigate = useNavigate();
@@ -11,22 +16,18 @@ export const BookingConfirmation: React.FC = () => {
     return null;
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
-  
+
     // Simulate saving to the database and include bookingId
-    fetch("http://localhost:3000/bookings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(bookingData),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        sessionStorage.setItem("bookingId", data.bookingId); // Save bookingId
-        window.location.href = `/payment?bookingId=${data.bookingId}&amount=50`;
-      });
+    const response = await dataProviders.backend.custom({
+      url: "/bookings",
+      method: "post",
+      payload: bookingData,
+    });
+    const data: BookingResponse = response.data as unknown as BookingResponse;
+    sessionStorage.setItem("bookingId", data.bookingId); // Save bookingId
+    window.location.href = `/payment?bookingId=${data.bookingId}&amount=50`;
   };
 
   const handleEdit = () => navigate("/booking");

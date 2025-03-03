@@ -6,8 +6,7 @@ import {
   Container,
   Paper,
   Box,
-  Button,
-  CircularProgress,
+  Button
 } from "@mui/material";
 
 const PaymentPage = () => {

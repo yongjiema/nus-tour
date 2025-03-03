@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, UseGuards, Request, Body } from '@nestjs/common';
+import { Controller, Get, Delete, UseGuards, Body, Req, Patch } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from '../auth/dto/update-user.dto';
@@ -9,19 +9,24 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Put('profile')
-  async updateProfile(@Request() req: any, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+  @Get('profile')
+  async getProfile(@Req() req: any) {
+    const user = await this.usersService.findById(req.user.id);
+    const { id, username, email, role } = user;
+    return { id, username, email, role };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  async updateProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     const updatedUser = await this.usersService.update(req.user.id, updateUserDto);
-    return {
-      id: Number(updatedUser.id),
-      username: updatedUser.username,
-      email: updatedUser.email,
-    };
+    const { id, username, email, role } = updatedUser;
+    return { id, username, email, role };
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('profile')
-  async deleteAccount(@Request() req: any): Promise<{ message: string }> {
+  async deleteAccount(@Req() req: any): Promise<{ message: string }> {
     await this.usersService.delete(req.user.id);
     return { message: 'Account deleted successfully.' };
   }
@@ -30,10 +35,6 @@ export class UsersController {
   @Get()
   async getAllUsers(): Promise<UserResponseDto[]> {
     const users = await this.usersService.findAll();
-    return users.map((user) => ({
-      id: Number(user.id),
-      username: user.username,
-      email: user.email,
-    }));
+    return users.map(({ id, username, email, role }) => ({ id, username, email, role }));
   }
 }

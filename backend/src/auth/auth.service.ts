@@ -1,41 +1,55 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { TokenBlacklistService } from './token-blacklist.service';
 
 @Injectable()
 export class AuthService {
-  private jwtBlacklist: Set<string> = new Set(); // In-memory blacklist for simplicity
-
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly tokenBlacklistService: TokenBlacklistService,
   ) {}
 
   async login(loginDto: LoginDto): Promise<{ access_token: string }> {
     const user = await this.usersService.validateUser(loginDto);
-    const payload = { email: user.email, id: user.id };
-    const access_token = this.jwtService.sign(payload);
-    return { access_token };
+    return {
+      access_token: this.jwtService.sign({ email: user.email, id: user.id }, { expiresIn: '60m' }),
+    };
   }
 
   async register(registerDto: RegisterDto): Promise<{ token: string }> {
-    const existingUser = await this.usersService.findByEmail(registerDto.email);
-    if (existingUser) {
-      throw new ConflictException('Email is already in use');
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { confirmPassword: _confirmPassword, ...userData } = registerDto as any;
+
+      const existingUser = await this.usersService.findByEmail(userData.email);
+      if (existingUser) {
+        throw new ConflictException('Email is already in use');
+      }
+
+      const newUser = await this.usersService.register(userData);
+      console.log('User created in auth service:', newUser);
+
+      const token = this.jwtService.sign({ id: newUser.id, email: newUser.email }, { expiresIn: '60m' });
+
+      return { token };
+    } catch (error) {
+      console.error('Registration error details:', error);
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException(`Registration failed: ${error.message}`);
     }
-    const newUser = await this.usersService.register(registerDto);
-    const payload = { id: newUser.id, email: newUser.email };
-    const token = this.jwtService.sign(payload, { expiresIn: '1h' });
-    return { token };
   }
 
   async logout(token: string): Promise<void> {
-    this.jwtBlacklist.add(token);
+    this.tokenBlacklistService.addToBlacklist(token);
   }
 
   isTokenBlacklisted(token: string): boolean {
-    return this.jwtBlacklist.has(token);
+    return this.tokenBlacklistService.isBlacklisted(token);
   }
 }

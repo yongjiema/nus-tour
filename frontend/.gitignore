@@ -26,4 +26,6 @@ _.njsproj
 _.sln
 \*.sw?
 
-.env
+# Dotenv
+.env*
+!.env*.sample

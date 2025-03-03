@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Container,
   TextField,
@@ -9,6 +9,12 @@ import {
   MenuItem,
   CircularProgress,
 } from "@mui/material";
+import * as dataProviders from "../../dataProviders";
+
+interface AvailableTimeSlot {
+  slot: string;
+  available: number;
+}
 
 export const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -19,9 +25,7 @@ export const BookingForm: React.FC = () => {
     timeSlot: "",
     deposit: 50,
   });
-  const [timeSlots, setTimeSlots] = useState<
-    { slot: string; available: number }[]
-  >([]);
+  const [timeSlots, setTimeSlots] = useState<AvailableTimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Restrict date selection to today and beyond
@@ -32,13 +36,14 @@ export const BookingForm: React.FC = () => {
   async function fetchAvailableTimeSlots(date: string) {
     try {
       setLoading(true);
-      const response = await fetch(
-        `http://localhost:3000/bookings/available-slots?date=${date}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch available time slots");
-      }
-      const data = await response.json();
+      const response = await dataProviders.backend.custom({
+        url: `/bookings/available-slots`,
+        method: "get",
+        payload: {
+          date
+        }
+      });
+      const data = response.data as AvailableTimeSlot[];
       setTimeSlots(data);
     } catch (error) {
       console.error(error);

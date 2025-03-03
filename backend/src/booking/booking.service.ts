@@ -1,5 +1,4 @@
-// src/booking/booking.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from '../database/entities/booking.entity';
@@ -13,7 +12,16 @@ export class BookingService {
   ) {}
 
   async createBooking(createBookingDto: CreateBookingDto): Promise<Booking> {
+    if (createBookingDto.groupSize < 1) {
+      throw new BadRequestException('Group size must be at least 1');
+    }
+
     const booking = this.bookingRepository.create(createBookingDto);
+
+    if (createBookingDto.groupSize < 1 || createBookingDto.groupSize > 20) {
+      throw new BadRequestException('Invalid group size. Please provide a value between 1 and 50.');
+    }
+
     return await this.bookingRepository.save(booking);
   }
 
