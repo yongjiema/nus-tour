@@ -30,11 +30,20 @@ export class Booking {
   @Column({ default: 50 })
   deposit: number;
 
-  @Column({ default: 'pending' })
-  paymentStatus: string;
-
   @Column()
   timeSlot: string;
+
+  @Column({ default: false })
+  hasFeedback: boolean;
+
+  @Column({ default: 'pending' })
+  bookingStatus: string;
+
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
+  @Column({ default: 'pending' })
+  paymentStatus: string;
 
   @Column({ default: false })
   checkedIn: boolean;

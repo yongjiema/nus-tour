@@ -34,6 +34,7 @@ import { Payment } from "./pages/payment";
 import Checkin from "./pages/checkin";
 import * as dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
+import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";
 
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
@@ -104,6 +105,16 @@ function App() {
                         </ThemedLayoutV2>
                       }
                     />
+                      <Route
+                        path="/admin/bookings"
+                        element={
+                          <ThemedLayoutV2 Header={Header}>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <BookingManagement />
+                            </Suspense>
+                          </ThemedLayoutV2>
+                        }
+                      />
                   </Route>
 
                   <Route path="/register" element={<Register />} />
