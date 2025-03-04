@@ -4,9 +4,9 @@ import {
   TableHead, TableRow, Select, FormControl, InputLabel, Alert
 } from "@mui/material";
 import { styled } from "@mui/material/styles"; // Use styled from @mui/material/styles
-// import { API_URL } from "../../../dataProvider"; // Correctly import API_URL
+import * as dataProviders from "../../../dataProvider";
+import { CrudFilters, CrudOperators } from "@refinedev/core";
 
-const API_URL = "http://localhost:3000";
 const RemoveButton = styled(Button)({
   backgroundColor: "red",
   color: "white",
@@ -65,28 +65,13 @@ const BookingManagement = () => {
 
   const fetchBookings = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/admin/bookings/findAll`, {
-        headers: {
-          "Authorization": `Bearer ${getToken()}`,
-          "Content-Type": "application/json"
-        }
+      const { data } = await dataProviders.default.getList({
+        resource: "admin/bookings/findAll",
+        metaData: {}
       });
 
-      if (response.status === 401) {
-        console.log(localStorage.getItem("token"));
-        setError("Unauthorized: Please log in again.");
-        return;
-      }
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Error fetching bookings:", text);
-        setError("Failed to load bookings.");
-        return;
-      }
-
-      const data = await response.json();
-      setBookings(data);
+      // Type assertion to tell TypeScript that data matches your Booking interface
+      setBookings(data as unknown as Booking[]);
       setError(null);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -102,29 +87,40 @@ const BookingManagement = () => {
 
   const filterBookings = async () => {
     try {
-      const query = `?search=${search}&status=${statusFilter}&date=${dateFilter}`;
-      const response = await fetch(`${API_URL}/admin/bookings${query}`, {
-        headers: {
-          "Authorization": `Bearer ${getToken()}`, // Attach JWT token
-          "Content-Type": "application/json"
-        }
+      // Create an array of filters, only including non-empty values
+      const filters: CrudFilters = [];
+
+      if (search) {
+        filters.push({
+          field: "q",
+          operator: "eq",
+          value: search
+        });
+      }
+
+      if (statusFilter) {
+        filters.push({
+          field: "status",
+          operator: "eq",
+          value: statusFilter
+        });
+      }
+
+      if (dateFilter) {
+        filters.push({
+          field: "date",
+          operator: "eq",
+          value: dateFilter
+        });
+      }
+
+      const { data } = await dataProviders.default.getList({
+        resource: "admin/bookings",
+        filters: filters,
       });
 
-      if (response.status === 401) {
-        setError("Unauthorized: Please log in again.");
-        return;
-      }
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Error fetching bookings:", text);
-        setError("Failed to load bookings.");
-        return;
-      }
-
-      const data = await response.json();
-      setBookings(data);
-      setError(null); // Clear error on successful fetch
+      setBookings(data as unknown as Booking[]);
+      setError(null);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       setError("Failed to load bookings.");
@@ -133,26 +129,11 @@ const BookingManagement = () => {
 
   const updateBookingStatus = async (id: string, bookingStatus: string) => {
     try {
-      const response = await fetch(`${API_URL}/admin/bookings/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Authorization": `Bearer ${getToken()}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ status: bookingStatus }), // Use bookingStatus here
+      await dataProviders.default.update({
+        resource: "admin/bookings",
+        id,
+        variables: { status: bookingStatus }
       });
-
-      if (response.status === 401) {
-        setError("Unauthorized: Please log in again.");
-        return;
-      }
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Error updating booking:", text);
-        setError("Failed to update booking.");
-        return;
-      }
 
       fetchBookings();
     } catch (error) {
@@ -163,25 +144,10 @@ const BookingManagement = () => {
 
   const removeBooking = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/admin/bookings/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${getToken()}`,
-          "Content-Type": "application/json"
-        }
+      await dataProviders.default.deleteOne({
+        resource: "admin/bookings",
+        id
       });
-
-      if (response.status === 401) {
-        setError("Unauthorized: Please log in again.");
-        return;
-      }
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Error removing booking:", text);
-        setError("Failed to remove booking.");
-        return;
-      }
 
       fetchBookings();
     } catch (error) {
@@ -192,25 +158,10 @@ const BookingManagement = () => {
 
   const checkInBooking = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/admin/bookings/${id}/checkin`, {
-        method: "PATCH",
-        headers: {
-          "Authorization": `Bearer ${getToken()}`,
-          "Content-Type": "application/json"
-        },
+      await dataProviders.default.custom({
+        url: `admin/bookings/${id}/checkin`,
+        method: "patch"
       });
-
-      if (response.status === 401) {
-        setError("Unauthorized: Please log in again.");
-        return;
-      }
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Error checking in booking:", text);
-        setError("Failed to check in booking.");
-        return;
-      }
 
       fetchBookings();
     } catch (error) {
@@ -221,25 +172,10 @@ const BookingManagement = () => {
 
   const checkOutBooking = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/admin/bookings/${id}/checkout`, {
-        method: "PATCH",
-        headers: {
-          "Authorization": `Bearer ${getToken()}`,
-          "Content-Type": "application/json"
-        },
+      await dataProviders.default.custom({
+        url: `admin/bookings/${id}/checkout`,
+        method: "patch"
       });
-
-      if (response.status === 401) {
-        setError("Unauthorized: Please log in again.");
-        return;
-      }
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Error checking out booking:", text);
-        setError("Failed to check out booking.");
-        return;
-      }
 
       fetchBookings();
     } catch (error) {
