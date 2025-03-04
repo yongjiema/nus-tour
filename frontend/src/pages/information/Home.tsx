@@ -83,11 +83,11 @@ export const InformationHome: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div>加载中...</div>;
+    return <div>Loading...</div>;
   }
 
   if (isError) {
-    return <div>加载失败</div>;
+    return <div>Failed to load</div>;
   }
 
   return (
@@ -99,10 +99,10 @@ export const InformationHome: React.FC = () => {
           gutterBottom
           style={{ color: "#002147", fontWeight: "bold" }}
         >
-          校园信息
+          Campus Information
         </Typography>
         <Typography variant="h5" color="textSecondary">
-          探索新加坡国立大学的各个方面
+          Explore Different Aspects of National University of Singapore
         </Typography>
       </Box>
 

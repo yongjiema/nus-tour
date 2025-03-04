@@ -13,10 +13,12 @@ import { Booking } from './entities/booking.entity';
         type: 'postgres',
         host: configService.get('DB_HOST', 'localhost'),
         port: configService.get<number>('DB_PORT', 5432),
-        ssl: { rejectUnauthorized: false },
         database: configService.get('DB_NAME', 'nus_tour'),
         username: configService.get('DB_USER', 'postgres'),
         password: configService.get('DB_PASSWORD', 'password'),
+        ssl: {
+          rejectUnauthorized: false
+        },
         entities: [User, Booking],
         synchronize: true,
         logging: true,

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -11,21 +11,30 @@ import { PaymentsModule } from './payments/payments.module';
 import { Booking } from './database/entities/booking.entity';
 import { Payment } from './database/entities/payments.entity';
 import { CheckinModule } from './checkin/checkin.module';
-import config from '../ormconfig';
 import { InformationModule } from './information/information.module';
 import { Information } from './database/entities/information.entity';
 import { TourInformationModule } from './tourinformation/tourinformation.module';
 import { TourInformation } from './database/entities/tourinformation.entity';
+import { User } from './database/entities/user.entity';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      ...config,
-      entities: [Booking, Payment, Information /* ... other entities */],
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT, 10) || 5432,
+      database: process.env.DB_NAME,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      entities: [User, Booking, Payment, Information, TourInformation],
       synchronize: true,
+      logging: true,
     }),
-    TypeOrmModule.forFeature([Booking, Information]), // Add Information entity here
+    TypeOrmModule.forFeature([Booking, Information]),
     DatabaseModule,
     AuthModule,
     UsersModule,

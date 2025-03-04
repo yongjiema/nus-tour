@@ -34,7 +34,7 @@ import { Payment } from "./pages/payment";
 import Checkin from "./pages/checkin";
 import * as dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
-import { TourInformation } from "./pages/tour-information";
+import { TourInformationHome } from "./pages/tour-information/Home";
 
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
@@ -68,6 +68,10 @@ function App() {
                   {
                     name: "information",
                     list: "/information",
+                  },
+                  {
+                    name: "tourInformation",
+                    list: "/tour-information",
                   }
                 ]}
                 options={{
@@ -95,7 +99,7 @@ function App() {
                       <Route path="canteens" element={<Canteens />} />
                       <Route path="convenience-stores" element={<ConvenienceStores />} />
                     </Route>
-                    <Route path="/tour-information" element={<TourInformation />} />
+                    <Route path="/tour-information" element={<TourInformationHome />} />
                     <Route path="/booking">
                       <Route index element={<BookingForm />} />
                       <Route path="confirmation" element={<BookingConfirmation />} />
