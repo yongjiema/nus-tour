@@ -37,6 +37,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import { TourInformationHome } from "./pages/tour-information/Home";
 
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
+const TourInfoManagement = lazy(() => import("./pages/admin-dashboard/TourInfoManagement"));
 
 function App() {
   return (
@@ -116,6 +117,16 @@ function App() {
                         <CustomLayout Header={Header}>
                           <Suspense fallback={<div>Loading...</div>}>
                             <AdminDashboard />
+                          </Suspense>
+                        </CustomLayout>
+                      }
+                    />
+                    <Route
+                      path="/admin/tour-info"
+                      element={
+                        <CustomLayout Header={Header}>
+                          <Suspense fallback={<div>Loading...</div>}>
+                            <TourInfoManagement />
                           </Suspense>
                         </CustomLayout>
                       }

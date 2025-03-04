@@ -29,6 +29,7 @@ import {
   FormatListBulleted as ListIcon,
   Update as UpdateIcon,
   ExpandMore as ExpandMoreIcon,
+  PushPin as PinIcon
 } from '@mui/icons-material';
 
 interface TourInformation {
@@ -51,7 +52,83 @@ interface TourInfoDetailsProps {
   info: TourInformation;
 }
 
+// 定义通知或事件项的接口
+interface InfoItem {
+  id: string;
+  text: string;
+  isPinned: boolean;
+  date: string;
+}
+
+// 解析字符串格式的通知和事件
+const parseItems = (input: string): InfoItem[] => {
+  if (!input) return [];
+  
+  try {
+    if (input.includes(':::')) {
+      // 新格式: "id1:::text1:::isPinned1:::date1|||id2:::text2:::isPinned2:::date2"
+      return input.split('|||').map(item => {
+        const [id, text, isPinned, date] = item.split(':::');
+        return {
+          id: id || `item-${Math.random().toString(36).substr(2, 9)}`,
+          text: text || '',
+          isPinned: isPinned === 'true',
+          date: date || new Date().toISOString()
+        };
+      }).filter(item => item.text.trim() !== '');
+    } else {
+      // 向后兼容旧格式（单个文本，用|||分隔）
+      return input.split('|||')
+        .filter(text => text.trim() !== '')
+        .map(text => ({
+          id: `item-${Math.random().toString(36).substr(2, 9)}`,
+          text,
+          isPinned: false,
+          date: new Date().toISOString()
+        }));
+    }
+  } catch (error) {
+    console.error('Error parsing items:', error);
+    // 如果解析失败，作为一个单独的项目返回
+    return [{
+      id: `item-${Math.random().toString(36).substr(2, 9)}`,
+      text: input,
+      isPinned: false,
+      date: new Date().toISOString()
+    }];
+  }
+};
+
 export const TourInfoDetails: React.FC<TourInfoDetailsProps> = ({ info }) => {
+  // 解析通知和事件
+  const noticeItems = parseItems(info.latestNotice);
+  const eventItems = parseItems(info.latestNewsEvent);
+  
+  // 排序处理：置顶项在前，然后按日期排序
+  const sortItems = (items: InfoItem[]) => {
+    return [...items].sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  };
+  
+  const sortedNotices = sortItems(noticeItems);
+  const sortedEvents = sortItems(eventItems);
+
+  // 格式化日期显示
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch (e) {
+      return '(Unknown date)';
+    }
+  };
+
   // 将指南和重要信息拆分为项目列表
   const guidelinesList = info.guidelines
     ? info.guidelines.split("\n").filter((line) => line.trim() !== "")
@@ -59,22 +136,6 @@ export const TourInfoDetails: React.FC<TourInfoDetailsProps> = ({ info }) => {
   const importantInfoList = info.importantInformation
     ? info.importantInformation.split("\n").filter((line) => line.trim() !== "")
     : [];
-
-  // 分割多条通知和事件（使用 ||| 作为分隔符）
-  const noticesList = info.latestNotice
-    ? info.latestNotice.split("|||").map(notice => notice.trim()).filter(notice => notice)
-    : [];
-  const eventsList = info.latestNewsEvent
-    ? info.latestNewsEvent.split("|||").map(event => event.trim()).filter(event => event)
-    : [];
-
-  // 格式化更新日期
-  const lastUpdated = new Date(info.updatedAt || info.dateOfModify);
-  const formattedDate = lastUpdated.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 
   return (
     <Box>
@@ -86,7 +147,7 @@ export const TourInfoDetails: React.FC<TourInfoDetailsProps> = ({ info }) => {
       </Box>
 
       {/* 通知部分 */}
-      {noticesList.length > 0 && (
+      {sortedNotices.length > 0 && (
         <Box mb={5}>
           <Box display="flex" alignItems="center" mb={2}>
             <AnnouncementIcon color="primary" sx={{ mr: 1 }} />
@@ -95,10 +156,14 @@ export const TourInfoDetails: React.FC<TourInfoDetailsProps> = ({ info }) => {
             </Typography>
           </Box>
           
-          {noticesList.map((notice, index) => (
+          {sortedNotices.map((notice, index) => (
             <Accordion 
-              key={`notice-${index}`} 
-              sx={{ mb: 1, "&:before": { display: "none" } }}
+              key={notice.id} 
+              sx={{ 
+                mb: 1, 
+                "&:before": { display: "none" },
+                borderLeft: notice.isPinned ? '4px solid #FF6600' : 'none'
+              }}
               defaultExpanded={index === 0}
             >
               <AccordionSummary
@@ -107,15 +172,22 @@ export const TourInfoDetails: React.FC<TourInfoDetailsProps> = ({ info }) => {
                 id={`notice-${index}-header`}
                 sx={{ 
                   backgroundColor: "rgba(0, 32, 96, 0.04)",
-                  borderLeft: "4px solid #002060", 
                 }}
               >
-                <Typography fontWeight="medium">
-                  Notice {index + 1}
-                </Typography>
+                <Box display="flex" alignItems="center" width="100%">
+                  {notice.isPinned && (
+                    <PinIcon sx={{ mr: 1, color: '#FF6600' }} fontSize="small" />
+                  )}
+                  <Typography fontWeight={notice.isPinned ? "bold" : "medium"}>
+                    Notice {index + 1}
+                  </Typography>
+                  <Typography variant="caption" sx={{ ml: 'auto', opacity: 0.7 }}>
+                    {formatDate(notice.date)}
+                  </Typography>
+                </Box>
               </AccordionSummary>
               <AccordionDetails>
-                <Typography variant="body2">{notice}</Typography>
+                <Typography variant="body2">{notice.text}</Typography>
               </AccordionDetails>
             </Accordion>
           ))}
@@ -123,27 +195,40 @@ export const TourInfoDetails: React.FC<TourInfoDetailsProps> = ({ info }) => {
       )}
 
       {/* 事件部分 */}
-      {eventsList.length > 0 && (
+      {sortedEvents.length > 0 && (
         <Box mb={5}>
           <Box display="flex" alignItems="center" mb={2}>
             <EventIcon color="primary" sx={{ mr: 1 }} />
             <Typography variant="h5" sx={{ color: "primary.main" }}>
-              Events
+              Events & News
             </Typography>
           </Box>
           
           <Grid container spacing={2}>
-            {eventsList.map((event, index) => (
-              <Grid item xs={12} md={6} key={`event-${index}`}>
-                <Card variant="outlined" sx={{ height: "100%" }}>
-                  <CardContent>
-                    <Box display="flex" alignItems="center" mb={1.5}>
-                      <EventIcon color="secondary" sx={{ mr: 1, fontSize: "1.1rem" }} />
-                      <Typography variant="subtitle1" fontWeight="medium">
+            {sortedEvents.map((event, index) => (
+              <Grid item xs={12} sm={6} md={4} key={event.id}>
+                <Card 
+                  sx={{ 
+                    height: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    border: event.isPinned ? '2px solid #FF6600' : 'none',
+                    boxShadow: event.isPinned ? '0 4px 8px rgba(255, 102, 0, 0.2)' : undefined
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      {event.isPinned && <PinIcon sx={{ mr: 1, color: '#FF6600' }} fontSize="small" />}
+                      <Typography variant="h6" gutterBottom fontWeight={event.isPinned ? "bold" : "medium"}>
                         Event {index + 1}
                       </Typography>
                     </Box>
-                    <Typography variant="body2">{event}</Typography>
+                    <Typography variant="body2" paragraph>
+                      {event.text}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDate(event.date)}
+                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -266,7 +351,7 @@ export const TourInfoDetails: React.FC<TourInfoDetailsProps> = ({ info }) => {
       >
         <UpdateIcon fontSize="small" sx={{ mr: 0.5 }} />
         <Typography variant="caption">
-          Last Updated: {formattedDate}
+          Last Updated: {info.updatedAt ? new Date(info.updatedAt).toLocaleString() : 'Unknown'}
         </Typography>
       </Box>
     </Box>

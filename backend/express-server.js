@@ -148,6 +148,82 @@ app.get('/tourInformation', async (req, res) => {
   }
 });
 
+// 获取旅游信息数据
+app.get('/tourinformation', async (req, res) => {
+  const client = new Client(dbConfig);
+  
+  try {
+    await client.connect();
+    
+    // 查询数据库获取所有旅游信息
+    const query = `
+      SELECT * FROM tour_information ORDER BY id
+    `;
+    const { rows } = await client.query(query);
+    
+    // 格式化响应以符合refine格式
+    res.json({
+      data: rows,
+      total: rows.length,
+      pageCount: 1,
+      page: 1,
+      perPage: 10,
+    });
+  } catch (error) {
+    console.error('Error fetching tour information:', error);
+    res.status(500).json({ error: 'Failed to fetch tour information' });
+  }
+});
+
+// 更新旅游信息数据
+app.put('/tourinformation/:id', async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+  const client = new Client(dbConfig);
+  
+  // 生成SET子句，排除不应该更新的字段
+  const excludedFields = ['id', 'createdAt'];
+  const setClause = Object.keys(updateData)
+    .filter(key => !excludedFields.includes(key))
+    .map(key => `"${key}" = $${Object.keys(updateData).indexOf(key) + 2}`)
+    .join(', ');
+  
+  if (!setClause) {
+    return res.status(400).json({ error: 'No valid fields to update' });
+  }
+  
+  try {
+    await client.connect();
+    
+    // 更新数据并添加更新时间戳
+    const query = `
+      UPDATE tour_information 
+      SET ${setClause}, "updatedAt" = NOW()
+      WHERE id = $1
+      RETURNING *
+    `;
+    
+    const values = [id, ...Object.keys(updateData)
+      .filter(key => !excludedFields.includes(key))
+      .map(key => updateData[key])];
+    
+    const { rows } = await client.query(query, values);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Tour information not found' });
+    }
+    
+    res.json({
+      data: rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating tour information:', error);
+    res.status(500).json({ error: 'Failed to update tour information' });
+  } finally {
+    await client.end();
+  }
+});
+
 // 启动服务器
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`临时服务器运行在 http://localhost:${PORT}`);

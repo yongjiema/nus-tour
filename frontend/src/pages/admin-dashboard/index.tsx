@@ -92,6 +92,15 @@ const AdminDashboard: React.FC = () => {
               Update Policies
             </Button>
           </Grid>
+          <Grid item>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate("/admin/tour-info")}
+            >
+              Manage Tour Information
+            </Button>
+          </Grid>
         </Grid>
       </Box>
     </DashboardContainer>
