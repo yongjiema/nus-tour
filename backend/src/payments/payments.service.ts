@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Payment } from '../database/entities/payments.entity';
@@ -24,12 +24,22 @@ export class PaymentsService {
     private bookingService: BookingService,
   ) {}
 
-  async createPayment(createPaymentDto: CreatePaymentDto): Promise<Payment> {
+  async createPayment(createPaymentDto: CreatePaymentDto, user: any): Promise<Payment> {
     this.logger.log(`Creating payment for booking: ${createPaymentDto.bookingId}`);
 
-    const booking = await this.bookingService.getBookingById(createPaymentDto.bookingId);
-    if (!booking) {
+    // First get the booking
+    let booking;
+    try {
+      booking = await this.bookingService.getBookingByBookingId(String(createPaymentDto.bookingId));
+    } catch (error) {
+      this.logger.error(`Booking not found: ${createPaymentDto.bookingId}`, error);
       throw new NotFoundException(`Booking with id ${createPaymentDto.bookingId} not found`);
+    }
+
+    // Verify the authenticated user owns this booking
+    if (booking.email !== user.email) {
+      this.logger.warn(`User ${user.email} attempted unauthorized payment for booking ${booking.id}`);
+      throw new ForbiddenException('You do not have permission to make payments for this booking');
     }
 
     // Check if payment already exists
@@ -56,10 +66,14 @@ export class PaymentsService {
       paymentMethod: createPaymentDto.paymentMethod,
     });
 
-    const savedPayment = await this.paymentsRepository.save(payment);
-    this.logger.log(`Payment created for booking: ${booking.id}`);
-
-    return savedPayment;
+    try {
+      const savedPayment = await this.paymentsRepository.save(payment);
+      this.logger.log(`Payment created for booking: ${booking.id}`);
+      return savedPayment;
+    } catch (error) {
+      console.error('Payment processing failed:', error);
+      throw new Error(`Payment failed: ${error.message}`);
+    }
   }
 
   async updatePaymentStatus(updateDto: UpdatePaymentStatusDto): Promise<Payment> {

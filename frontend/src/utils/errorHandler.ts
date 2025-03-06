@@ -84,6 +84,24 @@ export const useErrorHandler = () => {
         return "Invalid input. Please check your information.";
       }
 
+      // Handle booking-specific errors
+      if (err.data?.error === 'BOOKING_CONFLICT') {
+        return "This time slot is no longer available. Please select another time.";
+      }
+
+      if (err.data?.error === 'BOOKING_LIMIT_EXCEEDED') {
+        return "You've reached the maximum number of active bookings allowed.";
+      }
+
+      // Handle payment-specific errors
+      if (err.data?.error === 'PAYMENT_FAILED') {
+        return "Payment processing failed. Please try again or use a different payment method.";
+      }
+
+      if (err.data?.error === 'PAYMENT_EXPIRED') {
+        return "Your payment session has expired. Please start a new booking.";
+      }
+
       return Array.isArray(message) ? message.join(' ') : message;
     }
 

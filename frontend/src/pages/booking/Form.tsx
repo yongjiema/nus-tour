@@ -52,6 +52,7 @@ const BookingForm: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+  const [validSession, setValidSession] = useState(false);
 
   const {
     refineCore: { formLoading },
@@ -171,7 +172,8 @@ const BookingForm: React.FC = () => {
           throw new Error(errorMessage);
         } catch (responseError) {
           console.error("Error handling response:", responseError);
-          throw new Error(`Request failed: ${responseError.message}`);
+          
+          throw new Error(`Request failed: ${(responseError as Error).message}`);
         }
       }
       
@@ -188,7 +190,35 @@ const BookingForm: React.FC = () => {
       }
 
       // Now newBooking is accessible here
+      console.log("Saving booking data to localStorage:", newBooking);
       localStorage.setItem("booking-data", JSON.stringify(newBooking));
+
+      // Log before navigation
+      console.log(`Redirecting to payment page with booking ID: ${newBooking.bookingId || newBooking.id}`);
+      navigate(`/payment/${newBooking.bookingId || newBooking.id}`);
+
+      // After successful booking creation and response parsing
+      console.log("Booking created successfully:", newBooking);
+      
+      // Ensure bookingId exists before redirecting
+      if (!newBooking || !newBooking.bookingId) {
+        setError("Booking created but no ID was returned");
+        console.error("Missing booking ID in response:", newBooking);
+        return;
+      }
+      
+      // Store in localStorage with proper structure
+      localStorage.setItem("booking-data", JSON.stringify({
+        bookingId: newBooking.bookingId,
+        id: newBooking.id,
+        deposit: newBooking.deposit || 50,
+        date: newBooking.date,
+        timeSlot: newBooking.timeSlot,
+        groupSize: newBooking.groupSize
+      }));
+      
+      console.log(`Redirecting to payment with bookingId: ${newBooking.bookingId}`);
+      navigate(`/payment/${newBooking.bookingId}`);
 
       // And it's accessible here too
       setSuccess(true);
@@ -197,15 +227,42 @@ const BookingForm: React.FC = () => {
       }, 1000);
     } catch (err) {
       console.error("Error creating booking:", err);
-      setError(err.message || "An error occurred while creating your booking");
+      const error = err as Error;
+      setError(error.message || "An error occurred while creating your booking");
     }
   };
 
-  // Redirect if not authenticated
+  // Enhanced session verification
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (!token) {
+    const user = localStorage.getItem("user");
+    const referrer = document.referrer;
+    const sessionValid = sessionStorage.getItem("booking_flow_valid");
+    
+    // Check if user is authenticated
+    if (!token || !user) {
+      console.log("No authentication found, redirecting to login");
       navigate("/login");
+      return;
+    }
+    
+    // Verify the user is coming from a valid source
+    const isValidReferrer = 
+      referrer.includes("/register") || 
+      referrer.includes("/login") || 
+      referrer.includes("/home") ||
+      sessionValid === "true";
+    
+    if (isValidReferrer) {
+      // Mark this session as valid for potential page refreshes
+      sessionStorage.setItem("booking_flow_valid", "true");
+      setValidSession(true);
+    } else {
+      // Allow the user to proceed but show a notice
+      console.log("User accessed booking page directly");
+      setValidSession(true);
+      setError("For the best experience, start from the home page. You may continue with your booking.");
+      setTimeout(() => setError(""), 5000);
     }
   }, [navigate]);
 

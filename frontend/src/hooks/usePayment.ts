@@ -3,7 +3,6 @@ import { useCustomMutation } from "@refinedev/core";
 import { useNavigate } from "react-router-dom";
 import { useErrorHandler } from "../utils/errorHandler";
 import { useNotification } from "@refinedev/core";
-import { PaymentStatus } from '../api/types';
 
 export interface PaymentData {
   bookingId: number;
@@ -20,64 +19,57 @@ export const usePayment = () => {
 
   const processPayment = async (paymentData: PaymentData) => {
     setIsProcessing(true);
+    
     try {
-      // Simulate payment gateway processing
-      // In a real app, you would integrate with a payment provider here
-      const simulatePaymentGateway = () => {
-        return new Promise<{ transactionId: string }>((resolve) => {
-          setTimeout(() => {
-            resolve({ transactionId: `txn_${Date.now()}` });
-          }, 1500);
-        });
-      };
-
-      // Simulate payment gateway response
-      const gatewayResponse = await simulatePaymentGateway();
-
-      // Record payment in backend
-      await mutate({
+      if (!paymentData.bookingId) {
+        throw new Error("Missing booking ID. Please try again or contact support.");
+      }
+      
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+      
+      console.log("Processing payment for booking:", paymentData.bookingId);
+      
+      const response = await mutate({
         url: "payments",
         method: "post",
         values: {
           bookingId: paymentData.bookingId,
           amount: paymentData.amount,
-          status: PaymentStatus.COMPLETED,
-          transactionId: gatewayResponse.transactionId,
           paymentMethod: paymentData.paymentMethod || "paynow",
         },
+        meta: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       });
-
-      // Success notification
+      
+      // Return just the successful status - we don't need the data
+      const result = response !== undefined;
+      
+      // Store payment confirmation for success page
+      localStorage.setItem("payment_confirmation", JSON.stringify({
+        bookingId: paymentData.bookingId.toString(),
+        amount: paymentData.amount,
+        date: new Date().toISOString(),
+        transactionId: `TXN-${Date.now()}`
+      }));
+      
       open?.({
-        message: "Payment Successful",
-        description: "Your booking has been confirmed.",
+        message: "Payment successful",
         type: "success",
       });
-
-      // Redirect to confirmation page
-      navigate(`/booking/confirmation/${paymentData.bookingId}`);
+      
+      // Navigate to the success page with the booking ID
+      navigate(`/payment/success/${paymentData.bookingId}`);
+      
+      return result;
     } catch (error) {
-      // Update payment status to failed
-      try {
-        await mutate({
-          url: "payments/status",
-          method: "patch",
-          values: {
-            bookingId: paymentData.bookingId,
-            status: "failed",
-          },
-        });
-      } catch (updateError) {
-        console.error("Failed to update payment status:", updateError);
-      }
-
-      // Handle error
-      const errorMessage = handleError(error);
-      open?.({
-        message: "Payment Failed",
-        description: errorMessage,
-        type: "error",
-      });
+      handleError(error);
+      return false;
     } finally {
       setIsProcessing(false);
     }
@@ -87,4 +79,4 @@ export const usePayment = () => {
     processPayment,
     isProcessing,
   };
-}; 
+};

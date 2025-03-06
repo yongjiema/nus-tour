@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param, Get, UseGuards, Logger, Query } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Get, UseGuards, Logger, Query, Request } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
@@ -29,9 +29,10 @@ export class PaymentsController {
   }
 
   @Post()
-  async createPayment(@Body() createPaymentDto: CreatePaymentDto): Promise<Payment> {
-    this.logger.log(`Payment creation request received for booking: ${createPaymentDto.bookingId}`);
-    return this.paymentsService.createPayment(createPaymentDto);
+  @UseGuards(JwtAuthGuard) // Require authentication
+  async createPayment(@Body() createPaymentDto: CreatePaymentDto, @Request() req): Promise<Payment> {
+    this.logger.log(`Payment creation request from user ${req.user.email} for booking: ${createPaymentDto.bookingId}`);
+    return this.paymentsService.createPayment(createPaymentDto, req.user);
   }
 
   @Patch('status')
@@ -41,8 +42,10 @@ export class PaymentsController {
   }
 
   @Get('booking/:bookingId')
-  async getPaymentByBookingId(@Param('bookingId') bookingId: number): Promise<Payment> {
-    return this.paymentsService.getPaymentByBookingId(bookingId);
+  @Public()
+  async getPaymentByBookingId(@Param('bookingId') bookingId: string): Promise<Payment> {
+    // Convert to number only after we've handled string possibility
+    return this.paymentsService.getPaymentByBookingId(Number(bookingId));
   }
 
   // Admin endpoints

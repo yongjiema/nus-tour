@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useForm } from "@refinedev/react-hook-form";
+import { useForm } from "react-hook-form";
 import { useLogin } from "@refinedev/core";
 import {
   TextField,
@@ -21,7 +21,7 @@ interface LoginFormInputs {
 }
 
 // Validation schema for login form
-const validationSchema = yup.object({
+const validationSchema = yup.object().shape({
   email: yup
     .string()
     .required("Email is required")
@@ -35,24 +35,21 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { handleError } = useErrorHandler();
+  const { mutate: login } = useLogin();
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    refineCore: { onFinish, formLoading }
   } = useForm<LoginFormInputs>({
-    resolver: yupResolver(validationSchema),
-    refineCoreProps: {
-      action: "login"
-    }
+    resolver: yupResolver(validationSchema)
   });
 
   const onSubmit = async (data: LoginFormInputs) => {
     setError(null);
 
     try {
-      await onFinish(data);
+      await login(data);
       // AuthProvider's login will handle the redirect
     } catch (err) {
       setError(handleError(err));
@@ -105,9 +102,9 @@ const Login: React.FC = () => {
                 type="submit"
                 variant="contained"
                 fullWidth
-                disabled={formLoading || isSubmitting}
+                disabled={isSubmitting}
               >
-                {formLoading || isSubmitting ? "Logging in..." : "Login"}
+                {isSubmitting ? "Logging in..." : "Login"}
               </SubmitButton>
             </Grid>
 

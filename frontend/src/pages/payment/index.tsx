@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -12,7 +12,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { usePayment } from "../../hooks/usePayment";
 import { useCustom } from "@refinedev/core";
 import { PublicHeader } from "../../components/header/public";
-import axios from "axios";
 
 const PaymentPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -58,61 +57,62 @@ const SharedPageTitle = styled(Typography)({
   color: "#002147",
 });
 
-interface PaymentPageParams {
-  bookingId: string;
-}
-
-const PaymentPage: React.FC = () => {
-  const { bookingId } = useParams<keyof PaymentPageParams>() as PaymentPageParams;
+const PaymentPage = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { processPayment, isProcessing } = usePayment();
-  const [bookingDetails, setBookingDetails] = useState({
-    bookingId: bookingId,
-    amount: 0,
-  });
-  const [bookingData, setBookingData] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes (300 seconds)
+  const [timeLeft, setTimeLeft] = useState(300);
   const [sessionExpired, setSessionExpired] = useState(false);
+  
+  // Single state for booking details
+  const [bookingDetails, setBookingDetails] = useState<{
+    bookingId: string | null;
+    amount: number;
+  }>({
+    bookingId: id || null,
+    amount: 50,
+  });
 
+  // Initialize from localStorage first
   useEffect(() => {
-    // Get booking data from localStorage
-    const savedData = localStorage.getItem("booking-data");
-    if (savedData) {
-      setBookingData(JSON.parse(savedData));
-      // Clear after use
-      localStorage.removeItem("booking-data");
+    try {
+      const storedData = localStorage.getItem("booking-data");
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        console.log("Found booking data in localStorage:", parsedData);
+        
+        setBookingDetails({
+          bookingId: parsedData.bookingId || parsedData.id || id,
+          amount: parsedData.deposit || 50,
+        });
+        
+        // Optional: Remove after use
+        // localStorage.removeItem("booking-data");
+      }
+    } catch (e) {
+      console.error("Error parsing booking data:", e);
     }
-  }, []);
-
-  // Use bookingData if available, otherwise fetch from API
+  }, [id]);
+  
+  // Only fetch from API if we have an ID and no localStorage data
   const { data: apiData, isLoading } = useCustom({
-    url: `bookings/find-by-booking-id/${bookingId}`,
+    url: `/bookings/find-by-booking-id/${bookingDetails.bookingId || ''}`,
     method: "get",
     queryOptions: {
-      enabled: !bookingData // Only run API call if no localStorage data
+      enabled: !!bookingDetails.bookingId
     }
   });
-
-  // Combine data sources
-  const data = bookingData || apiData?.data;
-
+  
+  // Update from API data if available
   useEffect(() => {
-    if (data?.data) {
-      setBookingDetails({
-        bookingId: String(data.data.id),
-        amount: data.data.deposit,
-      });
+    if (apiData?.data) {
+      console.log("Received API booking data:", apiData.data);
+      setBookingDetails(prev => ({
+        ...prev,
+        amount: apiData.data.deposit || prev.amount
+      }));
     }
-  }, [data]);
-
-  useEffect(() => {
-    // Make sure auth headers are set correctly
-    const token = localStorage.getItem("auth-token") || localStorage.getItem("payment-redirect-token");
-    if (token) {
-      // Set token in your auth headers/context if needed
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    }
-  }, []);
+  }, [apiData]);
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -134,11 +134,30 @@ const PaymentPage: React.FC = () => {
   };
 
   const handleCompletePayment = async () => {
-    await processPayment({
-      bookingId: Number(bookingDetails.bookingId),
-      amount: bookingDetails.amount,
-      paymentMethod: "paynow",
-    });
+    if (!bookingDetails.bookingId) {
+      console.error("Missing booking ID");
+      return;
+    }
+    
+    try {
+      // Call the processPayment function - it handles navigation internally
+      await processPayment({
+        bookingId: Number(bookingDetails.bookingId),
+        amount: bookingDetails.amount,
+        paymentMethod: "paynow",
+      });
+      
+      // Store payment confirmation details for the success page
+      localStorage.setItem("payment_confirmation", JSON.stringify({
+        bookingId: typeof bookingDetails.bookingId === 'string' ? bookingDetails.bookingId : '',
+        amount: bookingDetails.amount,
+        date: new Date().toISOString(),
+        transactionId: `TXN-${Date.now()}`
+      }));
+      
+    } catch (error) {
+      console.error("Payment processing error:", error);
+    }
   };
 
   if (isLoading) {
@@ -159,7 +178,7 @@ const PaymentPage: React.FC = () => {
           <Box mt={3} textAlign="center">
             <ActionButton
               variant="contained"
-              onClick={() => navigate('/booking')}
+              onClick={() => navigate("/booking")}
             >
               Return to Booking
             </ActionButton>
@@ -195,7 +214,7 @@ const PaymentPage: React.FC = () => {
               {/* Booking Details */}
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="body2" sx={{ color: '#002147', mb: 1.25 }}>
-                  <strong>Booking ID:</strong> {bookingId}
+                  <strong>Booking ID:</strong> {bookingDetails.bookingId}
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#002147', mb: 1.25 }}>
                   <strong>Amount to Pay:</strong> SGD {bookingDetails.amount}
@@ -230,7 +249,10 @@ const PaymentPage: React.FC = () => {
               <Typography variant="body1" sx={{ mb: 3 }}>
                 Please restart the booking process to try again.
               </Typography>
-              <ActionButton variant="contained" onClick={() => navigate("/booking")}>
+              <ActionButton 
+                variant="contained" 
+                onClick={() => navigate("/booking")}
+              >
                 Return to Booking
               </ActionButton>
             </Box>
