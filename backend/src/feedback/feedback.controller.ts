@@ -4,10 +4,12 @@ import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/role.decorator';
-import { Feedback } from '../database/entities/feedback.entity';
+import { Logger } from '@nestjs/common';
 
 @Controller('feedback')
 export class FeedbackController {
+  private readonly logger = new Logger(FeedbackController.name);
+
   constructor(private readonly feedbackService: FeedbackService) {}
 
   @Post()
@@ -28,8 +30,14 @@ export class FeedbackController {
 
   @Get('user')
   @UseGuards(JwtAuthGuard)
-  async getUserFeedbacks(@Request() req): Promise<Feedback[]> {
-    return this.feedbackService.getFeedbacksByUserId(req.user.id);
+  async getUserFeedbacks(@Request() req) {
+    this.logger.log(`Getting feedbacks for user: ${JSON.stringify(req.user)}`);
+    const feedbacks = await this.feedbackService.getFeedbacksByUserId(req.user.id);
+    this.logger.log(`Found ${feedbacks.length} feedbacks for user`);
+    return {
+      data: feedbacks,
+      total: feedbacks.length,
+    };
   }
 
   @Get(':id')

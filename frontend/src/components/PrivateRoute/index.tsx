@@ -4,6 +4,12 @@ import { useIsAuthenticated } from "@refinedev/core";
 import { authProvider } from "../../authProvider";
 import { CircularProgress, Box } from "@mui/material";
 
+interface AuthCheckResponse {
+  authenticated: boolean;
+  redirectTo?: string;
+  role?: string;
+}
+
 const PrivateRoute: React.FC<{ requiredRole?: "admin" | "user" }> = ({
   requiredRole
 }) => {
@@ -14,8 +20,10 @@ const PrivateRoute: React.FC<{ requiredRole?: "admin" | "user" }> = ({
   useEffect(() => {
     const checkUserRole = async () => {
       try {
-        const { role } = await authProvider.check();
-        setUserRole(role);
+        console.log("Checking user role...");
+        const response = await authProvider.check() as AuthCheckResponse;
+        console.log("Auth check response:", response);
+        setUserRole(response.role || null);
       } catch (error) {
         console.error("Error checking role:", error);
       } finally {
@@ -24,13 +32,26 @@ const PrivateRoute: React.FC<{ requiredRole?: "admin" | "user" }> = ({
     };
 
     if (isAuthenticated) {
+      console.log("User is authenticated, checking role...");
       checkUserRole();
     } else {
+      console.log("User is not authenticated");
       setCheckingRole(false);
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    console.log("PrivateRoute state:", {
+      isLoading,
+      isAuthenticated,
+      userRole,
+      checkingRole,
+      requiredRole
+    });
+  }, [isLoading, isAuthenticated, userRole, checkingRole, requiredRole]);
+
   if (isLoading || checkingRole) {
+    console.log("Loading or checking role...");
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
         <CircularProgress />
@@ -39,16 +60,19 @@ const PrivateRoute: React.FC<{ requiredRole?: "admin" | "user" }> = ({
   }
 
   if (!isAuthenticated) {
+    console.log("Not authenticated, redirecting to login");
     return <Navigate to="/login" />;
   }
 
   // Check role-specific access if requiredRole is provided
-  if (requiredRole && userRole !== requiredRole) {
-    return userRole === "admin"
+  if (requiredRole && userRole?.toLowerCase() !== requiredRole.toLowerCase()) {
+    console.log(`Role mismatch - Required: ${requiredRole}, Current: ${userRole}`);
+    return userRole?.toLowerCase() === "admin"
       ? <Navigate to="/admin" />
-      : <Navigate to="/dashboard" />;
+      : <Navigate to="/user-dashboard" />;
   }
 
+  console.log("Access granted to protected route");
   return <Outlet />;
 };
 

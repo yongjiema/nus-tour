@@ -79,20 +79,34 @@ export class PaymentsService {
   async updatePaymentStatus(updateDto: UpdatePaymentStatusDto): Promise<Payment> {
     this.logger.log(`Updating payment status for booking: ${updateDto.bookingId} to ${updateDto.status}`);
 
-    const booking = await this.bookingRepository.findOne({
-      where: { id: updateDto.bookingId },
-    });
+    // Try to find booking by numeric ID first
+    let booking;
+    try {
+      // If it's a number, try direct lookup
+      if (typeof updateDto.bookingId === 'number') {
+        booking = await this.bookingRepository.findOne({
+          where: { id: updateDto.bookingId },
+        });
+      }
+      // If it's a string, check if it's a UUID
+      else {
+        booking = await this.bookingService.getBookingByBookingId(updateDto.bookingId);
+      }
+    } catch (err) {
+      this.logger.error(`Failed to find booking: ${updateDto.bookingId}`, err.message);
+      throw new NotFoundException(`Booking with id ${updateDto.bookingId} not found`);
+    }
 
     if (!booking) {
       throw new NotFoundException(`Booking with id ${updateDto.bookingId} not found`);
     }
 
     let payment = await this.paymentsRepository.findOne({
-      where: { bookingId: updateDto.bookingId },
+      where: { bookingId: booking.id },
     });
 
     if (!payment) {
-      this.logger.warn(`No payment found for booking: ${updateDto.bookingId}, creating one`);
+      this.logger.warn(`No payment found for booking: ${booking.id}, creating one`);
       payment = this.paymentsRepository.create({
         bookingId: booking.id,
         amount: booking.deposit,
@@ -120,11 +134,16 @@ export class PaymentsService {
     return updatedPayment;
   }
 
-  async getPaymentsByUserId(userId: number): Promise<Payment[]> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+  async getPaymentsByUserId(userId: string): Promise<Payment[]> {
+    this.logger.log(`Finding payments for user ID: ${userId}`);
+
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      this.logger.warn(`User not found with ID: ${userId}`);
+      return [];
     }
 
     // Find bookings by email
@@ -134,23 +153,44 @@ export class PaymentsService {
     });
 
     if (bookings.length === 0) {
+      this.logger.log(`No bookings found for user ${user.email}`);
       return [];
     }
 
     // Get booking IDs
     const bookingIds = bookings.map((booking) => booking.id);
+    this.logger.log(`Found ${bookingIds.length} bookings for user`);
 
     // Find payments for these bookings
-    return this.paymentsRepository.find({
+    const payments = await this.paymentsRepository.find({
       where: { booking: { id: In(bookingIds) } },
       order: { createdAt: 'DESC' },
       relations: ['booking'],
     });
+
+    this.logger.log(`Found ${payments.length} payments for user`);
+    return payments;
   }
 
   async getPaymentByBookingId(bookingId: number): Promise<Payment> {
+    // First try to find the booking, which could be stored with a UUID
+    let booking;
+    try {
+      booking = await this.bookingService.getBookingById(bookingId);
+    } catch (err) {
+      this.logger.warn(`Booking with numeric ID ${bookingId} not found, trying UUID lookup: ${err.message}`);
+      try {
+        // Try with string in case it's a UUID
+        booking = await this.bookingService.getBookingByBookingId(String(bookingId));
+      } catch (err2) {
+        this.logger.error(`Payment lookup failed: Booking ${bookingId} not found: ${err2.message}`);
+        throw new NotFoundException(`Payment for booking ${bookingId} not found - booking does not exist`);
+      }
+    }
+
+    // Now get the payment using the booking's numeric ID
     const payment = await this.paymentsRepository.findOne({
-      where: { bookingId },
+      where: { bookingId: booking.id },
     });
 
     if (!payment) {

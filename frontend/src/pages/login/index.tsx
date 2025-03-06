@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useLogin } from "@refinedev/core";
+import { useLogin, useNotification } from "@refinedev/core";
 import {
   TextField,
   Typography,
@@ -35,7 +35,8 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { handleError } = useErrorHandler();
-  const { mutate: login } = useLogin();
+  const { mutateAsync: login } = useLogin();
+  const { open } = useNotification();
 
   const {
     register,
@@ -49,8 +50,24 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      await login(data);
-      // AuthProvider's login will handle the redirect
+      const response = await login(data);
+      
+      if (response.success) {
+        const role = localStorage.getItem('role');
+        if (role === 'admin') {
+          navigate('/admin');
+        } else if (role === 'user') {
+          navigate('/user-dashboard');
+        } else {
+          setError('Invalid user role');
+        }
+        
+        const username = localStorage.getItem('username');
+        open?.({
+          message: `Welcome back, ${username}!`,
+          type: "success",
+        });
+      }
     } catch (err) {
       setError(handleError(err));
     }

@@ -14,7 +14,7 @@ export class FeedbackService {
     private bookingRepository: Repository<Booking>,
   ) {}
 
-  async create(createFeedbackDto: CreateFeedbackDto, userId: number): Promise<Feedback> {
+  async create(createFeedbackDto: CreateFeedbackDto, userId: string): Promise<Feedback> {
     const booking = await this.bookingRepository.findOne({
       where: { id: createFeedbackDto.bookingId },
     });
@@ -72,11 +72,9 @@ export class FeedbackService {
     return parseFloat(result.average) || 0;
   }
 
-  async getFeedbacksByUserId(userId: string | number): Promise<Feedback[]> {
-    const id = typeof userId === 'string' ? parseInt(userId, 10) : userId;
-
+  async getFeedbacksByUserId(userId: string): Promise<Feedback[]> {
     return this.feedbackRepository.find({
-      where: { user: { id } },
+      where: { user: { id: userId } },
       order: { createdAt: 'DESC' },
       relations: ['booking'],
     });

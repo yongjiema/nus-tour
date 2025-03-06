@@ -44,18 +44,43 @@ export class PaymentsController {
   @Get('booking/:bookingId')
   @Public()
   async getPaymentByBookingId(@Param('bookingId') bookingId: string): Promise<Payment> {
-    // Convert to number only after we've handled string possibility
+    this.logger.log(`Payment lookup request for booking: ${bookingId}`);
+    // Pass the ID as is - the service will handle both string UUIDs and numeric IDs
     return this.paymentsService.getPaymentByBookingId(Number(bookingId));
+  }
+
+  @Post('complete/:bookingId')
+  @UseGuards(JwtAuthGuard)
+  async completePayment(@Param('bookingId') bookingId: string): Promise<Payment> {
+    this.logger.log(`Payment completion request for booking: ${bookingId}`);
+    return this.paymentsService.updatePaymentStatus({
+      bookingId: bookingId,
+      status: PaymentStatus.COMPLETED,
+      transactionId: `TXN-${Date.now()}`,
+    });
   }
 
   // Admin endpoints
   @UseGuards(JwtAuthGuard)
   @Post('admin/complete/:bookingId')
-  async completePayment(@Param('bookingId') bookingId: number): Promise<Payment> {
+  async completePaymentAdmin(@Param('bookingId') bookingId: number): Promise<Payment> {
     this.logger.log(`Admin payment completion request for booking: ${bookingId}`);
     return this.paymentsService.updatePaymentStatus({
       bookingId: +bookingId,
       status: PaymentStatus.COMPLETED,
     });
+  }
+
+  @Get('user')
+  @UseGuards(JwtAuthGuard)
+  async getUserPayments(@Request() req) {
+    this.logger.log(`Getting payments for user: ${JSON.stringify(req.user)}`);
+    const userId = req.user.id;
+    const payments = await this.paymentsService.getPaymentsByUserId(userId);
+    this.logger.log(`Found ${payments.length} payments for user`);
+    return {
+      data: payments,
+      total: payments.length,
+    };
   }
 }

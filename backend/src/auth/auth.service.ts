@@ -22,6 +22,7 @@ export class AuthService {
         email: user.email,
         id: user.id,
         username: user.username,
+        role: user.role,
       },
       { expiresIn: '60m' },
     );
@@ -32,6 +33,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         username: user.username,
+        role: user.role,
       },
     };
   }

@@ -142,7 +142,7 @@ const PaymentPage = () => {
     try {
       // Call the processPayment function - it handles navigation internally
       await processPayment({
-        bookingId: Number(bookingDetails.bookingId),
+        bookingId: bookingDetails.bookingId,
         amount: bookingDetails.amount,
         paymentMethod: "paynow",
       });

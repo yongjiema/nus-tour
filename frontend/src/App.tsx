@@ -118,7 +118,14 @@ function App() {
                     </Route>
 
                     <Route element={<PrivateRoute requiredRole="user" />}>
-                      <Route path="/dashboard" element={<UserDashboard />} />
+                      <Route
+                        path="/user-dashboard"
+                        element={
+                          <ThemedLayoutV2 Header={Header}>
+                            <UserDashboard />
+                          </ThemedLayoutV2>
+                        }
+                      />
                     </Route>
 
                     <Route path="/payment/:bookingId" element={<PaymentPage />} />

@@ -56,10 +56,17 @@ export const authProvider = {
 
       if (response.data.access_token) {
         localStorage.setItem("access_token", response.data.access_token);
-        const userResponse = await axiosInstance.get("/auth/profile");
-        const userRole = userResponse.data.role;
+        localStorage.setItem("role", response.data.user.role);
+        localStorage.setItem("username", response.data.user.username);
+        localStorage.setItem("userId", response.data.user.id);
+        console.log("Stored auth data:", {
+          token: response.data.access_token,
+          role: response.data.user.role,
+          username: response.data.user.username,
+          userId: response.data.user.id
+        });
 
-        if (userRole === "admin") {
+        if (response.data.user.role === "admin") {
           return {
             success: true,
             redirectTo: "/admin",
@@ -67,7 +74,7 @@ export const authProvider = {
         } else {
           return {
             success: true,
-            redirectTo: "/dashboard",
+            redirectTo: "/user-dashboard",
           };
         }
       }
@@ -80,6 +87,7 @@ export const authProvider = {
         },
       };
     } catch (error) {
+      console.error("Login error:", error);
       return {
         success: false,
         error: {
@@ -91,8 +99,11 @@ export const authProvider = {
   },
 
   logout: async () => {
-    // Clear any stored authentication data
+    // Clear all stored authentication data
     localStorage.removeItem("access_token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("username");
+    localStorage.removeItem("userId");
     
     return {
       success: true,
@@ -102,37 +113,37 @@ export const authProvider = {
   
   check: async () => {
     const pathname = window.location.pathname;
+    const token = localStorage.getItem("access_token");
+    const role = localStorage.getItem("role");
+    const id = localStorage.getItem("userId");
     
-    // Public routes that don't require authentication
+    // If no token, user is not authenticated
+    if (!token) {
+      return { 
+        authenticated: false,
+        redirectTo: "/login"
+      };
+    }
+
+    // Public routes - still return auth data if available
     if (pathname === '/' || 
         pathname === '/login' || 
         pathname === '/register' || 
         pathname.startsWith('/information') ||
         pathname === '/checkin' ||
         pathname === '/testimonials') {
-      return { authenticated: true };
+      return { 
+        authenticated: true,
+        role,
+        id
+      };
     }
     
-    // Handle booking flow - require auth for booking but allow direct access to payment/confirmation with session data
-    if (pathname.includes('/booking')) {
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        return { 
-          authenticated: false,
-          redirectTo: "/login"
-        };
-      }
-    }
-    
-    // Check token for all other routes
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      return { authenticated: true };
-    }
-    
+    // For all authenticated routes, return full auth data
     return { 
-      authenticated: false,
-      redirectTo: "/login"
+      authenticated: true,
+      role,
+      id
     };
   },
   

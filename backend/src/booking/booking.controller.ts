@@ -56,8 +56,14 @@ export class BookingController {
 
   @Get('user')
   @UseGuards(JwtAuthGuard)
-  async getUserBookings(@Request() req): Promise<Booking[]> {
-    return this.bookingService.getAllBookingByEmail(req.user.email);
+  async getUserBookings(@Request() req) {
+    this.logger.log(`Getting bookings for user: ${JSON.stringify(req.user)}`);
+    const bookings = await this.bookingService.getAllBookingByEmail(req.user.email);
+    this.logger.log(`Found ${bookings.length} bookings for user`);
+    return {
+      data: bookings,
+      total: bookings.length,
+    };
   }
 
   @Public()

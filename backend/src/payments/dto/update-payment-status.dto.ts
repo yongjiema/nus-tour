@@ -1,10 +1,9 @@
-import { IsNotEmpty, IsNumber, IsEnum, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsEnum, IsString, IsOptional } from 'class-validator';
 import { PaymentStatus } from '../../database/entities/enums';
 
 export class UpdatePaymentStatusDto {
   @IsNotEmpty()
-  @IsNumber()
-  bookingId: number;
+  bookingId: string | number;
 
   @IsNotEmpty()
   @IsEnum(PaymentStatus)
