@@ -40,6 +40,7 @@ import FeedbackList from "./pages/feedback/list";
 import TestimonialsPage from "./pages/testimonial";
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";
 
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
@@ -103,30 +104,18 @@ function App() {
                       <Route path="/testimonials" element={<TestimonialsPage />} />
                     </Route>
 
-                    <Route element={<PrivateRoute requiredRole="admin" />}>
-                      <Route
-                        path="/admin"
-                        element={
-                          <ThemedLayoutV2 Header={Header}>
-                            <Suspense fallback={<div>Loading...</div>}>
-                              <AdminDashboard />
-                            </Suspense>
-                          </ThemedLayoutV2>
-                        }
-                      />
-                      <Route path="/admin/feedback" element={<FeedbackList />} />
-                    </Route>
-
-                    <Route element={<PrivateRoute requiredRole="user" />}>
-                      <Route
-                        path="/user-dashboard"
-                        element={
-                          <ThemedLayoutV2 Header={Header}>
-                            <UserDashboard />
-                          </ThemedLayoutV2>
-                        }
-                      />
-                    </Route>
+                  <Route element={<PrivateRoute />}>
+                    <Route
+                      path="/admin"
+                      element={
+                        <ThemedLayoutV2 Header={Header}>
+                          <Suspense fallback={<div>Loading...</div>}>
+                            <AdminDashboard />
+                          </Suspense>
+                        </ThemedLayoutV2>
+                      }
+                    />
+                  </Route>
 
                     <Route path="/payment/:bookingId" element={<PaymentPage />} />
                     <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmation />} />
