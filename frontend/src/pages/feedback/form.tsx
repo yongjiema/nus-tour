@@ -14,27 +14,26 @@ import {
   FormHelperText
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { useNotification } from "@refinedev/core";
 import { useErrorHandler } from "../../utils/errorHandler";
 
 // Styled components
-const FormContainer = styled(Box)(({ theme }) => ({
+const FormContainer = styled(Box)({
   maxWidth: 500,
   margin: "0 auto",
-}));
+});
 
-const SubmitButton = styled(Button)(({ theme }) => ({
-  marginTop: theme.spacing(2),
-  backgroundColor: theme.palette.primary.main,
+const SubmitButton = styled(Button)({
+  marginTop: '16px',
+  backgroundColor: 'primary.main',
   fontWeight: 'bold',
   '&:hover': {
-    backgroundColor: theme.palette.primary.dark,
+    backgroundColor: 'primary.dark',
   },
-}));
+});
 
-const RatingContainer = styled(Box)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
-}));
+const RatingContainer = styled(Box)({
+  marginBottom: '24px',
+});
 
 interface FeedbackFormProps {
   bookingId: number;
@@ -63,7 +62,6 @@ const feedbackSchema = yup.object().shape({
 });
 
 const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => {
-  const { open } = useNotification();
   const { handleError } = useErrorHandler();
 
   // Use Refine's useForm hook which combines React Hook Form with Refine data providers

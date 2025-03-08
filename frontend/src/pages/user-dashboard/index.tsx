@@ -6,7 +6,7 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/system";
 import { useNavigate } from "react-router-dom";
-import { useApiUrl, useList } from "@refinedev/core";
+import { useList } from "@refinedev/core";
 import { authProvider } from "../../authProvider";
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import PaymentIcon from '@mui/icons-material/Payment';
@@ -24,29 +24,25 @@ interface TabPanelProps {
   children: React.ReactNode;
   value: number;
   index: number;
-  [key: string]: any;
-}
-
-interface AuthCheckResponse {
-  authenticated: boolean;
-  id: string;
-  role: string;
+  'aria-controls'?: string;
+  'aria-labelledby'?: string;
+  role?: string;
 }
 
 // Styled components for consistent UI
-const DashboardContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(3),
-}));
+const DashboardContainer = styled(Box)({
+  padding: '24px',
+});
 
-const StatusChip = styled(Chip)(({ theme }) => ({
+const StatusChip = styled(Chip)({
   fontWeight: 'medium',
-}));
+});
 
-const SectionTitle = styled(Typography)(({ theme }) => ({
+const SectionTitle = styled(Typography)({
   fontWeight: 'bold',
-  marginBottom: theme.spacing(2),
+  marginBottom: '16px',
   color: '#002147', // NUS blue
-}));
+});
 
 const DashboardCard = styled(Card)({
   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
@@ -56,10 +52,10 @@ const DashboardCard = styled(Card)({
   }
 });
 
-const ActionButton = styled(Button)(({ theme }) => ({
+const ActionButton = styled(Button)({
   fontWeight: 'bold',
   textTransform: 'none',
-}));
+});
 
 // TabPanel component
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
@@ -73,7 +69,6 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 // Main component
 const UserDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const apiUrl = useApiUrl();
   const [tabValue, setTabValue] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +82,7 @@ const UserDashboard: React.FC = () => {
     error: bookingsErrorData,
     refetch: refetchBookings,
   } = useList<Booking>({
-    resource: "bookings/user",
+    resource: "bookings",
     queryOptions: {
       enabled: !!userId,
       onError: (error) => {
@@ -111,7 +106,7 @@ const UserDashboard: React.FC = () => {
     isError: paymentsError,
     error: paymentsErrorData,
   } = useList<Payment>({
-    resource: "payments/user",
+    resource: "payments",
     queryOptions: {
       enabled: !!userId,
       onError: (error) => {
@@ -135,7 +130,7 @@ const UserDashboard: React.FC = () => {
     error: feedbacksErrorData,
     refetch: refetchFeedbacks,
   } = useList<Feedback>({
-    resource: "feedbacks/user",
+    resource: "feedback/user",
     queryOptions: {
       enabled: !!userId,
       onError: (error) => {

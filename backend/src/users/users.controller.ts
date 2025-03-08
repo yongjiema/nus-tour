@@ -12,16 +12,14 @@ export class UsersController {
   @Get('profile')
   async getProfile(@Req() req: any) {
     const user = await this.usersService.findById(req.user.id);
-    const { id, username, email, role } = user;
-    return { id, username, email, role };
+    return user;
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('profile')
   async updateProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     const updatedUser = await this.usersService.update(req.user.id, updateUserDto);
-    const { id, username, email, role } = updatedUser;
-    return { id, username, email, role };
+    return updatedUser;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -35,6 +33,6 @@ export class UsersController {
   @Get()
   async getAllUsers(): Promise<UserResponseDto[]> {
     const users = await this.usersService.findAll();
-    return users.map(({ id, username, email, role }) => ({ id, username, email, role }));
+    return users;
   }
 }

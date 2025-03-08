@@ -1,10 +1,13 @@
 import axios, { AxiosError } from "axios";
-import { useNotification } from "@refinedev/core";
 
 interface ApiErrorResponse {
-  message?: string;
+  message?: string | string[];
   error?: string;
   statusCode?: number;
+  data?: {
+    error?: string;
+  };
+  status?: number;
 }
 
 export const getErrorMessage = (error: unknown): string => {
@@ -15,7 +18,7 @@ export const getErrorMessage = (error: unknown): string => {
     if (axiosError.response?.status === 400) {
       const errorData = axiosError.response.data;
       if (Array.isArray(errorData.message)) {
-        return errorData.message.join(', ');
+        return errorData.message.join(", ");
       }
       return errorData.message || "Validation error. Please check your input.";
     }
@@ -41,7 +44,7 @@ export const getErrorMessage = (error: unknown): string => {
     }
 
     // Network errors
-    if (axiosError.code === 'ECONNABORTED') {
+    if (axiosError.code === "ECONNABORTED") {
       return "Request timed out. Please check your connection.";
     }
 
@@ -58,22 +61,22 @@ export const getErrorMessage = (error: unknown): string => {
   return "An unexpected error occurred.";
 };
 
-export const handleSubmissionError = (error: unknown, setError: (error: string) => void) => {
+export const handleSubmissionError = (
+  error: unknown,
+  setError: (error: string) => void
+) => {
   const message = getErrorMessage(error);
   setError(message);
   console.error("Form submission error:", error);
 };
 
 export const useErrorHandler = () => {
-  const { open } = useNotification();
-
-  const handleError = (error: any) => {
+  const handleError = (error: unknown) => {
     console.error("API Error:", error);
 
-    const message = error.response?.data?.message || error.message || "An unexpected error occurred";
-
-    if (typeof error === 'object' && error !== null) {
-      const err = error as any;
+    if (typeof error === "object" && error !== null) {
+      const err = error as ApiErrorResponse;
+      const message = err.message || "An unexpected error occurred";
 
       // Handle fetch errors
       if (err.status === 409) {
@@ -85,24 +88,24 @@ export const useErrorHandler = () => {
       }
 
       // Handle booking-specific errors
-      if (err.data?.error === 'BOOKING_CONFLICT') {
+      if (err.data?.error === "BOOKING_CONFLICT") {
         return "This time slot is no longer available. Please select another time.";
       }
 
-      if (err.data?.error === 'BOOKING_LIMIT_EXCEEDED') {
+      if (err.data?.error === "BOOKING_LIMIT_EXCEEDED") {
         return "You've reached the maximum number of active bookings allowed.";
       }
 
       // Handle payment-specific errors
-      if (err.data?.error === 'PAYMENT_FAILED') {
+      if (err.data?.error === "PAYMENT_FAILED") {
         return "Payment processing failed. Please try again or use a different payment method.";
       }
 
-      if (err.data?.error === 'PAYMENT_EXPIRED') {
+      if (err.data?.error === "PAYMENT_EXPIRED") {
         return "Your payment session has expired. Please start a new booking.";
       }
 
-      return Array.isArray(message) ? message.join(' ') : message;
+      return Array.isArray(message) ? message.join(" ") : message;
     }
 
     return "An unexpected error occurred";

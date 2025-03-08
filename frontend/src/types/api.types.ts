@@ -11,7 +11,7 @@ export interface UserProfile {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'user';
+  role: "admin" | "user";
   createdAt: string;
   updatedAt: string;
 }
@@ -22,7 +22,7 @@ export interface Booking {
   date: string;
   timeSlot: string;
   groupSize: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: "pending" | "confirmed" | "completed" | "cancelled";
   hasFeedback: boolean;
   userId: string;
   user?: UserProfile;
@@ -41,8 +41,8 @@ export interface BookingsResponse {
 export interface Payment {
   id: number;
   amount: number;
-  status: 'pending' | 'completed' | 'failed';
-  method: 'credit_card' | 'paypal' | 'bank_transfer';
+  status: "pending" | "completed" | "failed";
+  method: "credit_card" | "paypal" | "bank_transfer";
   bookingId: number;
   userId: string;
   createdAt: string;
@@ -79,20 +79,19 @@ export interface DashboardStats {
   feedbacks: number;
 }
 
-export interface DashboardStatsResponse {
+export interface DashboardApiResponse {
   data: DashboardStats;
 }
 
 export interface ActivityItem {
   id: string | number;
-  type: 'booking' | 'payment' | 'feedback' | 'check-in';
+  type: string;
   description: string;
-  timestamp: string;
+  timestamp: string | Date;
 }
 
-export interface ActivityResponse {
+export interface ActivityApiResponse {
   data: ActivityItem[];
-  total: number;
 }
 
 // Auth related types

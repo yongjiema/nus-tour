@@ -1,6 +1,7 @@
 import { Controller, Get, UseGuards, Request, Patch, Query, Param, Body } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { BookingStatus } from '../../database/entities/enums';
 
 @Controller('admin/bookings')
 @UseGuards(JwtAuthGuard) // Protect with authentication
@@ -21,6 +22,6 @@ export class BookingController {
   // Update booking status (e.g., Confirm, Cancel, Check-in)
   @Patch(':id')
   async updateBookingStatus(@Param('id') id: string, @Body('status') status: string) {
-    return this.bookingService.updateBookingStatus(id, status);
+    return this.bookingService.updateBookingStatus(id, status as BookingStatus);
   }
 }

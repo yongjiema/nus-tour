@@ -124,12 +124,6 @@ const Login: React.FC = () => {
                 {isSubmitting ? "Logging in..." : "Login"}
               </SubmitButton>
             </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="body2" align="center">
-                Don't have an account? <Link href="/register">Register</Link>
-              </Typography>
-            </Grid>
           </Grid>
         </form>
       </AuthPaper>

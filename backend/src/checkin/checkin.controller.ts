@@ -2,7 +2,7 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { CheckinService } from './checkin.service';
 import { CheckinDto } from './dto/checkin.dto';
 
-@Controller('checkin')
+@Controller('checkins')
 export class CheckinController {
   constructor(private readonly checkinService: CheckinService) {}
 

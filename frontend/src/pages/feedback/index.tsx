@@ -1,5 +1,6 @@
 import React from "react";
 import { useForm } from "@refinedev/react-hook-form";
+import { SubmitHandler } from "react-hook-form";
 import {
   Box, Button, TextField, Typography,
   Rating, FormControlLabel, Checkbox, Paper
@@ -11,8 +12,15 @@ interface FeedbackFormProps {
   onSuccess?: () => void;
 }
 
+interface FeedbackFormData {
+  bookingId: number;
+  rating: number;
+  comments: string;
+  isPublic: boolean;
+}
+
 const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => {
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FeedbackFormData>({
     defaultValues: {
       bookingId,
       rating: 5,
@@ -24,7 +32,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
   const { mutate, isLoading } = useCreate();
   const rating = watch("rating");
 
-  const onSubmit = (data: any) => {
+  const onSubmit: SubmitHandler<FeedbackFormData> = (data) => {
     mutate(
       {
         resource: "bookings",

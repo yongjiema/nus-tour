@@ -3,12 +3,26 @@ import {
   List, ListItem, Divider, Typography, Rating,
   Box, Chip, IconButton, Paper
 } from "@mui/material";
-import { useList, useUpdate } from "@refinedev/core";
+import { useList, useUpdate, BaseRecord } from "@refinedev/core";
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
+interface Feedback extends BaseRecord {
+  id: number;
+  rating: number;
+  comments: string;
+  isPublic: boolean;
+  createdAt: string;
+  booking?: {
+    tourName?: string;
+  };
+  user?: {
+    name?: string;
+  };
+}
+
 const FeedbackList: React.FC = () => {
-  const { data, isLoading, refetch } = useList({
+  const { data, isLoading, refetch } = useList<Feedback>({
     resource: "feedback",
     pagination: { current: 1, pageSize: 10 },
   });
@@ -37,7 +51,7 @@ const FeedbackList: React.FC = () => {
           Customer Feedback
         </Typography>
         <List>
-          {data?.data.map((feedback: any) => (
+          {data?.data.map((feedback) => (
             <React.Fragment key={feedback.id}>
               <ListItem alignItems="flex-start">
                 <Box width="100%">

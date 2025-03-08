@@ -28,7 +28,6 @@ interface Feedback {
   createdAt: string;
 }
 
-// Styled components for consistent UI
 const PageTitle = styled(Typography)(({ theme }) => ({
   color: '#002147', // NUS blue
   fontWeight: 'bold',
@@ -66,7 +65,6 @@ const TestimonialsPage: React.FC = () => {
     resource: "feedback",
     filters: [{ field: "isPublic", operator: "eq", value: true }],
     pagination: { current: 1, pageSize: 50 },
-    sort: [{ field: "createdAt", order: "desc" }],
   });
 
   if (isLoading) {
@@ -92,9 +90,9 @@ const TestimonialsPage: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box textAlign="center">
-        <PageTitle variant="h3" component="h1" gutterBottom>
+        <Typography variant="h3" component="h1" gutterBottom>
           What Our Visitors Say
-        </PageTitle>
+        </Typography>
         <PageSubtitle variant="subtitle1">
           Read testimonials from visitors who've experienced our campus tours
         </PageSubtitle>

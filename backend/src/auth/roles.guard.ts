@@ -22,14 +22,17 @@ export class RolesGuard implements CanActivate {
     const { user } = context.switchToHttp().getRequest();
 
     // Make sure user exists and has roles
-    if (!user || !user.roles) {
+    if (!user || (!user.roles && !user.role)) {
       throw new ForbiddenException('User has no roles assigned');
     }
 
-    // Check if user has any of the required roles
-    const hasRequiredRole = requiredRoles.some((role) =>
-      Array.isArray(user.roles) ? user.roles.includes(role) : user.roles === role,
-    );
+    // Normalize user roles to uppercase array
+    const userRoles = Array.isArray(user.roles)
+      ? user.roles.map((role) => role.toUpperCase())
+      : [user.role.toUpperCase()];
+
+    // Check if user has any of the required roles (case-insensitive)
+    const hasRequiredRole = requiredRoles.some((role) => userRoles.includes(role.toUpperCase()));
 
     if (!hasRequiredRole) {
       throw new ForbiddenException('You do not have permission to access this resource');

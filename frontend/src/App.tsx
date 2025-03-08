@@ -33,14 +33,15 @@ import { BookingForm } from "./pages/booking";
 import BookingConfirmation from "./pages/booking/Confirmation";
 import PaymentPage from "./pages/payment";
 import Checkin from "./pages/checkin";
-import * as dataProviders from "./dataProviders";
+import dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
-import UserDashboard from "./pages/user-dashboard";
-import FeedbackList from "./pages/feedback/list";
 import TestimonialsPage from "./pages/testimonial";
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import UserDashboard from "./pages/user-dashboard";
+import { UserRole } from "./types/auth.types";
 import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";
+import CheckInManagement from "./pages/admin-dashboard/check-in/checkInManagement";
 
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
@@ -56,7 +57,7 @@ function App() {
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <Refine
                   authProvider={authProvider}
-                  dataProvider={dataProviders.backend}
+                  dataProvider={dataProviders}
                   notificationProvider={notificationProvider}
                   routerProvider={routerBindings}
                   resources={[
@@ -104,18 +105,44 @@ function App() {
                       <Route path="/testimonials" element={<TestimonialsPage />} />
                     </Route>
 
-                  <Route element={<PrivateRoute />}>
-                    <Route
-                      path="/admin"
-                      element={
-                        <ThemedLayoutV2 Header={Header}>
-                          <Suspense fallback={<div>Loading...</div>}>
-                            <AdminDashboard />
-                          </Suspense>
-                        </ThemedLayoutV2>
-                      }
-                    />
-                  </Route>
+                    {/* Admin Routes */}
+                    <Route element={<PrivateRoute requiredRole={UserRole.ADMIN} />}>
+                      <Route
+                        path="/admin"
+                        element={
+                          <ThemedLayoutV2 Header={Header}>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <AdminDashboard />
+                            </Suspense>
+                          </ThemedLayoutV2>
+                        }
+                      />
+                      <Route
+                        path="/admin/bookings"
+                        element={
+                          <ThemedLayoutV2 Header={Header}>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <BookingManagement />
+                            </Suspense>
+                          </ThemedLayoutV2>
+                        }
+                      />
+                      <Route
+                        path="/admin/check-ins"
+                        element={
+                          <ThemedLayoutV2 Header={Header}>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <CheckInManagement />
+                            </Suspense>
+                          </ThemedLayoutV2>
+                        }
+                      />
+                    </Route>
+
+                    {/* User Routes */}
+                    <Route element={<PrivateRoute requiredRole={UserRole.USER} />}>
+                      <Route path="/user-dashboard" element={<UserDashboard />} />
+                    </Route>
 
                     <Route path="/payment/:bookingId" element={<PaymentPage />} />
                     <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmation />} />

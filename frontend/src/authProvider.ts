@@ -1,4 +1,6 @@
 import axiosInstance from "./axiosConfig";
+import { HttpError } from "@refinedev/core";
+import { UserRole, LoginResponse } from "./types/auth.types";
 
 // Add a flag to prevent cascading refresh attempts
 let isRefreshing = false;
@@ -6,6 +8,15 @@ let isRefreshing = false;
 interface LoginCredentials {
   email: string;
   password: string;
+}
+
+interface ApiError extends HttpError {
+  message: string;
+  statusCode: number;
+  response?: {
+    status: number;
+    data?: unknown;
+  };
 }
 
 axiosInstance.interceptors.request.use((config) => {
@@ -22,12 +33,12 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       // Don't try to refresh if we're already doing so
       if (isRefreshing) {
         return Promise.reject(error);
       }
-      
+
       try {
         const refreshResponse = await authProvider.refresh();
         if (refreshResponse.success) {
@@ -49,24 +60,29 @@ axiosInstance.interceptors.response.use(
 export const authProvider = {
   login: async ({ email, password }: LoginCredentials) => {
     try {
-      const response = await axiosInstance.post("/auth/login", {
+      const response = await axiosInstance.post<LoginResponse>("/auth/login", {
         email,
         password,
       });
 
       if (response.data.access_token) {
+        // Normalize the role to uppercase to match enum
+        const normalizedRole =
+          response.data.user.role.toUpperCase() as UserRole;
+
         localStorage.setItem("access_token", response.data.access_token);
-        localStorage.setItem("role", response.data.user.role);
+        localStorage.setItem("role", normalizedRole);
         localStorage.setItem("username", response.data.user.username);
         localStorage.setItem("userId", response.data.user.id);
+
         console.log("Stored auth data:", {
           token: response.data.access_token,
-          role: response.data.user.role,
+          role: normalizedRole,
           username: response.data.user.username,
-          userId: response.data.user.id
+          userId: response.data.user.id,
         });
 
-        if (response.data.user.role === "admin") {
+        if (normalizedRole === UserRole.ADMIN) {
           return {
             success: true,
             redirectTo: "/admin",
@@ -99,58 +115,82 @@ export const authProvider = {
   },
 
   logout: async () => {
-    // Clear all stored authentication data
     localStorage.removeItem("access_token");
     localStorage.removeItem("role");
     localStorage.removeItem("username");
     localStorage.removeItem("userId");
-    
+
     return {
       success: true,
       redirectTo: "/login",
     };
   },
-  
+
   check: async () => {
     const pathname = window.location.pathname;
     const token = localStorage.getItem("access_token");
-    const role = localStorage.getItem("role");
+    const storedRole = localStorage.getItem("role");
     const id = localStorage.getItem("userId");
-    
+
+    // Normalize the role to match enum
+    const role = storedRole ? (storedRole.toUpperCase() as UserRole) : null;
+
     // If no token, user is not authenticated
     if (!token) {
-      return { 
+      return {
         authenticated: false,
-        redirectTo: "/login"
+        redirectTo: "/login",
       };
     }
 
     // Public routes - still return auth data if available
-    if (pathname === '/' || 
-        pathname === '/login' || 
-        pathname === '/register' || 
-        pathname.startsWith('/information') ||
-        pathname === '/checkin' ||
-        pathname === '/testimonials') {
-      return { 
+    if (
+      pathname === "/" ||
+      pathname === "/login" ||
+      pathname === "/register" ||
+      pathname.startsWith("/information") ||
+      pathname === "/checkin" ||
+      pathname === "/testimonials"
+    ) {
+      return {
         authenticated: true,
         role,
-        id
+        id,
       };
     }
-    
-    // For all authenticated routes, return full auth data
-    return { 
+
+    // Check if user is trying to access admin routes without admin role
+    if (pathname.startsWith("/admin") && role !== UserRole.ADMIN) {
+      return {
+        authenticated: true,
+        redirectTo: "/user-dashboard",
+        role,
+        id,
+      };
+    }
+
+    // Check if user is trying to access user routes with admin role
+    if (pathname === "/user-dashboard" && role === UserRole.ADMIN) {
+      return {
+        authenticated: true,
+        redirectTo: "/admin",
+        role,
+        id,
+      };
+    }
+
+    // For all other authenticated routes, return full auth data
+    return {
       authenticated: true,
       role,
-      id
+      id,
     };
   },
-  
+
   refresh: async () => {
     if (isRefreshing) return { success: false };
     isRefreshing = true;
-    
+
     try {
       const response = await axiosInstance.post("/auth/refresh");
       if (response.data.access_token) {
@@ -163,7 +203,7 @@ export const authProvider = {
     }
   },
 
-  onError: async (error: any) => {
+  onError: async (error: ApiError) => {
     const status = error?.response?.status;
 
     if (status === 401) {
@@ -176,7 +216,7 @@ export const authProvider = {
         return {
           logout: true,
           redirectTo: "/login",
-          error
+          error,
         };
       }
     }
@@ -184,7 +224,7 @@ export const authProvider = {
     if (status === 403) {
       return {
         redirectTo: "/unauthorized",
-        error
+        error,
       };
     }
 

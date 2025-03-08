@@ -3,18 +3,19 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useIsAuthenticated } from "@refinedev/core";
 import { authProvider } from "../../authProvider";
 import { CircularProgress, Box } from "@mui/material";
+import { UserRole } from "../../types/auth.types";
 
 interface AuthCheckResponse {
   authenticated: boolean;
   redirectTo?: string;
-  role?: string;
+  role?: UserRole;
 }
 
-const PrivateRoute: React.FC<{ requiredRole?: "admin" | "user" }> = ({
+const PrivateRoute: React.FC<{ requiredRole?: UserRole }> = ({
   requiredRole
 }) => {
   const { isLoading, data: isAuthenticated } = useIsAuthenticated();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [checkingRole, setCheckingRole] = useState(true);
 
   useEffect(() => {
@@ -65,9 +66,9 @@ const PrivateRoute: React.FC<{ requiredRole?: "admin" | "user" }> = ({
   }
 
   // Check role-specific access if requiredRole is provided
-  if (requiredRole && userRole?.toLowerCase() !== requiredRole.toLowerCase()) {
+  if (requiredRole && userRole !== requiredRole) {
     console.log(`Role mismatch - Required: ${requiredRole}, Current: ${userRole}`);
-    return userRole?.toLowerCase() === "admin"
+    return userRole === UserRole.ADMIN
       ? <Navigate to="/admin" />
       : <Navigate to="/user-dashboard" />;
   }

@@ -8,8 +8,10 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import EventIcon from '@mui/icons-material/Event';
 import PersonIcon from '@mui/icons-material/Person';
 import FeedbackIcon from '@mui/icons-material/Feedback';
-import { formatDateDisplay, formatTimeAgo } from "../../utils/dateUtils";
+import { formatDateDisplay } from "../../utils/dateUtils";
 import { useErrorHandler } from "../../utils/errorHandler";
+import { UserRole } from "../../types/auth.types";
+import { DashboardStats, DashboardApiResponse, ActivityItem, ActivityApiResponse } from "../../types/api.types";
 
 // Import individual components from recharts for better tree-shaking
 import {
@@ -24,20 +26,20 @@ import {
 } from 'recharts';
 
 // Styled components
-const DashboardContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(3),
-}));
+const DashboardContainer = styled(Box)({
+  padding: '24px',
+});
 
-const SectionTitle = styled(Typography)(({ theme }) => ({
+const SectionTitle = styled(Typography)({
   fontWeight: 'bold',
   color: '#002147', // NUS blue
-  marginBottom: theme.spacing(2),
-}));
+  marginBottom: '16px',
+});
 
-const StatCard = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
+const StatCard = styled(Paper)({
+  padding: '16px',
   textAlign: "center",
-  color: theme.palette.text.secondary,
+  color: 'text.secondary',
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
@@ -45,51 +47,28 @@ const StatCard = styled(Paper)(({ theme }) => ({
   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
   '&:hover': {
     transform: 'translateY(-4px)',
-    boxShadow: theme.shadows[4],
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
   }
-}));
+});
 
-const StatValue = styled(Typography)(({ theme }) => ({
+const StatValue = styled(Typography)({
   fontWeight: 'bold',
-  color: theme.palette.primary.main,
-  marginTop: theme.spacing(1),
-}));
+  color: 'primary.main',
+  marginTop: '8px',
+});
 
-const ActionButton = styled(Button)(({ theme }) => ({
+const ActionButton = styled(Button)({
   textTransform: 'none',
   fontWeight: 'bold',
-}));
+});
 
-const ChartContainer = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
+const ChartContainer = styled(Paper)({
+  padding: '16px',
   height: '100%',
-}));
-
-// Interfaces
-interface ActivityItem {
-  id: string | number;
-  type: string;
-  description: string;
-  timestamp: string | Date;
-}
-
-interface DashboardStatsData {
-  totalBookings: number;
-  pendingCheckIns: number;
-  completedTours: number;
-  feedbacks: number;
-}
-
-interface DashboardResponse {
-  data: DashboardStatsData;
-}
-
-interface ActivityResponse {
-  data: ActivityItem[];
-}
+});
 
 // Component for statistics cards
-const StatCards: React.FC<{ stats: DashboardStatsData, isLoading: boolean }> = ({ stats, isLoading }) => {
+const StatCards: React.FC<{ stats: DashboardStats, isLoading: boolean }> = ({ stats, isLoading }) => {
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -225,7 +204,7 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const apiUrl = useApiUrl();
   const { handleError } = useErrorHandler();
-  const [dashboardStats, setDashboardStats] = useState<DashboardStatsData>({
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalBookings: 0,
     pendingCheckIns: 0,
     completedTours: 0,
@@ -234,56 +213,56 @@ const AdminDashboard: React.FC = () => {
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
   // Using Refine's useCustom hook for data fetching
-  const { data, isLoading, error, refetch } = useCustom<DashboardResponse>({
-    url: `${apiUrl}/dashboard/stats`,
+  const { data: apiResponse, isLoading, error, refetch } = useCustom<{ data: DashboardStats }>({
+    url: `${apiUrl}/admin/dashboard/stats`,
     method: "get",
     queryOptions: {
       retry: 1,
-      onError: handleError
+      onError: (error) => {
+        console.error("Dashboard stats error:", error);
+        handleError(error);
+      }
     }
   });
 
   const {
-    data: activityData,
+    data: activityResponse,
     isLoading: activityLoading,
     refetch: refetchActivity
-  } = useCustom<ActivityResponse>({
-    url: `${apiUrl}/dashboard/recent-activity`,
+  } = useCustom<{ data: ActivityItem[] }>({
+    url: `${apiUrl}/admin/dashboard/recent-activity`,
     method: "get",
     queryOptions: {
       retry: 1,
-      onError: handleError
+      onError: (error) => {
+        console.error("Recent activity error:", error);
+        handleError(error);
+      }
     }
   });
 
   useEffect(() => {
-    if (data?.data) {
+    console.log('Dashboard stats response:', apiResponse);
+    if (apiResponse?.data?.data) {
+      console.log('Stats data:', apiResponse.data.data);
+      const stats = apiResponse.data.data;
       setDashboardStats({
-        totalBookings: Number(data.data.totalBookings) || 0,
-        pendingCheckIns: Number(data.data.pendingCheckIns) || 0,
-        completedTours: Number(data.data.completedTours) || 0,
-        feedbacks: Number(data.data.feedbacks) || 0,
+        totalBookings: stats.totalBookings,
+        pendingCheckIns: stats.pendingCheckIns,
+        completedTours: stats.completedTours,
+        feedbacks: stats.feedbacks,
       });
     }
-  }, [data]);
+  }, [apiResponse]);
 
   useEffect(() => {
-    if (activityData?.data) {
-      setRecentActivity(activityData.data.data || []);
+    console.log('Activity response:', activityResponse);
+    if (activityResponse?.data) {
+      // Ensure we're getting an array and handle empty data case
+      const activities = Array.isArray(activityResponse.data) ? activityResponse.data : [];
+      setRecentActivity(activities);
     }
-  }, [activityData]);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const result = await authProvider.check();
-      if (!result.authenticated && result.redirectTo) {
-        navigate(result.redirectTo);
-      } else if (result.role !== 'admin') {
-        navigate('/dashboard');
-      }
-    };
-    checkAuth();
-  }, [navigate]);
+  }, [activityResponse]);
 
   const handleRefresh = () => {
     refetch();

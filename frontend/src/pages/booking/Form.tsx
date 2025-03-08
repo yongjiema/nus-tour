@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Controller, SubmitHandler } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useApiUrl } from "@refinedev/core";
 import * as yup from "yup";
@@ -52,7 +52,6 @@ const BookingForm: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  const [validSession, setValidSession] = useState(false);
 
   const {
     refineCore: { formLoading },
@@ -61,7 +60,7 @@ const BookingForm: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<BookingFormData>({
-    resolver: yupResolver(bookingSchema) as any,
+    resolver: yupResolver(bookingSchema),
     refineCoreProps: {
       action: "create",
       resource: "bookings",
@@ -74,7 +73,7 @@ const BookingForm: React.FC = () => {
     },
   });
 
-  const onSubmit: SubmitHandler<BookingFormData> = async (data) => {
+  const onSubmit = async (data: BookingFormData) => {
     setError("");
     setSuccess(false);
     
@@ -256,11 +255,9 @@ const BookingForm: React.FC = () => {
     if (isValidReferrer) {
       // Mark this session as valid for potential page refreshes
       sessionStorage.setItem("booking_flow_valid", "true");
-      setValidSession(true);
     } else {
       // Allow the user to proceed but show a notice
       console.log("User accessed booking page directly");
-      setValidSession(true);
       setError("For the best experience, start from the home page. You may continue with your booking.");
       setTimeout(() => setError(""), 5000);
     }
@@ -269,7 +266,7 @@ const BookingForm: React.FC = () => {
   return (
     <Box
       component="form"
-      onSubmit={handleSubmit(onSubmit as any)}
+      onSubmit={handleSubmit(onSubmit)}
       sx={{ maxWidth: 600, margin: "0 auto" }}
     >
       {success && (
