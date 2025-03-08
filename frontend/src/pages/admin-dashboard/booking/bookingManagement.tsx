@@ -3,9 +3,9 @@ import {
   Container, Typography, TextField, Button, MenuItem, Grid, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Select, FormControl, InputLabel, Alert
 } from "@mui/material";
-import { styled } from "@mui/material/styles"; // Use styled from @mui/material/styles
+import { styled } from "@mui/material/styles";
 import * as dataProviders from "../../../dataProvider";
-import { CrudFilters, CrudOperators } from "@refinedev/core";
+import { CrudFilters } from "@refinedev/core";
 
 const RemoveButton = styled(Button)({
   backgroundColor: "red",
@@ -39,29 +39,27 @@ const CheckOutButton = styled(Button)({
   },
 });
 
-const BookingManagement = () => {
-  interface Booking {
-    bookingId: string;
-    name: string;
-    email: string;
-    date: string;
-    timeSlot: string;
-    groupSize: number;
-    deposit: number;
-    hasFeedback: boolean;
-    bookingStatus: string;
-    createdAt: Date;
-    paymentStatus: string;
-    checkedIn: boolean;
-  }
+interface Booking {
+  bookingId: string;
+  name: string;
+  email: string;
+  date: string;
+  timeSlot: string;
+  groupSize: number;
+  deposit: number;
+  hasFeedback: boolean;
+  bookingStatus: string;
+  createdAt: Date;
+  paymentStatus: string;
+  checkedIn: boolean;
+}
 
+const BookingManagement = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const getToken = () => localStorage.getItem("access_token"); // Fetch token from local storage
 
   const fetchBookings = useCallback(async () => {
     try {

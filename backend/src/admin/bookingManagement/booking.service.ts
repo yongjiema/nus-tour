@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from '../../database/entities/booking.entity';
+import { BookingStatus } from '../../database/entities/enums';
 
 @Injectable()
 export class BookingService {
@@ -30,7 +31,7 @@ export class BookingService {
     return this.bookingRepository.find();
   }
 
-  async updateBookingStatus(id: string, bookingStatus: string) {
+  async updateBookingStatus(id: string, bookingStatus: BookingStatus) {
     const booking = await this.bookingRepository.findOne({ where: { bookingId: id } });
 
     if (!booking) {

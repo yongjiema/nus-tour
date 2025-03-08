@@ -8,6 +8,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { TokenBlacklistService } from './token-blacklist.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthController } from './auth.controller';
+import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [
@@ -22,8 +23,8 @@ import { AuthController } from './auth.controller';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, TokenBlacklistService, JwtAuthGuard],
+  providers: [AuthService, JwtStrategy, TokenBlacklistService, JwtAuthGuard, RolesGuard],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule, TokenBlacklistService, JwtAuthGuard],
+  exports: [AuthService, JwtModule, TokenBlacklistService, JwtAuthGuard, JwtStrategy, RolesGuard],
 })
 export class AuthModule {}

@@ -7,7 +7,7 @@ import { IsEmail, IsNotEmpty } from 'class-validator';
 @Check('CHK_username_not_empty', "username <> ''")
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: number;
+  id: string;
 
   @Column()
   @IsNotEmpty({ message: 'Username should not be empty' })

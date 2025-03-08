@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
+import { AppController, DashboardController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './users/users.module';
@@ -9,10 +9,9 @@ import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { PaymentsModule } from './payments/payments.module';
 import { BookingManagementModule } from './admin/bookingManagement/booking.module';
-import { User } from './database/entities/user.entity';
-import { Booking } from './database/entities/booking.entity';
-import { Payment } from './database/entities/payments.entity';
 import { CheckinModule } from './checkin/checkin.module';
+import { FeedbackModule } from './feedback/feedback.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import config from '../ormconfig';
 
 @Module({
@@ -20,18 +19,20 @@ import config from '../ormconfig';
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       ...config,
-      entities: [User, Booking, Payment],
+      autoLoadEntities: true,
+      synchronize: true,
     }),
     DatabaseModule,
     UsersModule,
     AuthModule,
-    TypeOrmModule.forFeature([Booking]),
     BookingModule,
     PaymentsModule,
     BookingManagementModule,
     CheckinModule,
+    FeedbackModule,
+    DashboardModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, DashboardController],
   providers: [AppService],
 })
 export class AppModule {}

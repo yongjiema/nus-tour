@@ -1,7 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, Check } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, Check, OneToOne, CreateDateColumn } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+import { Checkin } from './checkin.entity';
+import { Payment } from './payments.entity';
+import { PaymentStatus, BookingStatus } from './enums';
 
-@Entity()
+@Entity('booking')
 @Check('CHK_email_format', "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'")
 @Check('CHK_groupSize_range', '"groupSize" > 0 AND "groupSize" <= 50')
 @Check(
@@ -22,7 +25,7 @@ export class Booking {
   email: string;
 
   @Column({ type: 'date' })
-  date: string;
+  date: Date; // The date of the booking itself
 
   @Column()
   groupSize: number;
@@ -36,17 +39,28 @@ export class Booking {
   @Column({ default: false })
   hasFeedback: boolean;
 
-  @Column({ default: 'pending' })
-  bookingStatus: string;
+  @Column({
+    type: 'enum',
+    enum: BookingStatus,
+    default: BookingStatus.PENDING,
+  })
+  bookingStatus: BookingStatus;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+  })
+  paymentStatus: PaymentStatus;
 
-  @Column({ default: 'pending' })
-  paymentStatus: string;
+  @CreateDateColumn()
+  createdAt: Date; // When the booking record was created
 
-  @Column({ default: false })
-  checkedIn: boolean;
+  @OneToOne(() => Checkin, (checkin) => checkin.booking, { nullable: true })
+  checkin: Checkin;
+
+  @OneToOne(() => Payment, (payment) => payment.booking, { nullable: true })
+  payment: Payment;
 
   @BeforeInsert()
   generateBookingId() {
