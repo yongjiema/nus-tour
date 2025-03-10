@@ -1,49 +1,27 @@
-# 校园旅游信息管理功能
+# Campus Tour Information Management Features
 
-## 概述
+## Overview
 
-我们添加了校园旅游信息管理功能，允许：
-1. 用户在旅游信息页面查看多条通知和事件
-2. 支持重要通知和事件的置顶功能  
-3. 管理员能够在后台添加、编辑和管理通知和事件
+We have added campus tour information management features that allow:
+1. Users to view multiple notifications and events on the tour information page
+2. Support for pinning important notifications and events
+3. Administrators to add, edit, and manage notifications and events in the backend
 
-## 功能详情
+## Feature Details
 
-### 前端用户界面
-- 支持显示多条通知，置顶的通知会优先显示
-- 支持显示多条事件，置顶的事件会在视觉上突出显示
-- 通知使用手风琴（Accordion）组件显示，方便浏览多条信息
-- 事件使用卡片网格布局，直观展示所有事件
+### Frontend User Interface
+- Supports displaying multiple notifications, with pinned notifications shown first
+- Supports displaying multiple events, with pinned events visually highlighted
+- Notifications are displayed using an Accordion component for easy browsing of multiple items
+- Events are displayed using a card grid layout for intuitive presentation
 
-### 管理员界面
-- 通过管理后台的"Manage Tour Information"按钮进入管理页面
-- 支持添加、编辑、删除通知和事件
-- 支持置顶/取消置顶功能
-- 管理页面采用选项卡设计，可以分别管理通知和事件
+### Administrator Interface
+- Access the management page via the "Manage Tour Information" button in the admin backend
+- Supports adding, editing, and deleting notifications and events
+- Supports pinning/unpinning functionality
+- The management page uses a tabbed design to separately manage notifications and events
 
-## 技术实现
+## Technical Implementation
 
-### 数据存储格式
-我们使用特殊的字符串格式来存储多条通知和事件：
-```
-id1:::text1:::isPinned1:::date1|||id2:::text2:::isPinned2:::date2|||...
-```
-
-每条通知/事件包含以下字段：
-- id: 唯一标识符
-- text: 通知/事件内容
-- isPinned: 是否置顶（true/false）
-- date: 添加日期
-
-### 后端API
-- GET /tourInformation - 获取所有旅游信息
-- PUT /tourInformation/:id - 更新指定ID的旅游信息
-
-### 兼容性
-- 系统能够处理旧格式的数据（仅用|||分隔的纯文本数据）
-- 新格式提供了更丰富的功能和更好的用户体验
-
-## 使用说明
-1. 管理员可以通过后台管理页面添加、编辑和管理通知/事件
-2. 用户可以在旅游信息页面查看所有通知和事件
-3. 置顶的通知和事件将优先显示，并在视觉上有所区别 
+### Data Storage Format
+We use a special string format to store multiple notifications and events:
