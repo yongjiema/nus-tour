@@ -16,6 +16,8 @@ import { Information } from './database/entities/information.entity';
 import { TourInformationModule } from './tourinformation/tourinformation.module';
 import { TourInformation } from './database/entities/tourinformation.entity';
 import { User } from './database/entities/user.entity';
+import { NewsEventModule } from './news-event/news-event.module';
+import { NewsEvent } from './database/entities/news-event.entity';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { User } from './database/entities/user.entity';
       ssl: {
         rejectUnauthorized: false
       },
-      entities: [User, Booking, Payment, Information, TourInformation],
+      entities: [User, Booking, Payment, Information, TourInformation, NewsEvent],
       synchronize: true,
       logging: true,
     }),
@@ -43,6 +45,7 @@ import { User } from './database/entities/user.entity';
     CheckinModule,
     InformationModule,
     TourInformationModule,
+    NewsEventModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NewsEventService } from './news-event/news-event.service';
 
 async function bootstrap() {
   console.log('Starting NestJS application...');
@@ -20,6 +22,21 @@ async function bootstrap() {
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     });
     console.log('CORS enabled');
+
+    const config = new DocumentBuilder()
+      .setTitle('NUS Tour API')
+      .setDescription('NUS Tour API description')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
+
+    // 获取 NewsEventService 并执行初始数据抓取
+    const newsEventService = app.get(NewsEventService);
+    setTimeout(() => {
+      newsEventService.fetchAndSaveLatestNewsAndEvents();
+    }, 5000); // 延迟5秒执行，确保数据库连接已建立
 
     try {
       // Listen on all interfaces

@@ -27,7 +27,7 @@ import {
   AcademicPrograms,
   BusRoutes,
   Canteens,
-  ConvenienceStores,
+  ConvenienceStores
 } from "./pages/information";
 import { BookingForm, BookingConfirmation } from "./pages/booking";
 import { Payment } from "./pages/payment";
