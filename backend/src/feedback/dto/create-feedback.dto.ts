@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, Min, Max, IsOptional, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, Min, Max, IsOptional, IsBoolean } from "class-validator";
 
 export class CreateFeedbackDto {
   @IsNotEmpty()

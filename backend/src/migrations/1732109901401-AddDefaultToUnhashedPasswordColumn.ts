@@ -1,7 +1,7 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddDefaultToUnhashedPasswordColumn1732109901401 implements MigrationInterface {
-  name = 'AddDefaultToUnhashedPasswordColumn1732109901401';
+  name = "AddDefaultToUnhashedPasswordColumn1732109901401";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "user" RENAME COLUMN "role" TO "unhashedPassword"`);

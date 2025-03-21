@@ -1,10 +1,10 @@
-import { Injectable, ConflictException, NotFoundException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../database/entities/user.entity';
-import { RegisterDto } from '../auth/dto/register.dto';
-import { LoginDto } from '../auth/dto/login.dto';
-import { UpdateUserDto } from '../auth/dto/update-user.dto';
+import { Injectable, ConflictException, NotFoundException, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { User } from "../database/entities/user.entity";
+import { RegisterDto } from "../auth/dto/register.dto";
+import { LoginDto } from "../auth/dto/login.dto";
+import { UpdateUserDto } from "../auth/dto/update-user.dto";
 
 @Injectable()
 export class UsersService {
@@ -26,7 +26,7 @@ export class UsersService {
     const existingUser = await this.usersRepository.findOne({ where: { email } });
     if (existingUser) {
       this.logger.warn(`Registration failed: Email already in use for email ${email}`);
-      throw new ConflictException('Email is already in use');
+      throw new ConflictException("Email is already in use");
     }
 
     const user = this.usersRepository.create({ email, username, password });
@@ -45,7 +45,7 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { email } });
 
     if (!user || !(await user.comparePassword(password))) {
-      throw new NotFoundException('Invalid username or password');
+      throw new NotFoundException("Invalid username or password");
     }
 
     return user;
@@ -54,7 +54,7 @@ export class UsersService {
   async findById(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
     return user;
   }
@@ -68,7 +68,7 @@ export class UsersService {
   async delete(id: string): Promise<void> {
     const user = await this.findById(id);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
     await this.usersRepository.softDelete(id);
   }

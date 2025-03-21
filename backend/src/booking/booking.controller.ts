@@ -9,14 +9,14 @@ import {
   Request,
   Logger,
   ForbiddenException,
-} from '@nestjs/common';
-import { BookingService } from './booking.service';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Booking } from '../database/entities/booking.entity';
-import { Public } from '../auth/decorators/public.decorator';
+} from "@nestjs/common";
+import { BookingService } from "./booking.service";
+import { CreateBookingDto } from "./dto/create-booking.dto";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Booking } from "../database/entities/booking.entity";
+import { Public } from "../auth/decorators/public.decorator";
 
-@Controller('bookings')
+@Controller("bookings")
 export class BookingController {
   private readonly logger = new Logger(BookingController.name);
 
@@ -44,8 +44,8 @@ export class BookingController {
     }
   }
 
-  @Get('available-slots')
-  async getAvailableTimeSlots(@Query('date') date: string) {
+  @Get("available-slots")
+  async getAvailableTimeSlots(@Query("date") date: string) {
     return await this.bookingService.getAvailableTimeSlots(date);
   }
 
@@ -54,7 +54,7 @@ export class BookingController {
     return this.bookingService.getAllBookings();
   }
 
-  @Get('user')
+  @Get("user")
   @UseGuards(JwtAuthGuard)
   async getUserBookings(@Request() req) {
     this.logger.log(`Getting bookings for user: ${JSON.stringify(req.user)}`);
@@ -67,14 +67,14 @@ export class BookingController {
   }
 
   @Public()
-  @Get(':id')
-  async getBookingById(@Param('id') id: number) {
+  @Get(":id")
+  async getBookingById(@Param("id") id: number) {
     return this.bookingService.getBookingById(id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('find-by-booking-id/:bookingId')
-  async getBookingByBookingId(@Param('bookingId') bookingId: string, @Request() req) {
+  @Get("find-by-booking-id/:bookingId")
+  async getBookingByBookingId(@Param("bookingId") bookingId: string, @Request() req) {
     this.logger.log(`Finding booking with ID: ${bookingId}`);
 
     try {
@@ -82,7 +82,7 @@ export class BookingController {
 
       // Optional: Verify the booking belongs to the authenticated user
       if (booking.email !== req.user.email) {
-        throw new ForbiddenException('You do not have access to this booking');
+        throw new ForbiddenException("You do not have access to this booking");
       }
 
       return booking;

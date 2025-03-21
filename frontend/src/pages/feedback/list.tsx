@@ -1,11 +1,8 @@
 import React from "react";
-import {
-  List, ListItem, Divider, Typography, Rating,
-  Box, Chip, IconButton, Paper
-} from "@mui/material";
+import { List, ListItem, Divider, Typography, Rating, Box, Chip, IconButton, Paper } from "@mui/material";
 import { useList, useUpdate, BaseRecord } from "@refinedev/core";
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 interface Feedback extends BaseRecord {
   id: number;
@@ -38,7 +35,7 @@ const FeedbackList: React.FC = () => {
       },
       {
         onSuccess: () => refetch(),
-      }
+      },
     );
   };
 
@@ -55,11 +52,7 @@ const FeedbackList: React.FC = () => {
             <React.Fragment key={feedback.id}>
               <ListItem alignItems="flex-start">
                 <Box width="100%">
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
                     <Box>
                       <Rating value={feedback.rating} readOnly />
                       <Typography color="textSecondary" variant="caption">
@@ -73,10 +66,7 @@ const FeedbackList: React.FC = () => {
                         color="primary"
                         variant="outlined"
                       />
-                      <IconButton
-                        size="small"
-                        onClick={() => handleToggleVisibility(feedback.id, feedback.isPublic)}
-                      >
+                      <IconButton size="small" onClick={() => handleToggleVisibility(feedback.id, feedback.isPublic)}>
                         {feedback.isPublic ? <VisibilityIcon /> : <VisibilityOffIcon />}
                       </IconButton>
                     </Box>

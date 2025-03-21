@@ -1,14 +1,14 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { Payment } from '../database/entities/payments.entity';
-import { User } from '../database/entities/user.entity';
-import { Booking } from '../database/entities/booking.entity';
-import { PaymentStatus } from '../database/entities/enums';
-import { BookingService } from '../booking/booking.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
-import { BookingStatus } from '../database/entities/enums';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, In } from "typeorm";
+import { Payment } from "../database/entities/payments.entity";
+import { User } from "../database/entities/user.entity";
+import { Booking } from "../database/entities/booking.entity";
+import { PaymentStatus } from "../database/entities/enums";
+import { BookingService } from "../booking/booking.service";
+import { CreatePaymentDto } from "./dto/create-payment.dto";
+import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
+import { BookingStatus } from "../database/entities/enums";
 
 @Injectable()
 export class PaymentsService {
@@ -39,7 +39,7 @@ export class PaymentsService {
     // Verify the authenticated user owns this booking
     if (booking.email !== user.email) {
       this.logger.warn(`User ${user.email} attempted unauthorized payment for booking ${booking.id}`);
-      throw new ForbiddenException('You do not have permission to make payments for this booking');
+      throw new ForbiddenException("You do not have permission to make payments for this booking");
     }
 
     // Check if payment already exists
@@ -71,7 +71,7 @@ export class PaymentsService {
       this.logger.log(`Payment created for booking: ${booking.id}`);
       return savedPayment;
     } catch (error) {
-      console.error('Payment processing failed:', error);
+      console.error("Payment processing failed:", error);
       throw new Error(`Payment failed: ${error.message}`);
     }
   }
@@ -83,7 +83,7 @@ export class PaymentsService {
     let booking;
     try {
       // If it's a number, try direct lookup
-      if (typeof updateDto.bookingId === 'number') {
+      if (typeof updateDto.bookingId === "number") {
         booking = await this.bookingRepository.findOne({
           where: { id: updateDto.bookingId },
         });
@@ -149,7 +149,7 @@ export class PaymentsService {
     // Find bookings by email
     const bookings = await this.bookingRepository.find({
       where: { email: user.email },
-      select: ['id'],
+      select: ["id"],
     });
 
     if (bookings.length === 0) {
@@ -164,8 +164,8 @@ export class PaymentsService {
     // Find payments for these bookings
     const payments = await this.paymentsRepository.find({
       where: { booking: { id: In(bookingIds) } },
-      order: { createdAt: 'DESC' },
-      relations: ['booking'],
+      order: { createdAt: "DESC" },
+      relations: ["booking"],
     });
 
     this.logger.log(`Found ${payments.length} payments for user`);

@@ -11,9 +11,7 @@ interface AuthCheckResponse {
   role?: UserRole;
 }
 
-const PrivateRoute: React.FC<{ requiredRole?: UserRole }> = ({
-  requiredRole
-}) => {
+const PrivateRoute: React.FC<{ requiredRole?: UserRole }> = ({ requiredRole }) => {
   const { isLoading, data: isAuthenticated } = useIsAuthenticated();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [checkingRole, setCheckingRole] = useState(true);
@@ -22,7 +20,7 @@ const PrivateRoute: React.FC<{ requiredRole?: UserRole }> = ({
     const checkUserRole = async () => {
       try {
         console.log("Checking user role...");
-        const response = await authProvider.check() as AuthCheckResponse;
+        const response = (await authProvider.check()) as AuthCheckResponse;
         console.log("Auth check response:", response);
         setUserRole(response.role || null);
       } catch (error) {
@@ -47,7 +45,7 @@ const PrivateRoute: React.FC<{ requiredRole?: UserRole }> = ({
       isAuthenticated,
       userRole,
       checkingRole,
-      requiredRole
+      requiredRole,
     });
   }, [isLoading, isAuthenticated, userRole, checkingRole, requiredRole]);
 
@@ -68,9 +66,7 @@ const PrivateRoute: React.FC<{ requiredRole?: UserRole }> = ({
   // Check role-specific access if requiredRole is provided
   if (requiredRole && userRole !== requiredRole) {
     console.log(`Role mismatch - Required: ${requiredRole}, Current: ${userRole}`);
-    return userRole === UserRole.ADMIN
-      ? <Navigate to="/admin" />
-      : <Navigate to="/user-dashboard" />;
+    return userRole === UserRole.ADMIN ? <Navigate to="/admin" /> : <Navigate to="/user-dashboard" />;
   }
 
   console.log("Access granted to protected route");

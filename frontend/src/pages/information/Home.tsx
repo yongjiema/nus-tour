@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Button,
-  Container,
-  CardMedia,
-} from "@mui/material";
+import { Box, Typography, Grid, Card, CardContent, Button, Container, CardMedia } from "@mui/material";
 
 import academicProgramsImage from "../../assets/images/academics.jpg";
 import busRoutesImage from "../../assets/images/bus-routes.jpg";
@@ -20,15 +11,13 @@ import nusNewsImage from "../../assets/images/news.jpg";
 const informationData = [
   {
     title: "Academic Programs",
-    description:
-      "Explore a wide variety of faculties and academic programs at NUS.",
+    description: "Explore a wide variety of faculties and academic programs at NUS.",
     image: academicProgramsImage,
     link: "https://www.nus.edu.sg/nusbulletin/ay202223/programmes/",
   },
   {
     title: "Campus Bus Routes",
-    description:
-      "Navigate the campus with ease using our efficient bus system.",
+    description: "Navigate the campus with ease using our efficient bus system.",
     image: busRoutesImage,
     link: "https://uci.nus.edu.sg/oca/mobilityservices/getting-around-nus/",
   },
@@ -53,8 +42,7 @@ const informationData = [
   },
   {
     title: "NUS news",
-    description:
-      "Stay updated with the latest news and events happening at NUS.",
+    description: "Stay updated with the latest news and events happening at NUS.",
     image: nusNewsImage,
     link: "https://news.nus.edu.sg/",
   },
@@ -63,23 +51,11 @@ const informationData = [
 export const InformationHome: React.FC = () => {
   return (
     <Container maxWidth="lg" style={{ marginTop: "50px" }}>
-      <Typography
-        variant="h3"
-        gutterBottom
-        align="center"
-        style={{ color: "#002147", fontWeight: "bold" }}
-      >
+      <Typography variant="h3" gutterBottom align="center" style={{ color: "#002147", fontWeight: "bold" }}>
         Campus Information
       </Typography>
-      <Typography
-        variant="body1"
-        color="textSecondary"
-        align="center"
-        gutterBottom
-        style={{ color: "#FF6600" }}
-      >
-        Learn more about what NUS has to offer, from academic programs to
-        essential campus facilities.
+      <Typography variant="body1" color="textSecondary" align="center" gutterBottom style={{ color: "#FF6600" }}>
+        Learn more about what NUS has to offer, from academic programs to essential campus facilities.
       </Typography>
       <Grid container spacing={4} style={{ marginTop: "30px" }}>
         {informationData.map((info, index) => (
@@ -93,18 +69,9 @@ export const InformationHome: React.FC = () => {
                 },
               }}
             >
-              <CardMedia
-                component="img"
-                height="140"
-                image={info.image}
-                alt={info.title}
-              />
+              <CardMedia component="img" height="140" image={info.image} alt={info.title} />
               <CardContent>
-                <Typography
-                  variant="h5"
-                  gutterBottom
-                  style={{ color: "#002147", fontWeight: "bold" }}
-                >
+                <Typography variant="h5" gutterBottom style={{ color: "#002147", fontWeight: "bold" }}>
                   {info.title}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">

@@ -1,12 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
-import { FeedbackService } from './feedback.service';
-import { CreateFeedbackDto } from './dto/create-feedback.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/role.decorator';
-import { Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from "@nestjs/common";
+import { FeedbackService } from "./feedback.service";
+import { CreateFeedbackDto } from "./dto/create-feedback.dto";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { RolesGuard } from "../auth/roles.guard";
+import { Roles } from "../auth/role.decorator";
+import { Logger } from "@nestjs/common";
 
-@Controller('feedback')
+@Controller("feedback")
 export class FeedbackController {
   private readonly logger = new Logger(FeedbackController.name);
 
@@ -23,12 +23,12 @@ export class FeedbackController {
     return this.feedbackService.findAll(query);
   }
 
-  @Get('public')
+  @Get("public")
   findPublic() {
     return this.feedbackService.findAll({ isPublic: true });
   }
 
-  @Get('user')
+  @Get("user")
   @UseGuards(JwtAuthGuard)
   async getUserFeedbacks(@Request() req) {
     this.logger.log(`Getting feedbacks for user: ${JSON.stringify(req.user)}`);
@@ -40,22 +40,22 @@ export class FeedbackController {
     };
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
+  @Get(":id")
+  findOne(@Param("id") id: string) {
     return this.feedbackService.findOne(+id);
   }
 
-  @Patch(':id')
+  @Patch(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  update(@Param('id') id: string, @Body() updateData: any) {
+  @Roles("admin")
+  update(@Param("id") id: string, @Body() updateData: any) {
     return this.feedbackService.update(+id, updateData);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  remove(@Param('id') id: string) {
+  @Roles("admin")
+  remove(@Param("id") id: string) {
     return this.feedbackService.remove(+id);
   }
 }

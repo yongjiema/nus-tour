@@ -1,6 +1,6 @@
-import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/core";
+import { ConfigService } from "@nestjs/config";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -9,10 +9,10 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:5173'),
-    credentials: configService.get<boolean>('CORS_CREDENTIALS', true),
-    methods: configService.get<string>('CORS_METHODS', 'GET,POST,PUT,DELETE')?.split(','),
-    allowedHeaders: configService.get<string>('CORS_HEADERS', 'Content-Type,Authorization')?.split(','),
+    origin: configService.get<string>("CORS_ORIGIN", "http://localhost:5173"),
+    credentials: configService.get<boolean>("CORS_CREDENTIALS", true),
+    methods: configService.get<string>("CORS_METHODS", "GET,POST,PUT,DELETE")?.split(","),
+    allowedHeaders: configService.get<string>("CORS_HEADERS", "Content-Type,Authorization")?.split(","),
   });
 
   await app.listen(port);

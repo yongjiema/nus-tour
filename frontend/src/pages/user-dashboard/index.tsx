@@ -1,22 +1,30 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box, Grid, Paper, Typography, Button, Tabs, Tab,
-  CircularProgress, Alert, Divider, Card, CardContent,
-  Chip, List, ListItem
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  Button,
+  Tabs,
+  Tab,
+  CircularProgress,
+  Alert,
+  Divider,
+  Card,
+  CardContent,
+  Chip,
+  List,
+  ListItem,
 } from "@mui/material";
 import { styled } from "@mui/system";
 import { useNavigate } from "react-router-dom";
 import { useList } from "@refinedev/core";
 import { authProvider } from "../../authProvider";
-import EventNoteIcon from '@mui/icons-material/EventNote';
-import PaymentIcon from '@mui/icons-material/Payment';
-import RateReviewIcon from '@mui/icons-material/RateReview';
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import PaymentIcon from "@mui/icons-material/Payment";
+import RateReviewIcon from "@mui/icons-material/RateReview";
 import FeedbackForm from "../feedback/form";
-import {
-  Booking,
-  Payment,
-  Feedback,
-} from "../../types/api.types";
+import { Booking, Payment, Feedback } from "../../types/api.types";
 import { formatDateDisplay } from "../../utils/dateUtils";
 
 // Interfaces
@@ -24,37 +32,37 @@ interface TabPanelProps {
   children: React.ReactNode;
   value: number;
   index: number;
-  'aria-controls'?: string;
-  'aria-labelledby'?: string;
+  "aria-controls"?: string;
+  "aria-labelledby"?: string;
   role?: string;
 }
 
 // Styled components for consistent UI
 const DashboardContainer = styled(Box)({
-  padding: '24px',
+  padding: "24px",
 });
 
 const StatusChip = styled(Chip)({
-  fontWeight: 'medium',
+  fontWeight: "medium",
 });
 
 const SectionTitle = styled(Typography)({
-  fontWeight: 'bold',
-  marginBottom: '16px',
-  color: '#002147', // NUS blue
+  fontWeight: "bold",
+  marginBottom: "16px",
+  color: "#002147", // NUS blue
 });
 
 const DashboardCard = styled(Card)({
-  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
-  }
+  transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+  "&:hover": {
+    transform: "translateY(-4px)",
+    boxShadow: "0 4px 20px 0 rgba(0,0,0,0.12)",
+  },
 });
 
 const ActionButton = styled(Button)({
-  fontWeight: 'bold',
-  textTransform: 'none',
+  fontWeight: "bold",
+  textTransform: "none",
 });
 
 // TabPanel component
@@ -152,38 +160,38 @@ const UserDashboard: React.FC = () => {
       try {
         setIsLoading(true);
         setAuthError(null);
-        
+
         // Get auth data from localStorage first as backup
-        const storedUserId = localStorage.getItem('userId');
-        const storedRole = localStorage.getItem('role');
-        const token = localStorage.getItem('access_token');
-        
+        const storedUserId = localStorage.getItem("userId");
+        const storedRole = localStorage.getItem("role");
+        const token = localStorage.getItem("access_token");
+
         console.log("Auth data from localStorage:", {
           userId: storedUserId,
           role: storedRole,
           hasToken: !!token,
-          tokenValue: token // Log the actual token for debugging
+          tokenValue: token, // Log the actual token for debugging
         });
-        
+
         // Try getting from authProvider
         const result = await authProvider.check();
         console.log("Auth check result:", result);
-        
+
         if (result.authenticated && result.id) {
           console.log("Setting userId from auth check:", result.id);
           setUserId(result.id);
-        } else if (storedUserId && storedRole === 'user') {
+        } else if (storedUserId && storedRole === "user") {
           console.log("Setting userId from localStorage:", storedUserId);
           setUserId(storedUserId);
         } else {
           console.log("Auth failed, redirecting to login");
           setAuthError("Authentication failed. Please log in again.");
-          setTimeout(() => navigate('/login'), 2000);
+          setTimeout(() => navigate("/login"), 2000);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error("Auth check failed:", error);
         setAuthError("Authentication error. Please try again.");
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate("/login"), 2000);
       } finally {
         setIsLoading(false);
       }
@@ -206,7 +214,7 @@ const UserDashboard: React.FC = () => {
       console.log("Bookings data received:", {
         total: bookingsData.total,
         count: bookingsData.data?.length,
-        data: bookingsData.data
+        data: bookingsData.data,
       });
     }
     if (bookingsError) {
@@ -216,7 +224,7 @@ const UserDashboard: React.FC = () => {
       console.log("Payments data received:", {
         total: paymentsData.total,
         count: paymentsData.data?.length,
-        data: paymentsData.data
+        data: paymentsData.data,
       });
     }
     if (paymentsError) {
@@ -226,13 +234,23 @@ const UserDashboard: React.FC = () => {
       console.log("Feedbacks data received:", {
         total: feedbacksData.total,
         count: feedbacksData.data?.length,
-        data: feedbacksData.data
+        data: feedbacksData.data,
       });
     }
     if (feedbacksError) {
       console.error("Feedbacks error:", feedbacksErrorData);
     }
-  }, [bookingsData, bookingsError, bookingsErrorData, paymentsData, paymentsError, paymentsErrorData, feedbacksData, feedbacksError, feedbacksErrorData]);
+  }, [
+    bookingsData,
+    bookingsError,
+    bookingsErrorData,
+    paymentsData,
+    paymentsError,
+    paymentsErrorData,
+    feedbacksData,
+    feedbacksError,
+    feedbacksErrorData,
+  ]);
 
   if (isLoading) {
     return (
@@ -241,7 +259,7 @@ const UserDashboard: React.FC = () => {
       </Box>
     );
   }
-  
+
   if (authError) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -269,16 +287,12 @@ const UserDashboard: React.FC = () => {
 
   return (
     <DashboardContainer>
-      <SectionTitle variant="h4" gutterBottom>My Dashboard</SectionTitle>
+      <SectionTitle variant="h4" gutterBottom>
+        My Dashboard
+      </SectionTitle>
 
-      <Paper sx={{ width: '100%', mb: 4 }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          centered
-          indicatorColor="primary"
-          textColor="primary"
-        >
+      <Paper sx={{ width: "100%", mb: 4 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} centered indicatorColor="primary" textColor="primary">
           <Tab icon={<EventNoteIcon />} label="My Bookings" />
           <Tab icon={<PaymentIcon />} label="Payments" />
           <Tab icon={<RateReviewIcon />} label="Feedback" />
@@ -293,12 +307,7 @@ const UserDashboard: React.FC = () => {
           ) : bookings.length === 0 ? (
             <Alert severity="info">
               You don't have any bookings yet.
-              <ActionButton
-                color="primary"
-                size="small"
-                onClick={() => navigate('/booking')}
-                sx={{ ml: 2 }}
-              >
+              <ActionButton color="primary" size="small" onClick={() => navigate("/booking")} sx={{ ml: 2 }}>
                 Book a Tour
               </ActionButton>
             </Alert>
@@ -309,32 +318,24 @@ const UserDashboard: React.FC = () => {
                   <DashboardCard>
                     <CardContent>
                       <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="h6">
-                          Tour on {formatDateDisplay(booking.date)}
-                        </Typography>
+                        <Typography variant="h6">Tour on {formatDateDisplay(booking.date)}</Typography>
                         <StatusChip
                           label={booking.status}
                           color={
-                            booking.status === 'completed' ? 'success' :
-                              booking.status === 'confirmed' ? 'primary' :
-                                'default'
+                            booking.status === "completed"
+                              ? "success"
+                              : booking.status === "confirmed"
+                              ? "primary"
+                              : "default"
                           }
                         />
                       </Box>
                       <Divider sx={{ my: 1 }} />
-                      <Typography variant="body1">
-                        Time: {booking.timeSlot}
-                      </Typography>
-                      <Typography variant="body1">
-                        Group Size: {booking.groupSize}
-                      </Typography>
+                      <Typography variant="body1">Time: {booking.timeSlot}</Typography>
+                      <Typography variant="body1">Group Size: {booking.groupSize}</Typography>
                       <Box mt={2} display="flex" justifyContent="flex-end">
-                        {booking.status === 'completed' && !booking.hasFeedback && (
-                          <ActionButton
-                            variant="contained"
-                            color="primary"
-                            onClick={() => setTabValue(2)}
-                          >
+                        {booking.status === "completed" && !booking.hasFeedback && (
+                          <ActionButton variant="contained" color="primary" onClick={() => setTabValue(2)}>
                             Leave Feedback
                           </ActionButton>
                         )}
@@ -359,12 +360,10 @@ const UserDashboard: React.FC = () => {
                 <ListItem key={payment.id} divider>
                   <Box width="100%">
                     <Box display="flex" justifyContent="space-between">
-                      <Typography variant="subtitle1">
-                        Payment #{payment.id}
-                      </Typography>
+                      <Typography variant="subtitle1">Payment #{payment.id}</Typography>
                       <StatusChip
                         label={payment.status}
-                        color={payment.status === 'completed' ? 'success' : 'default'}
+                        color={payment.status === "completed" ? "success" : "default"}
                       />
                     </Box>
                     <Typography variant="body2" color="textSecondary">
@@ -389,16 +388,18 @@ const UserDashboard: React.FC = () => {
             <CircularProgress />
           ) : (
             <Box>
-              <SectionTitle variant="h6" gutterBottom>Your Completed Tours</SectionTitle>
+              <SectionTitle variant="h6" gutterBottom>
+                Your Completed Tours
+              </SectionTitle>
 
-              {!bookings.some((b: Booking) => b.status === 'completed' && !b.hasFeedback) ? (
+              {!bookings.some((b: Booking) => b.status === "completed" && !b.hasFeedback) ? (
                 <Alert severity="info">
                   You don't have any completed tours to review, or you've already provided feedback for all of them.
                 </Alert>
               ) : (
                 <Grid container spacing={3}>
                   {bookings
-                    .filter((b: Booking) => b.status === 'completed' && !b.hasFeedback)
+                    .filter((b: Booking) => b.status === "completed" && !b.hasFeedback)
                     .map((booking: Booking) => (
                       <Grid item xs={12} key={booking.id}>
                         <Paper sx={{ p: 2 }}>
@@ -420,7 +421,9 @@ const UserDashboard: React.FC = () => {
               )}
 
               <Box mt={4}>
-                <SectionTitle variant="h6" gutterBottom>Your Past Reviews</SectionTitle>
+                <SectionTitle variant="h6" gutterBottom>
+                  Your Past Reviews
+                </SectionTitle>
                 {feedbacksLoading ? (
                   <CircularProgress />
                 ) : feedbacksError ? (
@@ -433,9 +436,7 @@ const UserDashboard: React.FC = () => {
                       <ListItem key={feedback.id} divider>
                         <Box width="100%">
                           <Box display="flex" justifyContent="space-between">
-                            <Typography variant="subtitle1">
-                              Rating: {feedback.rating}/5
-                            </Typography>
+                            <Typography variant="subtitle1">Rating: {feedback.rating}/5</Typography>
                             <Typography variant="body2" color="textSecondary">
                               {formatDateDisplay(feedback.createdAt)}
                             </Typography>

@@ -1,7 +1,22 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Container, Typography, TextField, Button, MenuItem, Grid, Paper, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Select, FormControl, InputLabel, Alert
+  Container,
+  Typography,
+  TextField,
+  Button,
+  MenuItem,
+  Grid,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Select,
+  FormControl,
+  InputLabel,
+  Alert,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import * as dataProviders from "../../../dataProvider";
@@ -65,7 +80,7 @@ const BookingManagement = () => {
     try {
       const { data } = await dataProviders.default.getList({
         resource: "admin/bookings/findAll",
-        metaData: {}
+        metaData: {},
       });
 
       // Type assertion to tell TypeScript that data matches your Booking interface
@@ -92,7 +107,7 @@ const BookingManagement = () => {
         filters.push({
           field: "q",
           operator: "eq",
-          value: search
+          value: search,
         });
       }
 
@@ -100,7 +115,7 @@ const BookingManagement = () => {
         filters.push({
           field: "status",
           operator: "eq",
-          value: statusFilter
+          value: statusFilter,
         });
       }
 
@@ -108,7 +123,7 @@ const BookingManagement = () => {
         filters.push({
           field: "date",
           operator: "eq",
-          value: dateFilter
+          value: dateFilter,
         });
       }
 
@@ -130,7 +145,7 @@ const BookingManagement = () => {
       await dataProviders.default.update({
         resource: "admin/bookings",
         id,
-        variables: { status: bookingStatus }
+        variables: { status: bookingStatus },
       });
 
       fetchBookings();
@@ -144,7 +159,7 @@ const BookingManagement = () => {
     try {
       await dataProviders.default.deleteOne({
         resource: "admin/bookings",
-        id
+        id,
       });
 
       fetchBookings();
@@ -158,7 +173,7 @@ const BookingManagement = () => {
     try {
       await dataProviders.default.custom({
         url: `admin/bookings/${id}/checkin`,
-        method: "patch"
+        method: "patch",
       });
 
       fetchBookings();
@@ -172,7 +187,7 @@ const BookingManagement = () => {
     try {
       await dataProviders.default.custom({
         url: `admin/bookings/${id}/checkout`,
-        method: "patch"
+        method: "patch",
       });
 
       fetchBookings();
@@ -204,10 +219,7 @@ const BookingManagement = () => {
         <Grid item xs={4}>
           <FormControl fullWidth>
             <InputLabel>Status</InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
+            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <MenuItem value="">All</MenuItem>
               <MenuItem value="Pending">Pending</MenuItem>
               <MenuItem value="Confirmed">Confirmed</MenuItem>
@@ -267,9 +279,7 @@ const BookingManagement = () => {
                   <TableCell>{booking.checkedIn ? "Yes" : "No"}</TableCell>
                   <TableCell>
                     {booking.paymentStatus === "pending" && (
-                      <RemoveButton onClick={() => removeBooking(booking.bookingId)}>
-                        Remove
-                      </RemoveButton>
+                      <RemoveButton onClick={() => removeBooking(booking.bookingId)}>Remove</RemoveButton>
                     )}
 
                     {booking.paymentStatus === "pending" && (
@@ -278,16 +288,12 @@ const BookingManagement = () => {
                       </ChangeTimeSlotButton>
                     )}
 
-                    {booking.paymentStatus === "success"&& (
-                      <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>
-                        Check In
-                      </CheckInButton>
+                    {booking.paymentStatus === "success" && (
+                      <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>Check In</CheckInButton>
                     )}
 
                     {booking.paymentStatus === "checked-in" && (
-                      <CheckOutButton onClick={() => checkOutBooking(booking.bookingId)}>
-                        Check Out
-                      </CheckOutButton>
+                      <CheckOutButton onClick={() => checkOutBooking(booking.bookingId)}>Check Out</CheckOutButton>
                     )}
                   </TableCell>
                 </TableRow>

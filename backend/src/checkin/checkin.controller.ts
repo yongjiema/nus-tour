@@ -1,14 +1,14 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { CheckinService } from './checkin.service';
-import { CheckinDto } from './dto/checkin.dto';
+import { Controller, Post, Body } from "@nestjs/common";
+import { CheckinService } from "./checkin.service";
+import { CheckinDto } from "./dto/checkin.dto";
 
-@Controller('checkins')
+@Controller("checkins")
 export class CheckinController {
   constructor(private readonly checkinService: CheckinService) {}
 
   @Post()
   async checkIn(@Body() checkinDto: CheckinDto) {
     await this.checkinService.checkIn(checkinDto);
-    return { message: 'Check-in successful!' };
+    return { message: "Check-in successful!" };
   }
 }

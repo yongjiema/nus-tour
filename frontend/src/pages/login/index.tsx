@@ -1,18 +1,11 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLogin, useNotification } from "@refinedev/core";
-import {
-  TextField,
-  Typography,
-  Alert,
-  Link,
-  Container,
-  Grid,
-} from "@mui/material";
+import { TextField, Alert, Container, Grid } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { AuthPaper, PageTitle, SubmitButton } from '../../components/styled';
+import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
 import { useErrorHandler } from "../../utils/errorHandler";
 
 interface LoginFormInputs {
@@ -22,13 +15,8 @@ interface LoginFormInputs {
 
 // Validation schema for login form
 const validationSchema = yup.object().shape({
-  email: yup
-    .string()
-    .required("Email is required")
-    .email("Invalid email format"),
-  password: yup
-    .string()
-    .required("Password is required")
+  email: yup.string().required("Email is required").email("Invalid email format"),
+  password: yup.string().required("Password is required"),
 });
 
 const Login: React.FC = () => {
@@ -43,7 +31,7 @@ const Login: React.FC = () => {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormInputs>({
-    resolver: yupResolver(validationSchema)
+    resolver: yupResolver(validationSchema),
   });
 
   const onSubmit = async (data: LoginFormInputs) => {
@@ -51,18 +39,18 @@ const Login: React.FC = () => {
 
     try {
       const response = await login(data);
-      
+
       if (response.success) {
-        const role = localStorage.getItem('role');
-        if (role === 'admin') {
-          navigate('/admin');
-        } else if (role === 'user') {
-          navigate('/user-dashboard');
+        const role = localStorage.getItem("role");
+        if (role === "admin") {
+          navigate("/admin");
+        } else if (role === "user") {
+          navigate("/user-dashboard");
         } else {
-          setError('Invalid user role');
+          setError("Invalid user role");
         }
-        
-        const username = localStorage.getItem('username');
+
+        const username = localStorage.getItem("username");
         open?.({
           message: `Welcome back, ${username}!`,
           type: "success",
@@ -115,12 +103,7 @@ const Login: React.FC = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <SubmitButton
-                type="submit"
-                variant="contained"
-                fullWidth
-                disabled={isSubmitting}
-              >
+              <SubmitButton type="submit" variant="contained" fullWidth disabled={isSubmitting}>
                 {isSubmitting ? "Logging in..." : "Login"}
               </SubmitButton>
             </Grid>

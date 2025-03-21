@@ -14,5 +14,8 @@ indent_size = 2
 [*.{json,yaml}]
 indent_size = 2
 
-[*.{ts,tsx}]
+[.prettierrc]
+indent_size = 2
+
+[*.{js,ts,jsx,tsx}]
 indent_size = 2

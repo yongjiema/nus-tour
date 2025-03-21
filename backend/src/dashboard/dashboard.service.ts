@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Booking } from '../database/entities/booking.entity';
-import { User } from '../database/entities/user.entity';
-import { Feedback } from '../database/entities/feedback.entity';
-import { Payment } from '../database/entities/payments.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Booking } from "../database/entities/booking.entity";
+import { User } from "../database/entities/user.entity";
+import { Feedback } from "../database/entities/feedback.entity";
+import { Payment } from "../database/entities/payments.entity";
 
 @Injectable()
 export class DashboardService {
@@ -31,7 +31,7 @@ export class DashboardService {
 
     // Use find() instead of count() when you need to filter results
     const bookingsWithCheckin = await this.bookingRepository.find({
-      relations: ['checkin'],
+      relations: ["checkin"],
     });
     const completedTours = bookingsWithCheckin.filter((booking) => booking.checkin).length;
 
@@ -49,29 +49,29 @@ export class DashboardService {
     try {
       // Get recent bookings with proper error handling
       const recentBookings = await this.bookingRepository.find({
-        order: { createdAt: 'DESC' } as any,
+        order: { createdAt: "DESC" } as any,
         take: 5,
       });
 
       // Get recent feedback
       const recentFeedback = await this.feedbackRepository.find({
-        order: { createdAt: 'DESC' } as any,
+        order: { createdAt: "DESC" } as any,
         take: 5,
-        relations: ['booking'],
+        relations: ["booking"],
       });
 
       // Combine and format activities with safer property access
       const activities = [
         ...recentBookings.map((booking) => ({
           id: `booking-${booking.id}`,
-          type: 'booking',
-          description: `New booking from ${booking.name || 'Guest'} for ${new Date(booking.date).toLocaleDateString()}`,
+          type: "booking",
+          description: `New booking from ${booking.name || "Guest"} for ${new Date(booking.date).toLocaleDateString()}`,
           timestamp: booking.createdAt,
         })),
         ...recentFeedback.map((feedback) => ({
           id: `feedback-${feedback.id}`,
-          type: 'feedback',
-          description: `New ${feedback.rating}-star feedback received for booking #${feedback.booking?.id || 'Unknown'}`,
+          type: "feedback",
+          description: `New ${feedback.rating}-star feedback received for booking #${feedback.booking?.id || "Unknown"}`,
           timestamp: feedback.createdAt,
         })),
       ];
@@ -84,7 +84,7 @@ export class DashboardService {
         data: activities.slice(0, 10),
       };
     } catch (error) {
-      console.error('Error fetching recent activity:', error);
+      console.error("Error fetching recent activity:", error);
       return { data: [] };
     }
   }
