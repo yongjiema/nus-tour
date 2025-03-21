@@ -1,13 +1,13 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus } from "@nestjs/common";
 
 export class BookingValidationException extends HttpException {
   constructor(message: string) {
     super(
       {
         statusCode: HttpStatus.BAD_REQUEST,
-        error: 'Booking Validation Error',
+        error: "Booking Validation Error",
         message,
-        errorCode: 'BOOKING_VALIDATION_ERROR',
+        errorCode: "BOOKING_VALIDATION_ERROR",
       },
       HttpStatus.BAD_REQUEST,
     );
@@ -19,9 +19,9 @@ export class PaymentProcessingException extends HttpException {
     super(
       {
         statusCode: HttpStatus.BAD_REQUEST,
-        error: 'Payment Processing Error',
+        error: "Payment Processing Error",
         message,
-        errorCode: 'PAYMENT_PROCESSING_ERROR',
+        errorCode: "PAYMENT_PROCESSING_ERROR",
       },
       HttpStatus.BAD_REQUEST,
     );
@@ -33,9 +33,9 @@ export class ResourceNotFoundException extends HttpException {
     super(
       {
         statusCode: HttpStatus.NOT_FOUND,
-        error: 'Resource Not Found',
+        error: "Resource Not Found",
         message: `${resource} with identifier ${identifier} was not found.`,
-        errorCode: 'RESOURCE_NOT_FOUND',
+        errorCode: "RESOURCE_NOT_FOUND",
       },
       HttpStatus.NOT_FOUND,
     );
@@ -47,9 +47,9 @@ export class AuthenticationException extends HttpException {
     super(
       {
         statusCode: HttpStatus.UNAUTHORIZED,
-        error: 'Authentication Error',
+        error: "Authentication Error",
         message,
-        errorCode: 'AUTHENTICATION_ERROR',
+        errorCode: "AUTHENTICATION_ERROR",
       },
       HttpStatus.UNAUTHORIZED,
     );

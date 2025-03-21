@@ -9,7 +9,7 @@ export const backend = {
   ...dataProvider,
   getList: async <TData extends BaseRecord = BaseRecord>(
     resource: string,
-    { pagination, filters, sorters }: { pagination?: Pagination; filters?: CrudFilters; sorters?: CrudSorting; }
+    { pagination, filters, sorters }: { pagination?: Pagination; filters?: CrudFilters; sorters?: CrudSorting },
   ) => {
     console.log("Data Provider getList args:", { resource, pagination, filters, sorters });
     try {
@@ -17,7 +17,7 @@ export const backend = {
         resource,
         pagination,
         filters,
-        sorters
+        sorters,
       });
       console.log("Data Provider getList response:", response);
       return response;
@@ -26,15 +26,12 @@ export const backend = {
       throw error;
     }
   },
-  getOne: async <TData extends BaseRecord = BaseRecord>(
-    resource: string,
-    params: { id: string | number }
-  ) => {
+  getOne: async <TData extends BaseRecord = BaseRecord>(resource: string, params: { id: string | number }) => {
     console.log("Data Provider getOne args:", { resource, params });
     try {
       const response = await dataProvider.getOne<TData>({
         resource,
-        ...params
+        ...params,
       });
       console.log("Data Provider getOne response:", response);
       return response;
@@ -45,13 +42,13 @@ export const backend = {
   },
   create: async <TData extends BaseRecord = BaseRecord>(
     resource: string,
-    params: { variables: Record<string, unknown> }
+    params: { variables: Record<string, unknown> },
   ) => {
     console.log("Data Provider create args:", { resource, params });
     try {
       const response = await dataProvider.create<TData>({
         resource,
-        ...params
+        ...params,
       });
       console.log("Data Provider create response:", response);
       return response;
@@ -62,13 +59,13 @@ export const backend = {
   },
   update: async <TData extends BaseRecord = BaseRecord>(
     resource: string,
-    params: { id: string | number; variables: Record<string, unknown> }
+    params: { id: string | number; variables: Record<string, unknown> },
   ) => {
     console.log("Data Provider update args:", { resource, params });
     try {
       const response = await dataProvider.update<TData>({
         resource,
-        ...params
+        ...params,
       });
       console.log("Data Provider update response:", response);
       return response;
@@ -77,15 +74,12 @@ export const backend = {
       throw error;
     }
   },
-  deleteOne: async <TData extends BaseRecord = BaseRecord>(
-    resource: string,
-    params: { id: string | number }
-  ) => {
+  deleteOne: async <TData extends BaseRecord = BaseRecord>(resource: string, params: { id: string | number }) => {
     console.log("Data Provider deleteOne args:", { resource, params });
     try {
       const response = await dataProvider.deleteOne<TData>({
         resource,
-        ...params
+        ...params,
       });
       console.log("Data Provider deleteOne response:", response);
       return response;
@@ -94,15 +88,12 @@ export const backend = {
       throw error;
     }
   },
-  getMany: async <TData extends BaseRecord = BaseRecord>(
-    resource: string,
-    params: { ids: (string | number)[] }
-  ) => {
+  getMany: async <TData extends BaseRecord = BaseRecord>(resource: string, params: { ids: (string | number)[] }) => {
     console.log("Data Provider getMany args:", { resource, params });
     try {
       const response = await dataProvider.getMany<TData>({
         resource,
-        ...params
+        ...params,
       });
       console.log("Data Provider getMany response:", response);
       return response;
@@ -113,13 +104,13 @@ export const backend = {
   },
   createMany: async <TData extends BaseRecord = BaseRecord>(
     resource: string,
-    params: { variables: Record<string, unknown>[] }
+    params: { variables: Record<string, unknown>[] },
   ) => {
     console.log("Data Provider createMany args:", { resource, params });
     try {
       const response = await dataProvider.createMany<TData>({
         resource,
-        ...params
+        ...params,
       });
       console.log("Data Provider createMany response:", response);
       return response;
@@ -128,15 +119,12 @@ export const backend = {
       throw error;
     }
   },
-  deleteMany: async <TData extends BaseRecord = BaseRecord>(
-    resource: string,
-    params: { ids: (string | number)[] }
-  ) => {
+  deleteMany: async <TData extends BaseRecord = BaseRecord>(resource: string, params: { ids: (string | number)[] }) => {
     console.log("Data Provider deleteMany args:", { resource, params });
     try {
       const response = await dataProvider.deleteMany<TData>({
         resource,
-        ...params
+        ...params,
       });
       console.log("Data Provider deleteMany response:", response);
       return response;
@@ -147,17 +135,17 @@ export const backend = {
   },
   custom: async <TData extends BaseRecord = BaseRecord>(
     resource: string,
-    params: { 
-      method: "get" | "delete" | "head" | "options" | "post" | "put" | "patch"; 
-      url: string; 
-      payload?: Record<string, unknown>
-    }
+    params: {
+      method: "get" | "delete" | "head" | "options" | "post" | "put" | "patch";
+      url: string;
+      payload?: Record<string, unknown>;
+    },
   ) => {
     console.log("Data Provider custom args:", { resource, params });
     try {
       const response = await dataProvider.custom<TData>({
         ...params,
-        meta: { resource }
+        meta: { resource },
       });
       console.log("Data Provider custom response:", response);
       return response;

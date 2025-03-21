@@ -1,15 +1,15 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PaymentsService } from './payments.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Payment } from '../database/entities/payments.entity';
-import { User } from '../database/entities/user.entity';
-import { Booking } from '../database/entities/booking.entity';
-import { BookingService } from '../booking/booking.service';
-import { Repository } from 'typeorm';
-import { Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
-import { PaymentStatus, BookingStatus } from '../database/entities/enums';
+import { Test, TestingModule } from "@nestjs/testing";
+import { PaymentsService } from "./payments.service";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Payment } from "../database/entities/payments.entity";
+import { User } from "../database/entities/user.entity";
+import { Booking } from "../database/entities/booking.entity";
+import { BookingService } from "../booking/booking.service";
+import { Repository } from "typeorm";
+import { Logger, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { CreatePaymentDto } from "./dto/create-payment.dto";
+import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
+import { PaymentStatus, BookingStatus } from "../database/entities/enums";
 
 type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
@@ -17,7 +17,7 @@ type MockType<T> = {
   [P in keyof T]?: jest.Mock<any, any>;
 };
 
-describe('PaymentsService', () => {
+describe("PaymentsService", () => {
   let service: PaymentsService;
   let paymentsRepository: MockRepository<Payment>;
   let userRepository: MockRepository<User>;
@@ -26,15 +26,15 @@ describe('PaymentsService', () => {
 
   // Sample test data
   const mockUser = {
-    id: 'user-1',
-    email: 'test@example.com',
+    id: "user-1",
+    email: "test@example.com",
   };
 
   const mockBooking = {
     id: 123,
-    bookingId: 'booking-123',
-    name: 'Test Booking',
-    email: 'test@example.com',
+    bookingId: "booking-123",
+    name: "Test Booking",
+    email: "test@example.com",
     deposit: 50,
     bookingStatus: BookingStatus.PENDING,
   };
@@ -44,8 +44,8 @@ describe('PaymentsService', () => {
     bookingId: mockBooking.id,
     amount: 50,
     status: PaymentStatus.PENDING,
-    transactionId: 'tx-123',
-    paymentMethod: 'credit_card',
+    transactionId: "tx-123",
+    paymentMethod: "credit_card",
     createdAt: new Date(),
     updatedAt: new Date(),
     booking: mockBooking,
@@ -113,20 +113,20 @@ describe('PaymentsService', () => {
     bookingService = module.get(BookingService);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('createPayment', () => {
-    it('should create a payment successfully', async () => {
+  describe("createPayment", () => {
+    it("should create a payment successfully", async () => {
       const createPaymentDto: CreatePaymentDto = {
-        bookingId: 'booking-123',
+        bookingId: "booking-123",
         amount: 100,
       };
-      const user = { id: 'user-1', email: 'test@example.com' };
+      const user = { id: "user-1", email: "test@example.com" };
 
       // Mock booking service to return a booking
-      jest.spyOn(bookingService, 'getBookingByBookingId').mockResolvedValueOnce(mockBooking as any);
+      jest.spyOn(bookingService, "getBookingByBookingId").mockResolvedValueOnce(mockBooking as any);
 
       // Mock no existing payment
       paymentsRepository.findOne.mockResolvedValue(null);
@@ -145,7 +145,7 @@ describe('PaymentsService', () => {
 
       const result = await service.createPayment(createPaymentDto, user);
 
-      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith('booking-123');
+      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith("booking-123");
       expect(paymentsRepository.findOne).toHaveBeenCalled();
       expect(paymentsRepository.create).toHaveBeenCalled();
       expect(paymentsRepository.save).toHaveBeenCalled();
@@ -155,43 +155,43 @@ describe('PaymentsService', () => {
       });
     });
 
-    it('should throw NotFoundException when booking is not found', async () => {
+    it("should throw NotFoundException when booking is not found", async () => {
       const createPaymentDto = {
-        bookingId: 'non-existent',
+        bookingId: "non-existent",
       };
-      const user = { id: 'user-1', email: 'test@example.com' };
+      const user = { id: "user-1", email: "test@example.com" };
 
       // Mock booking service to throw NotFoundException
       jest
-        .spyOn(bookingService, 'getBookingByBookingId')
+        .spyOn(bookingService, "getBookingByBookingId")
         .mockRejectedValueOnce(new NotFoundException(`Booking with booking ID non-existent not found`));
 
       await expect(service.createPayment(createPaymentDto, user)).rejects.toThrow(NotFoundException);
-      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith('non-existent');
+      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith("non-existent");
     });
 
-    it('should throw ForbiddenException when user is not authorized', async () => {
+    it("should throw ForbiddenException when user is not authorized", async () => {
       const createPaymentDto = {
-        bookingId: 'booking-123',
+        bookingId: "booking-123",
       };
-      const user = { id: 'user-2', email: 'different@example.com' };
+      const user = { id: "user-2", email: "different@example.com" };
 
       // Mock booking service to return a booking with different email
-      jest.spyOn(bookingService, 'getBookingByBookingId').mockResolvedValueOnce(mockBooking as any);
+      jest.spyOn(bookingService, "getBookingByBookingId").mockResolvedValueOnce(mockBooking as any);
 
       await expect(service.createPayment(createPaymentDto, user)).rejects.toThrow(ForbiddenException);
-      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith('booking-123');
+      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith("booking-123");
     });
 
-    it('should update existing payment when one exists', async () => {
+    it("should update existing payment when one exists", async () => {
       const createPaymentDto = {
-        bookingId: 'booking-123',
+        bookingId: "booking-123",
         status: PaymentStatus.COMPLETED,
       };
-      const user = { id: 'user-1', email: 'test@example.com' };
+      const user = { id: "user-1", email: "test@example.com" };
 
       // Mock booking service to return a booking
-      jest.spyOn(bookingService, 'getBookingByBookingId').mockResolvedValueOnce(mockBooking as any);
+      jest.spyOn(bookingService, "getBookingByBookingId").mockResolvedValueOnce(mockBooking as any);
 
       // Mock existing payment
       paymentsRepository.findOne.mockResolvedValue(mockPayment);
@@ -212,8 +212,8 @@ describe('PaymentsService', () => {
     });
   });
 
-  describe('updatePaymentStatus', () => {
-    it('should update payment status by numeric ID', async () => {
+  describe("updatePaymentStatus", () => {
+    it("should update payment status by numeric ID", async () => {
       const updateDto: UpdatePaymentStatusDto = {
         bookingId: 123,
         status: PaymentStatus.COMPLETED,
@@ -244,14 +244,14 @@ describe('PaymentsService', () => {
       expect(result.status).toBe(PaymentStatus.COMPLETED);
     });
 
-    it('should update payment status by string ID', async () => {
+    it("should update payment status by string ID", async () => {
       const updateDto: UpdatePaymentStatusDto = {
-        bookingId: 'booking-123',
+        bookingId: "booking-123",
         status: PaymentStatus.COMPLETED,
       };
 
       // Mock getting booking by bookingId
-      jest.spyOn(bookingService, 'getBookingByBookingId').mockResolvedValueOnce(mockBooking as any);
+      jest.spyOn(bookingService, "getBookingByBookingId").mockResolvedValueOnce(mockBooking as any);
 
       // Mock existing payment
       paymentsRepository.findOne.mockResolvedValue(mockPayment);
@@ -270,12 +270,12 @@ describe('PaymentsService', () => {
 
       const result = await service.updatePaymentStatus(updateDto);
 
-      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith('booking-123');
+      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith("booking-123");
       expect(paymentsRepository.findOne).toHaveBeenCalled();
       expect(result.status).toBe(PaymentStatus.COMPLETED);
     });
 
-    it('should create a new payment if none exists', async () => {
+    it("should create a new payment if none exists", async () => {
       const updateDto: UpdatePaymentStatusDto = {
         bookingId: 123,
         status: PaymentStatus.COMPLETED,
@@ -306,7 +306,7 @@ describe('PaymentsService', () => {
       expect(result.status).toBe(PaymentStatus.COMPLETED);
     });
 
-    it('should throw NotFoundException when booking is not found', async () => {
+    it("should throw NotFoundException when booking is not found", async () => {
       const updateDto: UpdatePaymentStatusDto = {
         bookingId: 999,
         status: PaymentStatus.COMPLETED,
@@ -315,16 +315,16 @@ describe('PaymentsService', () => {
       // Mock not finding booking
       bookingRepository.findOne.mockResolvedValue(null);
       jest
-        .spyOn(bookingService, 'getBookingByBookingId')
-        .mockRejectedValueOnce(new NotFoundException('Booking not found'));
+        .spyOn(bookingService, "getBookingByBookingId")
+        .mockRejectedValueOnce(new NotFoundException("Booking not found"));
 
       await expect(service.updatePaymentStatus(updateDto)).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('getPaymentsByUserId', () => {
-    it('should return payments for a user', async () => {
-      const userId = 'user-1';
+  describe("getPaymentsByUserId", () => {
+    it("should return payments for a user", async () => {
+      const userId = "user-1";
 
       // Mock finding user
       userRepository.findOne.mockResolvedValue(mockUser);
@@ -343,8 +343,8 @@ describe('PaymentsService', () => {
       expect(result).toEqual([mockPayment]);
     });
 
-    it('should return empty array when user is not found', async () => {
-      const userId = 'non-existent';
+    it("should return empty array when user is not found", async () => {
+      const userId = "non-existent";
 
       // Mock not finding user
       userRepository.findOne.mockResolvedValue(null);
@@ -355,8 +355,8 @@ describe('PaymentsService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return empty array when user has no bookings', async () => {
-      const userId = 'user-1';
+    it("should return empty array when user has no bookings", async () => {
+      const userId = "user-1";
 
       // Mock finding user
       userRepository.findOne.mockResolvedValue(mockUser);
@@ -371,12 +371,12 @@ describe('PaymentsService', () => {
     });
   });
 
-  describe('getPaymentByBookingId', () => {
-    it('should return payment for a valid booking ID', async () => {
+  describe("getPaymentByBookingId", () => {
+    it("should return payment for a valid booking ID", async () => {
       const bookingId = 123;
 
       // Mock finding booking
-      jest.spyOn(bookingService, 'getBookingById').mockResolvedValueOnce(mockBooking as any);
+      jest.spyOn(bookingService, "getBookingById").mockResolvedValueOnce(mockBooking as any);
 
       // Mock finding payment
       paymentsRepository.findOne.mockResolvedValue(mockPayment);
@@ -388,14 +388,14 @@ describe('PaymentsService', () => {
       expect(result).toEqual(mockPayment);
     });
 
-    it('should try UUID lookup if numeric ID fails', async () => {
+    it("should try UUID lookup if numeric ID fails", async () => {
       const bookingId = 123;
 
       // Mock failing to find booking by numeric ID
-      jest.spyOn(bookingService, 'getBookingById').mockRejectedValueOnce(new NotFoundException('Not found'));
+      jest.spyOn(bookingService, "getBookingById").mockRejectedValueOnce(new NotFoundException("Not found"));
 
       // Mock finding booking by string ID
-      jest.spyOn(bookingService, 'getBookingByBookingId').mockResolvedValueOnce(mockBooking as any);
+      jest.spyOn(bookingService, "getBookingByBookingId").mockResolvedValueOnce(mockBooking as any);
 
       // Mock finding payment
       paymentsRepository.findOne.mockResolvedValue(mockPayment);
@@ -403,26 +403,26 @@ describe('PaymentsService', () => {
       const result = await service.getPaymentByBookingId(bookingId);
 
       expect(bookingService.getBookingById).toHaveBeenCalledWith(bookingId);
-      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith('123');
+      expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith("123");
       expect(paymentsRepository.findOne).toHaveBeenCalled();
       expect(result).toEqual(mockPayment);
     });
 
-    it('should throw NotFoundException when booking is not found', async () => {
+    it("should throw NotFoundException when booking is not found", async () => {
       const bookingId = 999;
 
       // Mock failing to find booking by any method
-      jest.spyOn(bookingService, 'getBookingById').mockRejectedValueOnce(new NotFoundException('Not found'));
-      jest.spyOn(bookingService, 'getBookingByBookingId').mockRejectedValueOnce(new NotFoundException('Not found'));
+      jest.spyOn(bookingService, "getBookingById").mockRejectedValueOnce(new NotFoundException("Not found"));
+      jest.spyOn(bookingService, "getBookingByBookingId").mockRejectedValueOnce(new NotFoundException("Not found"));
 
       await expect(service.getPaymentByBookingId(bookingId)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw NotFoundException when payment is not found', async () => {
+    it("should throw NotFoundException when payment is not found", async () => {
       const bookingId = 123;
 
       // Mock finding booking
-      jest.spyOn(bookingService, 'getBookingById').mockResolvedValueOnce(mockBooking as any);
+      jest.spyOn(bookingService, "getBookingById").mockResolvedValueOnce(mockBooking as any);
 
       // Mock not finding payment
       paymentsRepository.findOne.mockResolvedValue(null);

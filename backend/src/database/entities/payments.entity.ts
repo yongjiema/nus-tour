@@ -7,13 +7,13 @@ import {
   OneToOne,
   JoinColumn,
   UpdateDateColumn,
-} from 'typeorm';
-import { Booking } from './booking.entity';
-import { PaymentStatus } from './enums';
+} from "typeorm";
+import { Booking } from "./booking.entity";
+import { PaymentStatus } from "./enums";
 
-@Entity('payment')
-@Check('CHK_payment_status_valid', "\"status\" IN ('pending', 'completed')")
-@Check('CHK_amount_positive', '"amount" > 0')
+@Entity("payment")
+@Check("CHK_payment_status_valid", "\"status\" IN ('pending', 'completed')")
+@Check("CHK_amount_positive", '"amount" > 0')
 export class Payment {
   @PrimaryGeneratedColumn()
   id: number;
@@ -21,11 +21,11 @@ export class Payment {
   @Column()
   bookingId: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: "decimal", precision: 10, scale: 2 })
   amount: number;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: PaymentStatus,
     default: PaymentStatus.PENDING,
   })
@@ -44,7 +44,7 @@ export class Payment {
   updatedAt: Date;
 
   @OneToOne(() => Booking, (booking) => booking.payment)
-  @JoinColumn({ name: 'bookingId' })
+  @JoinColumn({ name: "bookingId" })
   booking: Booking;
 }
 export { PaymentStatus };

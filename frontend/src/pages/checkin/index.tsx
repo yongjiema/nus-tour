@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Container, Typography, TextField, Box, Alert } from "@mui/material";
-import { styled } from '@mui/material/styles';
+import { styled } from "@mui/material/styles";
 import { useCustomMutation, useNotification } from "@refinedev/core";
 import { useErrorHandler } from "../../utils/errorHandler";
-import { AuthPaper, PageTitle, SubmitButton } from '../../components/styled';
+import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
 
 // Styled components for consistent UI
 const FormContainer = styled(Box)(({ theme }) => ({
@@ -43,7 +43,7 @@ const Checkin: React.FC = () => {
       await mutate({
         url: "checkins",
         method: "post",
-        values: formData
+        values: formData,
       });
 
       setCheckinSuccess(true);
@@ -66,18 +66,12 @@ const Checkin: React.FC = () => {
           Participant Check-In
         </PageTitle>
 
-        <Typography
-          variant="body1"
-          gutterBottom
-          sx={{ mb: 3, textAlign: "center" }}
-        >
+        <Typography variant="body1" gutterBottom sx={{ mb: 3, textAlign: "center" }}>
           Please enter your Booking ID and Email Address to check in.
         </Typography>
 
         {checkinSuccess && (
-          <SuccessAlert severity="success">
-            Check-in successful! Thank you for joining our tour.
-          </SuccessAlert>
+          <SuccessAlert severity="success">Check-in successful! Thank you for joining our tour.</SuccessAlert>
         )}
 
         <FormContainer component="form" onSubmit={handleCheckin}>

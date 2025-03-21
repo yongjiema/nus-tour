@@ -9,26 +9,26 @@ import {
   BadRequestException,
   Logger,
   UnauthorizedException,
-} from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { User } from '../database/entities/user.entity';
-import { UsersService } from '../users/users.service';
+} from "@nestjs/common";
+import { AuthService } from "./auth.service";
+import { RegisterDto } from "./dto/register.dto";
+import { LoginDto } from "./dto/login.dto";
+import { JwtAuthGuard } from "./jwt-auth.guard";
+import { User } from "../database/entities/user.entity";
+import { UsersService } from "../users/users.service";
 
-@Controller('auth')
+@Controller("auth")
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   constructor(private readonly authService: AuthService) {}
 
-  @Post('login')
+  @Post("login")
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
-  @Post('register')
+  @Post("register")
   async register(@Body() registerDto: RegisterDto) {
     try {
       this.logger.log(`Register endpoint called with: ${JSON.stringify(registerDto)}`);
@@ -36,66 +36,66 @@ export class AuthController {
       return result;
     } catch (error) {
       if (error instanceof ConflictException) {
-        throw new ConflictException('Email is already in use');
+        throw new ConflictException("Email is already in use");
       }
       this.logger.error(`Registration failed: ${error.message}`, error.stack);
       throw new BadRequestException(`Registration failed: ${error.message}`);
     }
   }
 
-  @Post('logout')
+  @Post("logout")
   @UseGuards(JwtAuthGuard)
   async logout(@Request() req: any): Promise<{ message: string }> {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      throw new UnauthorizedException('No authorization header found'); // Changed from BadRequestException
+      throw new UnauthorizedException("No authorization header found"); // Changed from BadRequestException
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
     if (!token) {
-      throw new UnauthorizedException('No token provided'); // Also changed this for consistency
+      throw new UnauthorizedException("No token provided"); // Also changed this for consistency
     }
 
     await this.authService.logout(token);
-    return { message: 'Logged out successfully' };
+    return { message: "Logged out successfully" };
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('profile')
+  @Get("profile")
   getProfile(@Request() req: any) {
     return req.user;
   }
 
-  @Post('refresh')
+  @Post("refresh")
   @UseGuards(JwtAuthGuard)
   async refreshToken(@Request() req) {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-      throw new UnauthorizedException('Token not provided');
+      throw new UnauthorizedException("Token not provided");
     }
 
     return await this.authService.refreshToken(token);
   }
 }
 
-@Controller('users')
+@Controller("users")
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
 
   constructor(private readonly usersService: UsersService) {}
 
-  @Post('register')
+  @Post("register")
   async register(@Body() registerDto: RegisterDto): Promise<User> {
     try {
       return await this.usersService.register(registerDto);
     } catch (error) {
       if (error instanceof ConflictException) {
-        throw new ConflictException('Email is already in use');
+        throw new ConflictException("Email is already in use");
       }
 
-      this.logger.error('Registration failed:', error.stack, 'RegisterDto:', registerDto);
+      this.logger.error("Registration failed:", error.stack, "RegisterDto:", registerDto);
 
-      throw new BadRequestException('Registration failed.');
+      throw new BadRequestException("Registration failed.");
     }
   }
 }

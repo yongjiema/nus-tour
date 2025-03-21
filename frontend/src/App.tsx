@@ -2,17 +2,10 @@ import { Suspense, lazy } from "react";
 import { Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
-import {
-  notificationProvider,
-  RefineSnackbarProvider,
-  ThemedLayoutV2,
-} from "@refinedev/mui";
+import { notificationProvider, RefineSnackbarProvider, ThemedLayoutV2 } from "@refinedev/mui";
 import CssBaseline from "@mui/material/CssBaseline";
 import GlobalStyles from "@mui/material/GlobalStyles";
-import routerBindings, {
-  DocumentTitleHandler,
-  UnsavedChangesNotifier,
-} from "@refinedev/react-router-v6";
+import routerBindings, { DocumentTitleHandler, UnsavedChangesNotifier } from "@refinedev/react-router-v6";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { authProvider } from "./authProvider";
 import { Header } from "./components/header";
@@ -22,13 +15,7 @@ import { ForgotPassword } from "./pages/forgotPassword";
 import Login from "./pages/login";
 import { Register } from "./pages/register";
 import { Home } from "./pages/home";
-import {
-  InformationHome,
-  AcademicPrograms,
-  BusRoutes,
-  Canteens,
-  ConvenienceStores,
-} from "./pages/information";
+import { InformationHome, AcademicPrograms, BusRoutes, Canteens, ConvenienceStores } from "./pages/information";
 import { BookingForm } from "./pages/booking";
 import BookingConfirmation from "./pages/booking/Confirmation";
 import PaymentPage from "./pages/payment";
@@ -36,8 +23,8 @@ import Checkin from "./pages/checkin";
 import dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
 import TestimonialsPage from "./pages/testimonial";
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import UserDashboard from "./pages/user-dashboard";
 import { UserRole } from "./types/auth.types";
 import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";
@@ -88,16 +75,10 @@ function App() {
                       <Route path="/register" element={<Register />} />
                       <Route path="/forgot-password" element={<ForgotPassword />} />
                       <Route path="/information" element={<InformationHome />} />
-                      <Route
-                        path="/information/academic-programs"
-                        element={<AcademicPrograms />}
-                      />
+                      <Route path="/information/academic-programs" element={<AcademicPrograms />} />
                       <Route path="/information/bus-routes" element={<BusRoutes />} />
                       <Route path="/information/canteens" element={<Canteens />} />
-                      <Route
-                        path="/information/convenience-stores"
-                        element={<ConvenienceStores />}
-                      />
+                      <Route path="/information/convenience-stores" element={<ConvenienceStores />} />
                       <Route path="/booking" element={<BookingForm />} />
                       <Route path="/booking/confirmation" element={<BookingConfirmation />} />
                       <Route path="/payment" element={<PaymentPage />} />

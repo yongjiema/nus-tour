@@ -1,7 +1,7 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { TypeOrmModuleOptions } from "@nestjs/typeorm";
 
 const config: TypeOrmModuleOptions = {
-  type: 'postgres',
+  type: "postgres",
   host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT, 10),
   username: process.env.DB_USER,
@@ -13,7 +13,7 @@ const config: TypeOrmModuleOptions = {
   extra: {
     sslmode: process.env.DB_SSLMODE,
   },
-  entities: [__dirname + '/**/*.entity{.ts,.js}'],
+  entities: [__dirname + "/**/*.entity{.ts,.js}"],
   synchronize: true,
 };
 

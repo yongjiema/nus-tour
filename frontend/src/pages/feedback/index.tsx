@@ -1,10 +1,7 @@
 import React from "react";
 import { useForm } from "@refinedev/react-hook-form";
 import { SubmitHandler } from "react-hook-form";
-import {
-  Box, Button, TextField, Typography,
-  Rating, FormControlLabel, Checkbox, Paper
-} from "@mui/material";
+import { Box, Button, TextField, Typography, Rating, FormControlLabel, Checkbox, Paper } from "@mui/material";
 import { useCreate } from "@refinedev/core";
 
 interface FeedbackFormProps {
@@ -20,13 +17,19 @@ interface FeedbackFormData {
 }
 
 const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => {
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FeedbackFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<FeedbackFormData>({
     defaultValues: {
       bookingId,
       rating: 5,
       comments: "",
-      isPublic: true
-    }
+      isPublic: true,
+    },
   });
 
   const { mutate, isLoading } = useCreate();
@@ -42,7 +45,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
         onSuccess: () => {
           if (onSuccess) onSuccess();
         },
-      }
+      },
     );
   };
 
@@ -54,12 +57,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Box mb={2}>
           <Typography component="legend">Rating</Typography>
-          <Rating
-            name="rating"
-            value={rating}
-            onChange={(_, value) => setValue("rating", value || 0)}
-            size="large"
-          />
+          <Rating name="rating" value={rating} onChange={(_, value) => setValue("rating", value || 0)} size="large" />
         </Box>
 
         <TextField
@@ -74,22 +72,12 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
         />
 
         <FormControlLabel
-          control={
-            <Checkbox
-              defaultChecked
-              {...register("isPublic")}
-            />
-          }
+          control={<Checkbox defaultChecked {...register("isPublic")} />}
           label="Make my review public"
         />
 
         <Box mt={2}>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={isLoading}
-          >
+          <Button type="submit" variant="contained" color="primary" disabled={isLoading}>
             Submit Feedback
           </Button>
         </Box>

@@ -1,15 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Container,
-  Typography,
-  Box,
-  Paper,
-  Button,
-  styled,
-  Divider,
-  CircularProgress,
-} from "@mui/material";
+import { Container, Typography, Box, Paper, Button, styled, Divider, CircularProgress } from "@mui/material";
 import { CheckCircle } from "@mui/icons-material";
 import { useOne } from "@refinedev/core";
 import { PublicHeader } from "../../components/header/public";
@@ -67,10 +58,7 @@ const BookingConfirmation: React.FC = () => {
             Booking not found. Please check your booking details.
           </Typography>
           <Box sx={{ textAlign: "center", mt: 2 }}>
-            <ActionButton
-              variant="contained"
-              onClick={() => navigate("/booking")}
-            >
+            <ActionButton variant="contained" onClick={() => navigate("/booking")}>
               Return to Booking
             </ActionButton>
           </Box>
@@ -103,52 +91,68 @@ const BookingConfirmation: React.FC = () => {
           </Typography>
 
           <DetailsRow>
-            <Typography variant="body2" color="textSecondary">Booking ID</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Booking ID
+            </Typography>
             <Typography variant="body2">{booking.bookingId}</Typography>
           </DetailsRow>
 
           <DetailsRow>
-            <Typography variant="body2" color="textSecondary">Name</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Name
+            </Typography>
             <Typography variant="body2">{booking.name}</Typography>
           </DetailsRow>
 
           <DetailsRow>
-            <Typography variant="body2" color="textSecondary">Email</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Email
+            </Typography>
             <Typography variant="body2">{booking.email}</Typography>
           </DetailsRow>
 
           <DetailsRow>
-            <Typography variant="body2" color="textSecondary">Date</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Date
+            </Typography>
             <Typography variant="body2">{booking.date}</Typography>
           </DetailsRow>
 
           <DetailsRow>
-            <Typography variant="body2" color="textSecondary">Time</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Time
+            </Typography>
             <Typography variant="body2">{booking.timeSlot}</Typography>
           </DetailsRow>
 
           <DetailsRow>
-            <Typography variant="body2" color="textSecondary">Group Size</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Group Size
+            </Typography>
             <Typography variant="body2">{booking.groupSize} people</Typography>
           </DetailsRow>
 
           <DetailsRow>
-            <Typography variant="body2" color="textSecondary">Amount Paid</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Amount Paid
+            </Typography>
             <Typography variant="body2">SGD {booking.deposit}</Typography>
           </DetailsRow>
 
           <DetailsRow>
-            <Typography variant="body2" color="textSecondary">Payment Status</Typography>
-            <Typography variant="body2" sx={{ color: booking.paymentStatus === 'completed' ? 'success.main' : 'warning.main' }}>
+            <Typography variant="body2" color="textSecondary">
+              Payment Status
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: booking.paymentStatus === "completed" ? "success.main" : "warning.main" }}
+            >
               {booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)}
             </Typography>
           </DetailsRow>
 
           <Box sx={{ textAlign: "center", mt: 3 }}>
-            <ActionButton
-              variant="contained"
-              onClick={() => navigate("/")}
-            >
+            <ActionButton variant="contained" onClick={() => navigate("/")}>
               Return to Home
             </ActionButton>
           </Box>

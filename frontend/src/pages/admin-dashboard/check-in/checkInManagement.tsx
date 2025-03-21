@@ -1,7 +1,18 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Container, Typography, TextField, Button, Grid, Paper, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Alert
+  Container,
+  Typography,
+  TextField,
+  Button,
+  Grid,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Alert,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import * as dataProviders from "../../../dataProvider";
@@ -45,8 +56,8 @@ const CheckInManagement = () => {
       const { data } = await dataProviders.default.getList({
         resource: "admin/bookings/findAll",
         metaData: {
-          filters: [{ field: "bookingStatus", operator: "eq", value: "confirmed" }]
-        }
+          filters: [{ field: "bookingStatus", operator: "eq", value: "confirmed" }],
+        },
       });
 
       setBookings(data as unknown as Booking[]);
@@ -71,7 +82,7 @@ const CheckInManagement = () => {
         filters.push({
           field: "q",
           operator: "eq",
-          value: search
+          value: search,
         });
       }
 
@@ -79,7 +90,7 @@ const CheckInManagement = () => {
         filters.push({
           field: "date",
           operator: "eq",
-          value: dateFilter
+          value: dateFilter,
         });
       }
 
@@ -100,7 +111,7 @@ const CheckInManagement = () => {
     try {
       await dataProviders.default.custom({
         url: `admin/bookings/${id}/checkin`,
-        method: "patch"
+        method: "patch",
       });
 
       fetchBookings();
@@ -114,7 +125,7 @@ const CheckInManagement = () => {
     try {
       await dataProviders.default.custom({
         url: `admin/bookings/${id}/checkout`,
-        method: "patch"
+        method: "patch",
       });
 
       fetchBookings();
@@ -126,10 +137,14 @@ const CheckInManagement = () => {
 
   return (
     <Container>
-      <Typography variant="h4" gutterBottom>Check-In Management</Typography>
+      <Typography variant="h4" gutterBottom>
+        Check-In Management
+      </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
       )}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -152,12 +167,7 @@ const CheckInManagement = () => {
           />
         </Grid>
         <Grid item xs={12} md={4}>
-          <Button
-            variant="contained"
-            onClick={filterBookings}
-            fullWidth
-            sx={{ height: "100%" }}
-          >
+          <Button variant="contained" onClick={filterBookings} fullWidth sx={{ height: "100%" }}>
             Apply Filters
           </Button>
         </Grid>
@@ -190,13 +200,9 @@ const CheckInManagement = () => {
                   <TableCell>{booking.checkedIn ? "Checked In" : "Not Checked In"}</TableCell>
                   <TableCell>
                     {!booking.checkedIn ? (
-                      <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>
-                        Check In
-                      </CheckInButton>
+                      <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>Check In</CheckInButton>
                     ) : (
-                      <CheckOutButton onClick={() => checkOutBooking(booking.bookingId)}>
-                        Check Out
-                      </CheckOutButton>
+                      <CheckOutButton onClick={() => checkOutBooking(booking.bookingId)}>Check Out</CheckOutButton>
                     )}
                   </TableCell>
                 </TableRow>
@@ -209,4 +215,4 @@ const CheckInManagement = () => {
   );
 };
 
-export default CheckInManagement; 
+export default CheckInManagement;

@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Booking } from '../../database/entities/booking.entity';
-import { BookingStatus } from '../../database/entities/enums';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Booking } from "../../database/entities/booking.entity";
+import { BookingStatus } from "../../database/entities/enums";
 
 @Injectable()
 export class BookingService {
@@ -12,16 +12,16 @@ export class BookingService {
   ) {}
 
   async getFilteredBookings(search?: string, status?: string, date?: string) {
-    const query = this.bookingRepository.createQueryBuilder('booking');
+    const query = this.bookingRepository.createQueryBuilder("booking");
 
     if (search) {
-      query.andWhere('booking.name ILIKE :search OR booking.bookingId ILIKE :search', { search: `%${search}%` });
+      query.andWhere("booking.name ILIKE :search OR booking.bookingId ILIKE :search", { search: `%${search}%` });
     }
     if (status) {
-      query.andWhere('booking.status = :status', { status });
+      query.andWhere("booking.status = :status", { status });
     }
     if (date) {
-      query.andWhere('booking.date = :date', { date });
+      query.andWhere("booking.date = :date", { date });
     }
 
     return query.getMany();

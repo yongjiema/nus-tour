@@ -51,8 +51,13 @@
     "start:dev": "npm run dev",
     "refine": "refine",
     "check": "npm run lint && npm test",
-    "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write .",
+    "lint": "npm run tsc:check && npm run prettier:check && npm run eslint",
+    "lint:fix": "npm run prettier:fix && npm run eslint:fix",
+    "tsc:check": "tsc --noEmit",
+    "eslint": "eslint",
+    "eslint:fix": "eslint --fix",
+    "prettier:check": "prettier --ignore-path ./.gitignore --check .",
+    "prettier:fix": "prettier --ignore-path ./.gitignore --write .",
     "test": ""
   },
   "browserslist": {

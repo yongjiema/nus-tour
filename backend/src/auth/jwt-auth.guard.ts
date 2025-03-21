@@ -1,6 +1,6 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { TokenBlacklistService } from './token-blacklist.service';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { TokenBlacklistService } from "./token-blacklist.service";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -14,17 +14,17 @@ export class JwtAuthGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
-      throw new UnauthorizedException('Token is missing or improperly formatted');
+      throw new UnauthorizedException("Token is missing or improperly formatted");
     }
 
     try {
       if (this.tokenBlacklistService.isBlacklisted(token)) {
-        throw new UnauthorizedException('Token has been blacklisted');
+        throw new UnauthorizedException("Token has been blacklisted");
       }
 
       const decoded = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET || 'secret',
-        algorithms: ['HS256'],
+        secret: process.env.JWT_SECRET || "secret",
+        algorithms: ["HS256"],
       });
 
       request.user = decoded;
@@ -37,16 +37,16 @@ export class JwtAuthGuard implements CanActivate {
   private extractTokenFromHeader(request: any): string | null {
     const authHeader = request.headers.authorization;
     if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing');
+      throw new UnauthorizedException("Authorization header is missing");
     }
 
-    if (typeof authHeader !== 'string') {
-      throw new UnauthorizedException('Authorization header must be a string');
+    if (typeof authHeader !== "string") {
+      throw new UnauthorizedException("Authorization header must be a string");
     }
 
-    const [bearer, token] = authHeader.split(' ');
+    const [bearer, token] = authHeader.split(" ");
 
-    if (bearer !== 'Bearer' || !token) {
+    if (bearer !== "Bearer" || !token) {
       throw new UnauthorizedException('Invalid token format. Expected "Bearer <token>".');
     }
 

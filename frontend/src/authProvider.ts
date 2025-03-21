@@ -54,7 +54,7 @@ axiosInstance.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export const authProvider = {
@@ -67,8 +67,7 @@ export const authProvider = {
 
       if (response.data.access_token) {
         // Normalize the role to uppercase to match enum
-        const normalizedRole =
-          response.data.user.role.toUpperCase() as UserRole;
+        const normalizedRole = response.data.user.role.toUpperCase() as UserRole;
 
         localStorage.setItem("access_token", response.data.access_token);
         localStorage.setItem("role", normalizedRole);

@@ -1,6 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn } from 'typeorm';
-import { User } from './user.entity';
-import { Booking } from './booking.entity';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn } from "typeorm";
+import { User } from "./user.entity";
+import { Booking } from "./booking.entity";
 
 @Entity()
 export class Feedback {
@@ -13,10 +13,10 @@ export class Feedback {
   @ManyToOne(() => Booking)
   booking: Booking;
 
-  @Column({ type: 'int', default: 5 })
+  @Column({ type: "int", default: 5 })
   rating: number;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   comments: string;
 
   @Column({ default: false })

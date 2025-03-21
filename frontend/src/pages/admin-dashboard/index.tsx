@@ -1,73 +1,76 @@
 import React, { useEffect, useState } from "react";
-import { Box, Grid, Paper, Typography, Button, CircularProgress, Alert, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+} from "@mui/material";
 import { styled } from "@mui/system";
 import { useNavigate } from "react-router-dom";
 import { useApiUrl, useCustom } from "@refinedev/core";
-import RefreshIcon from '@mui/icons-material/Refresh';
-import EventIcon from '@mui/icons-material/Event';
-import PersonIcon from '@mui/icons-material/Person';
-import FeedbackIcon from '@mui/icons-material/Feedback';
+import RefreshIcon from "@mui/icons-material/Refresh";
+import EventIcon from "@mui/icons-material/Event";
+import PersonIcon from "@mui/icons-material/Person";
+import FeedbackIcon from "@mui/icons-material/Feedback";
 import { formatDateDisplay } from "../../utils/dateUtils";
 import { useErrorHandler } from "../../utils/errorHandler";
 import { DashboardStats, ActivityItem } from "../../types/api.types";
 
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend
-} from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 const DashboardContainer = styled(Box)({
-  padding: '24px',
+  padding: "24px",
 });
 
 const SectionTitle = styled(Typography)({
-  fontWeight: 'bold',
-  color: '#002147',
-  marginBottom: '16px',
+  fontWeight: "bold",
+  color: "#002147",
+  marginBottom: "16px",
 });
 
 const StatCard = styled(Paper)({
-  padding: '16px',
+  padding: "16px",
   textAlign: "center",
-  color: 'text.secondary',
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
-  }
+  color: "text.secondary",
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+  "&:hover": {
+    transform: "translateY(-4px)",
+    boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
+  },
 });
 
 const StatValue = styled(Typography)({
-  fontWeight: 'bold',
-  color: 'primary.main',
-  marginTop: '8px',
+  fontWeight: "bold",
+  color: "primary.main",
+  marginTop: "8px",
 });
 
 const ActionButton = styled(Button)({
-  textTransform: 'none',
-  fontWeight: 'bold',
+  textTransform: "none",
+  fontWeight: "bold",
 });
 
 const ChartContainer = styled(Paper)({
-  padding: '16px',
-  height: '100%',
+  padding: "16px",
+  height: "100%",
 });
 
 // Component for statistics cards
-const StatCards: React.FC<{ stats: DashboardStats, isLoading: boolean }> = ({ stats, isLoading }) => {
+const StatCards: React.FC<{ stats: DashboardStats; isLoading: boolean }> = ({ stats, isLoading }) => {
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
         <CircularProgress />
       </Box>
     );
@@ -106,31 +109,22 @@ const StatCards: React.FC<{ stats: DashboardStats, isLoading: boolean }> = ({ st
 // Component for quick action buttons
 const QuickActions: React.FC<{ navigate: (path: string) => void }> = ({ navigate }) => (
   <Box mt={4}>
-    <SectionTitle variant="h5" gutterBottom>Quick Actions</SectionTitle>
+    <SectionTitle variant="h5" gutterBottom>
+      Quick Actions
+    </SectionTitle>
     <Grid container spacing={2}>
       <Grid item>
-        <ActionButton
-          variant="contained"
-          color="primary"
-          onClick={() => navigate("/admin/bookings")}
-        >
+        <ActionButton variant="contained" color="primary" onClick={() => navigate("/admin/bookings")}>
           Manage Bookings
         </ActionButton>
       </Grid>
       <Grid item>
-        <ActionButton
-          variant="contained"
-          color="secondary"
-          onClick={() => navigate("/admin/check-ins")}
-        >
+        <ActionButton variant="contained" color="secondary" onClick={() => navigate("/admin/check-ins")}>
           Manage Check-Ins
         </ActionButton>
       </Grid>
       <Grid item>
-        <ActionButton
-          variant="contained"
-          onClick={() => navigate("/admin/feedback")}
-        >
+        <ActionButton variant="contained" onClick={() => navigate("/admin/feedback")}>
           View Feedback
         </ActionButton>
       </Grid>
@@ -141,9 +135,11 @@ const QuickActions: React.FC<{ navigate: (path: string) => void }> = ({ navigate
 // Component for the statistics chart
 const BookingChart: React.FC<{ data: { name: string; value: number }[] }> = ({ data }) => (
   <Box mt={4}>
-    <SectionTitle variant="h5" gutterBottom>Booking Statistics</SectionTitle>
+    <SectionTitle variant="h5" gutterBottom>
+      Booking Statistics
+    </SectionTitle>
     <ChartContainer>
-      <div style={{ width: '100%', height: 300 }}>
+      <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -161,14 +157,16 @@ const BookingChart: React.FC<{ data: { name: string; value: number }[] }> = ({ d
 
 // Component for recent activity list
 const RecentActivity: React.FC<{
-  activities: ActivityItem[],
-  isLoading: boolean
+  activities: ActivityItem[];
+  isLoading: boolean;
 }> = ({ activities, isLoading }) => (
   <Box mt={4}>
-    <SectionTitle variant="h5" gutterBottom>Recent Activity</SectionTitle>
+    <SectionTitle variant="h5" gutterBottom>
+      Recent Activity
+    </SectionTitle>
     <Paper>
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
           <CircularProgress />
         </Box>
       ) : !activities || activities.length === 0 ? (
@@ -180,9 +178,13 @@ const RecentActivity: React.FC<{
           {activities.map((activity) => (
             <ListItem key={activity.id}>
               <ListItemIcon>
-                {activity.type === 'booking' ? <EventIcon /> :
-                 activity.type === 'feedback' ? <FeedbackIcon /> :
-                 <PersonIcon />}
+                {activity.type === "booking" ? (
+                  <EventIcon />
+                ) : activity.type === "feedback" ? (
+                  <FeedbackIcon />
+                ) : (
+                  <PersonIcon />
+                )}
               </ListItemIcon>
               <ListItemText
                 primary={activity.description}
@@ -209,7 +211,12 @@ const AdminDashboard: React.FC = () => {
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
   // Using Refine's useCustom hook for data fetching
-  const { data: apiResponse, isLoading, error, refetch } = useCustom<{ data: DashboardStats }>({
+  const {
+    data: apiResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useCustom<{ data: DashboardStats }>({
     url: `${apiUrl}/admin/dashboard/stats`,
     method: "get",
     queryOptions: {
@@ -217,14 +224,14 @@ const AdminDashboard: React.FC = () => {
       onError: (error) => {
         console.error("Dashboard stats error:", error);
         handleError(error);
-      }
-    }
+      },
+    },
   });
 
   const {
     data: activityResponse,
     isLoading: activityLoading,
-    refetch: refetchActivity
+    refetch: refetchActivity,
   } = useCustom<{ data: ActivityItem[] }>({
     url: `${apiUrl}/admin/dashboard/recent-activity`,
     method: "get",
@@ -233,14 +240,14 @@ const AdminDashboard: React.FC = () => {
       onError: (error) => {
         console.error("Recent activity error:", error);
         handleError(error);
-      }
-    }
+      },
+    },
   });
 
   useEffect(() => {
-    console.log('Dashboard stats response:', apiResponse);
+    console.log("Dashboard stats response:", apiResponse);
     if (apiResponse?.data?.data) {
-      console.log('Stats data:', apiResponse.data.data);
+      console.log("Stats data:", apiResponse.data.data);
       const stats = apiResponse.data.data;
       setDashboardStats({
         totalBookings: stats.totalBookings,
@@ -252,7 +259,7 @@ const AdminDashboard: React.FC = () => {
   }, [apiResponse]);
 
   useEffect(() => {
-    console.log('Activity response:', activityResponse);
+    console.log("Activity response:", activityResponse);
     if (activityResponse?.data) {
       // Ensure we're getting an array and handle empty data case
       const activities = Array.isArray(activityResponse.data) ? activityResponse.data : [];
@@ -266,21 +273,17 @@ const AdminDashboard: React.FC = () => {
   };
 
   const chartData = [
-    { name: 'Total Bookings', value: dashboardStats.totalBookings },
-    { name: 'Pending Check-Ins', value: dashboardStats.pendingCheckIns },
-    { name: 'Completed Tours', value: dashboardStats.completedTours },
-    { name: 'Feedbacks', value: dashboardStats.feedbacks },
+    { name: "Total Bookings", value: dashboardStats.totalBookings },
+    { name: "Pending Check-Ins", value: dashboardStats.pendingCheckIns },
+    { name: "Completed Tours", value: dashboardStats.completedTours },
+    { name: "Feedbacks", value: dashboardStats.feedbacks },
   ];
 
   return (
     <DashboardContainer>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <SectionTitle variant="h4">Admin Dashboard</SectionTitle>
-        <ActionButton
-          startIcon={<RefreshIcon />}
-          onClick={handleRefresh}
-          variant="outlined"
-        >
+        <ActionButton startIcon={<RefreshIcon />} onClick={handleRefresh} variant="outlined">
           Refresh Data
         </ActionButton>
       </Box>
@@ -297,10 +300,7 @@ const AdminDashboard: React.FC = () => {
 
       <BookingChart data={chartData} />
 
-      <RecentActivity
-        activities={recentActivity}
-        isLoading={activityLoading}
-      />
+      <RecentActivity activities={recentActivity} isLoading={activityLoading} />
     </DashboardContainer>
   );
 };

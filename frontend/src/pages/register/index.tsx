@@ -1,14 +1,7 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { useNotification, useApiUrl } from "@refinedev/core";
-import {
-  Container,
-  TextField,
-  Typography,
-  Grid,
-  Alert,
-  Link,
-} from "@mui/material";
+import { Container, TextField, Typography, Grid, Alert, Link } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -17,15 +10,12 @@ import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
 
 const validationSchema = yup.object({
   username: yup.string().required("Username is required"),
-  email: yup.string()
-    .required("Email is required")
-    .email("Invalid email address"),
-  password: yup.string()
-    .required("Password is required")
-    .min(6, "Password must be at least 6 characters"),
-  confirmPassword: yup.string()
+  email: yup.string().required("Email is required").email("Invalid email address"),
+  password: yup.string().required("Password is required").min(6, "Password must be at least 6 characters"),
+  confirmPassword: yup
+    .string()
     .required("Confirm Password is required")
-    .oneOf([yup.ref('password')], "Passwords must match")
+    .oneOf([yup.ref("password")], "Passwords must match"),
 });
 
 type RegisterFormData = {
@@ -33,7 +23,7 @@ type RegisterFormData = {
   email: string;
   password: string;
   confirmPassword: string;
-}
+};
 
 export const Register: React.FC = () => {
   const apiUrl = useApiUrl();
@@ -45,16 +35,16 @@ export const Register: React.FC = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },    
+    formState: { errors, isValid },
   } = useForm<RegisterFormData>({
     resolver: yupResolver<RegisterFormData>(validationSchema),
     mode: "onChange",
     defaultValues: {
-      email: '',
-      password: '',
-      username: '',
-      confirmPassword: ''
-    }
+      email: "",
+      password: "",
+      username: "",
+      confirmPassword: "",
+    },
   });
 
   const onSubmit = async (data: RegisterFormData) => {
@@ -64,11 +54,11 @@ export const Register: React.FC = () => {
     try {
       // Registration API call
       const response = await fetch(`${apiUrl}/auth/register`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
@@ -77,11 +67,11 @@ export const Register: React.FC = () => {
       }
 
       const responseData = await response.json();
-      
+
       // Store token and user info
       if (responseData.access_token) {
         localStorage.setItem("access_token", responseData.access_token);
-        
+
         // Make sure we have the user data to store
         if (responseData.user) {
           localStorage.setItem("user", JSON.stringify(responseData.user));
@@ -89,13 +79,13 @@ export const Register: React.FC = () => {
         } else {
           console.warn("User data missing in registration response");
         }
-        
+
         // After registration, fetch the user profile to ensure token works
         try {
           const profileResponse = await fetch(`${apiUrl}/auth/profile`, {
             headers: {
-              Authorization: `Bearer ${responseData.access_token}`
-            }
+              Authorization: `Bearer ${responseData.access_token}`,
+            },
           });
           if (profileResponse.ok) {
             console.log("Token verification successful");
@@ -190,12 +180,7 @@ export const Register: React.FC = () => {
               </Grid>
 
               <Grid item xs={12}>
-                <SubmitButton
-                  type="submit"
-                  variant="contained"
-                  fullWidth
-                  disabled={!isValid}
-                >
+                <SubmitButton type="submit" variant="contained" fullWidth disabled={!isValid}>
                   Register
                 </SubmitButton>
               </Grid>

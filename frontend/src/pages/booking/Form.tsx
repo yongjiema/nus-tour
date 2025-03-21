@@ -3,47 +3,40 @@ import { Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useApiUrl } from "@refinedev/core";
 import * as yup from "yup";
-import {
-  Box,
-  Button,
-  TextField,
-  MenuItem,
-  Alert,
-} from "@mui/material";
+import { Box, Button, TextField, MenuItem, Alert } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { isValid } from "date-fns";
 import { useForm } from "@refinedev/react-hook-form";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 const tomorrow = new Date();
 tomorrow.setDate(tomorrow.getDate() + 1);
 
-const bookingSchema = yup.object({
-  date: yup
-    .date()
-    .min(tomorrow, "Booking date must be from tomorrow onwards")
-    .required("Booking date is required"),
-  timeSlot: yup
-    .string()
-    .oneOf(
-      [
-        "09:00 AM - 10:00 AM",
-        "10:00 AM - 11:00 AM",
-        "11:00 AM - 12:00 PM",
-        "01:00 PM - 02:00 PM",
-        "02:00 PM - 03:00 PM",
-        "03:00 PM - 04:00 PM",
-      ],
-      "Please select a valid time slot"
-    )
-    .required("Time slot is required"),
-  groupSize: yup
-    .number()
-    .min(1, "Group size must be at least 1")
-    .max(50, "Group size cannot exceed 50")
-    .integer("Group size must be a whole number")
-    .required("Group size is required"),
-}).required();
+const bookingSchema = yup
+  .object({
+    date: yup.date().min(tomorrow, "Booking date must be from tomorrow onwards").required("Booking date is required"),
+    timeSlot: yup
+      .string()
+      .oneOf(
+        [
+          "09:00 AM - 10:00 AM",
+          "10:00 AM - 11:00 AM",
+          "11:00 AM - 12:00 PM",
+          "01:00 PM - 02:00 PM",
+          "02:00 PM - 03:00 PM",
+          "03:00 PM - 04:00 PM",
+        ],
+        "Please select a valid time slot",
+      )
+      .required("Time slot is required"),
+    groupSize: yup
+      .number()
+      .min(1, "Group size must be at least 1")
+      .max(50, "Group size cannot exceed 50")
+      .integer("Group size must be a whole number")
+      .required("Group size is required"),
+  })
+  .required();
 
 type BookingFormData = yup.InferType<typeof bookingSchema>;
 
@@ -76,13 +69,13 @@ const BookingForm: React.FC = () => {
   const onSubmit = async (data: BookingFormData) => {
     setError("");
     setSuccess(false);
-    
+
     // Enhanced logging
     console.log(`API URL: ${apiUrl}/bookings`);
-    console.log("Creating booking with data:", { 
-      ...data, 
+    console.log("Creating booking with data:", {
+      ...data,
       date: data.date?.toISOString(),
-      formattedDate: data.date?.toISOString().split('T')[0]
+      formattedDate: data.date?.toISOString().split("T")[0],
     });
 
     try {
@@ -102,59 +95,59 @@ const BookingForm: React.FC = () => {
       console.log(`Token present (length: ${token.length})`);
 
       // Format the date as YYYY-MM-DD
-      const formattedDate = data.date.toISOString().split('T')[0];
-      
+      const formattedDate = data.date.toISOString().split("T")[0];
+
       // Log the exact date being sent
       console.log("Sending date to server:", formattedDate);
 
       // Get user information from localStorage
       const userStr = localStorage.getItem("user");
       const userData = userStr ? JSON.parse(userStr) : null;
-      
+
       if (!userData || !userData.email || !userData.username) {
         setError("User information not found. Please log in again.");
         navigate("/login");
         return;
       }
-      
+
       // Create booking payload
       const bookingData = {
         date: formattedDate, // Send date as YYYY-MM-DD string
         timeSlot: data.timeSlot,
         groupSize: Number(data.groupSize),
         name: userData.username,
-        email: userData.email
+        email: userData.email,
       };
-      
+
       // Replace the fetch call
       const response = await fetch(`${apiUrl}/bookings`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(bookingData)
+        body: JSON.stringify(bookingData),
       });
 
       console.log(`Sent request to: ${apiUrl}/bookings`);
-      
+
       // Check if response is ok before attempting to parse JSON
       if (!response.ok) {
         const status = response.status;
         console.error(`Server returned status: ${status}`);
-        
+
         try {
-          const contentType = response.headers.get('content-type');
+          const contentType = response.headers.get("content-type");
           console.log(`Error response content type: ${contentType}`);
-          
+
           const errorText = await response.text();
           console.log(`Raw error response: "${errorText}"`);
-          
+
           let errorMessage = `Failed to create booking (Status ${status})`;
-          
-          if (errorText && errorText.trim() !== '') {
+
+          if (errorText && errorText.trim() !== "") {
             try {
-              if (contentType?.includes('application/json')) {
+              if (contentType?.includes("application/json")) {
                 const errorData = JSON.parse(errorText);
                 errorMessage = errorData.message || errorMessage;
                 console.error("Parsed error details:", errorData);
@@ -167,21 +160,21 @@ const BookingForm: React.FC = () => {
           } else {
             console.error("Server returned empty error response");
           }
-          
+
           throw new Error(errorMessage);
         } catch (responseError) {
           console.error("Error handling response:", responseError);
-          
+
           throw new Error(`Request failed: ${(responseError as Error).message}`);
         }
       }
-      
+
       // Declare variable outside the conditional block
       let newBooking;
 
       // Check response type
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
         newBooking = await response.json();
         console.log("Booking created successfully:", newBooking);
       } else {
@@ -198,24 +191,27 @@ const BookingForm: React.FC = () => {
 
       // After successful booking creation and response parsing
       console.log("Booking created successfully:", newBooking);
-      
+
       // Ensure bookingId exists before redirecting
       if (!newBooking || !newBooking.bookingId) {
         setError("Booking created but no ID was returned");
         console.error("Missing booking ID in response:", newBooking);
         return;
       }
-      
+
       // Store in localStorage with proper structure
-      localStorage.setItem("booking-data", JSON.stringify({
-        bookingId: newBooking.bookingId,
-        id: newBooking.id,
-        deposit: newBooking.deposit || 50,
-        date: newBooking.date,
-        timeSlot: newBooking.timeSlot,
-        groupSize: newBooking.groupSize
-      }));
-      
+      localStorage.setItem(
+        "booking-data",
+        JSON.stringify({
+          bookingId: newBooking.bookingId,
+          id: newBooking.id,
+          deposit: newBooking.deposit || 50,
+          date: newBooking.date,
+          timeSlot: newBooking.timeSlot,
+          groupSize: newBooking.groupSize,
+        }),
+      );
+
       console.log(`Redirecting to payment with bookingId: ${newBooking.bookingId}`);
       navigate(`/payment/${newBooking.bookingId}`);
 
@@ -237,21 +233,21 @@ const BookingForm: React.FC = () => {
     const user = localStorage.getItem("user");
     const referrer = document.referrer;
     const sessionValid = sessionStorage.getItem("booking_flow_valid");
-    
+
     // Check if user is authenticated
     if (!token || !user) {
       console.log("No authentication found, redirecting to login");
       navigate("/login");
       return;
     }
-    
+
     // Verify the user is coming from a valid source
-    const isValidReferrer = 
-      referrer.includes("/register") || 
-      referrer.includes("/login") || 
+    const isValidReferrer =
+      referrer.includes("/register") ||
+      referrer.includes("/login") ||
       referrer.includes("/home") ||
       sessionValid === "true";
-    
+
     if (isValidReferrer) {
       // Mark this session as valid for potential page refreshes
       sessionStorage.setItem("booking_flow_valid", "true");
@@ -264,11 +260,7 @@ const BookingForm: React.FC = () => {
   }, [navigate]);
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit(onSubmit)}
-      sx={{ maxWidth: 600, margin: "0 auto" }}
-    >
+    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ maxWidth: 600, margin: "0 auto" }}>
       {success && (
         <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(false)}>
           Booking created successfully! Redirecting to payment...
@@ -341,14 +333,7 @@ const BookingForm: React.FC = () => {
         InputProps={{ inputProps: { min: 1, max: 50 } }}
       />
 
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        fullWidth
-        sx={{ mt: 3 }}
-        disabled={formLoading}
-      >
+      <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3 }} disabled={formLoading}>
         {formLoading ? "Submitting..." : "Book Tour"}
       </Button>
     </Box>
