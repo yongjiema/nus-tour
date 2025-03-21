@@ -1,33 +1,196 @@
 const express = require('express');
 const { Client } = require('pg');
+const cors = require('cors');
+const axios = require('axios');
+const cheerio = require('cheerio');
+const { Pool } = require('pg');
+require('dotenv').config();
 const app = express();
 const PORT = 3456;
 
 // 数据库连接参数
 const dbConfig = {
-  host: 'ep-round-cell-a1ty5qy1.ap-southeast-1.aws.neon.tech',
-  port: 5432,
-  user: 'nus-tour_owner',
-  password: 'V0QKJlUHS6Am',
-  database: 'nus-tour',
+  host: process.env.DB_HOST || 'ep-round-cell-a1ty5qy1.ap-southeast-1.aws.neon.tech',
+  port: process.env.DB_PORT || 5432,
+  user: process.env.DB_USER || 'nus-tour_owner',
+  password: process.env.DB_PASSWORD || 'V0QKJlUHS6Am',
+  database: process.env.DB_NAME || 'nus-tour',
   ssl: {
     rejectUnauthorized: false
   }
 };
 
+// 启用CORS
+app.use(cors());
 app.use(express.json());
 
-// 启用CORS
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+// 创建数据库连接池
+const pool = new Pool(dbConfig);
+
+// 测试数据库连接
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error("Error acquiring client", err.stack);
   }
+  console.log("数据库连接成功");
+  release();
+});
+
+// 获取新闻数据
+async function fetchNews() {
+  try {
+    console.log("开始获取新闻数据...");
+    const response = await axios.get('https://www.nus.edu.sg/news');
+    const $ = cheerio.load(response.data);
+    const news = [];
+
+    $(".news-item").each((i, element) => {
+      const title = $(element).find(".news-title").text().trim();
+      const link = $(element).find("a").attr("href");
+      const date = $(element).find(".news-date").text().trim();
+      const image = $(element).find("img").attr("src");
+
+      if (title && link) {
+        news.push({
+          title,
+          link: link.startsWith("http") ? link : `https://www.nus.edu.sg${link}`,
+          date,
+          image: image || null,
+        });
+      }
+    });
+
+    console.log(`获取到 ${news.length} 条新闻`);
+    return news;
+  } catch (error) {
+    console.error("获取新闻失败:", error);
+    return [];
+  }
+}
+
+// 获取活动数据
+async function fetchEvents() {
+  try {
+    console.log("开始获取活动数据...");
+    const response = await axios.get('https://www.nus.edu.sg/events');
+    const $ = cheerio.load(response.data);
+    const events = [];
+
+    $(".event-item").each((i, element) => {
+      const title = $(element).find(".event-title").text().trim();
+      const link = $(element).find("a").attr("href");
+      const date = $(element).find(".event-date").text().trim();
+      const location = $(element).find(".event-location").text().trim();
+
+      if (title && link) {
+        events.push({
+          title,
+          link: link.startsWith("http") ? link : `https://www.nus.edu.sg${link}`,
+          date,
+          location,
+        });
+      }
+    });
+
+    console.log(`获取到 ${events.length} 条活动`);
+    return events;
+  } catch (error) {
+    console.error("获取活动失败:", error);
+    return [];
+  }
+}
+
+// 更新数据库中的新闻数据
+async function updateNewsInDB(news) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 清空现有新闻数据
+    await client.query("DELETE FROM news");
+
+    // 插入新的新闻数据
+    for (const item of news) {
+      await client.query(
+        "INSERT INTO news (title, link, date, image) VALUES ($1, $2, $3, $4)",
+        [item.title, item.link, item.date, item.image]
+      );
+    }
+
+    await client.query("COMMIT");
+    console.log("新闻数据更新成功");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("更新新闻数据失败:", error);
+  } finally {
+    client.release();
+  }
+}
+
+// 更新数据库中的活动数据
+async function updateEventsInDB(events) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 清空现有活动数据
+    await client.query("DELETE FROM events");
+
+    // 插入新的活动数据
+    for (const item of events) {
+      await client.query(
+        "INSERT INTO events (title, link, date, location) VALUES ($1, $2, $3, $4)",
+        [item.title, item.link, item.date, item.location]
+      );
+    }
+
+    await client.query("COMMIT");
+    console.log("活动数据更新成功");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("更新活动数据失败:", error);
+  } finally {
+    client.release();
+  }
+}
+
+// 定时更新函数
+async function scheduledUpdate() {
+  console.log("开始定时更新数据...");
+  const news = await fetchNews();
+  const events = await fetchEvents();
   
-  next();
+  await updateNewsInDB(news);
+  await updateEventsInDB(events);
+  
+  console.log("定时更新完成");
+}
+
+// 设置定时任务，每30分钟执行一次
+setInterval(scheduledUpdate, 30 * 60 * 1000);
+
+// 启动时立即执行一次更新
+scheduledUpdate();
+
+// API路由
+app.get('/news', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM news ORDER BY date DESC");
+    res.json(result.rows);
+  } catch (error) {
+    console.error("获取新闻失败:", error);
+    res.status(500).json({ error: "Failed to fetch news" });
+  }
+});
+
+app.get('/events', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM events ORDER BY date DESC");
+    res.json(result.rows);
+  } catch (error) {
+    console.error("获取活动失败:", error);
+    res.status(500).json({ error: "Failed to fetch events" });
+  }
 });
 
 // 根路径

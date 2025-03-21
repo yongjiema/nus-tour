@@ -10,7 +10,7 @@
     "start:dev:backend": "cd backend && npm run start:dev",
     "start:dev:frontend": "cd frontend && npm run start:dev",
     "start:express": "cd backend && node express-server.js",
-    "start:dev:all": "concurrently -rk \"npm run start:dev:backend\" \"npm run start:dev:frontend\" \"npm run start:express\"",
+    "start:dev:all": "concurrently \"npm run start:dev:backend\" \"npm run start:dev:frontend\" \"npm run start:express\"",
     "lint:backend": "cd backend && npm run lint",
     "lint:frontend": "cd frontend && npm run lint",
     "lint:all": "npm run lint:backend && npm run lint:frontend",
@@ -21,7 +21,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0",
+    "concurrently": "^9.1.2",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3"
   },
