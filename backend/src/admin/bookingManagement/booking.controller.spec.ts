@@ -6,8 +6,8 @@ import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
 import { JwtService } from "@nestjs/jwt";
 import { TokenBlacklistService } from "../../auth/token-blacklist.service";
 import { NotFoundException } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
 
-// Create a mock for JwtAuthGuard that always allows access
 class MockJwtAuthGuard {
   canActivate() {
     return true;
@@ -17,6 +17,9 @@ class MockJwtAuthGuard {
 describe("BookingController", () => {
   let controller: BookingController;
   let service: BookingService;
+  let consoleLogSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
+  let loggerErrorSpy: jest.SpyInstance;
 
   // Sample booking data for testing
   const sampleBooking = {
@@ -63,6 +66,20 @@ describe("BookingController", () => {
     isBlacklisted: jest.fn().mockReturnValue(false),
   };
 
+  beforeAll(() => {
+    // Set up spies before all tests run
+    consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+    loggerErrorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation();
+  });
+
+  afterAll(() => {
+    // Restore original implementations after all tests
+    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    loggerErrorSpy.mockRestore();
+  });
+
   beforeEach(async () => {
     jest.clearAllMocks(); // Reset mocks between tests
 
@@ -105,11 +122,9 @@ describe("BookingController", () => {
     });
 
     it("should log the user making the request", async () => {
-      // Create a spy on console.log
-      const consoleSpy = jest.spyOn(console, "log");
+      // No need to create another spy, we're using the global one
       await controller.findAll({ user: { id: "admin-id" } });
-      expect(consoleSpy).toHaveBeenCalledWith("User making request:", { id: "admin-id" });
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalledWith("User making request:", { id: "admin-id" });
     });
 
     it("should handle service errors", async () => {

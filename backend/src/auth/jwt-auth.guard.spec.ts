@@ -20,8 +20,16 @@ describe("JwtAuthGuard", () => {
     jwtAuthGuard = new JwtAuthGuard(jwtService, tokenBlacklistService);
   });
 
+  beforeEach(() => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("should throw UnauthorizedException if Authorization header is missing", () => {

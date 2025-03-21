@@ -1,13 +1,12 @@
 import React from "react";
 import { useForm } from "@refinedev/react-hook-form";
-import { Controller } from "react-hook-form";
+import { Controller, Resolver, FieldValues } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { Box, Typography, TextField, Rating, Button, FormControlLabel, Checkbox, FormHelperText } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useErrorHandler } from "../../utils/errorHandler";
 
-// Styled components
 const FormContainer = styled(Box)({
   maxWidth: 500,
   margin: "0 auto",
@@ -37,7 +36,6 @@ interface FeedbackFormInputs {
   isPublic: boolean;
 }
 
-// Validation schema
 const feedbackSchema = yup.object().shape({
   rating: yup
     .number()
@@ -55,7 +53,6 @@ const feedbackSchema = yup.object().shape({
 const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => {
   const { handleError } = useErrorHandler();
 
-  // Use Refine's useForm hook which combines React Hook Form with Refine data providers
   const {
     handleSubmit,
     control,
@@ -64,7 +61,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
     refineCore: { onFinish, formLoading },
     reset,
   } = useForm<FeedbackFormInputs>({
-    resolver: yupResolver(feedbackSchema),
+    resolver: yupResolver(feedbackSchema) as unknown as Resolver<FieldValues, Record<string, never>>,
     defaultValues: {
       rating: 0,
       comments: "",
@@ -78,7 +75,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
         type: "success",
       },
       redirect: false,
-      // Including the bookingId directly in the meta data
       meta: {
         bookingId,
       },
@@ -87,13 +83,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
 
   const onSubmit = async (data: FeedbackFormInputs) => {
     try {
-      // Add bookingId to the form data
       await onFinish({ ...data, bookingId });
-
-      // Reset form after successful submission
       reset();
-
-      // Call the onSuccess callback if provided
       if (onSuccess) {
         onSuccess();
       }
@@ -102,8 +93,10 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
     }
   };
 
+  const handleFormSubmit = handleSubmit((data) => onSubmit(data as FeedbackFormInputs));
+
   return (
-    <FormContainer component="form" onSubmit={handleSubmit(onSubmit)}>
+    <FormContainer component="form" onSubmit={handleFormSubmit}>
       <Typography variant="subtitle1" gutterBottom>
         How was your tour experience?
       </Typography>
@@ -120,7 +113,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
             <Rating {...field} precision={1} size="large" onChange={(_, value) => field.onChange(value)} />
           )}
         />
-        {errors.rating && <FormHelperText error>{errors.rating.message}</FormHelperText>}
+        {errors.rating && <FormHelperText error>{errors.rating.message?.toString()}</FormHelperText>}
       </RatingContainer>
 
       {/* Comments Field */}
@@ -136,7 +129,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
             margin="normal"
             label="Share your thoughts about the tour"
             error={!!errors.comments}
-            helperText={errors.comments?.message}
+            helperText={errors.comments?.message?.toString()}
           />
         )}
       />

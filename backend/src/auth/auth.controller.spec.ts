@@ -65,6 +65,8 @@ describe("AuthController", () => {
     });
 
     it("should throw a BadRequestException for a general registration failure", async () => {
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
       const mockRegisterDto: RegisterDto = {
         email: "test@example.com",
         username: "Test User",
@@ -74,6 +76,8 @@ describe("AuthController", () => {
 
       await expect(authController.register(mockRegisterDto)).rejects.toThrow(BadRequestException);
       expect(mockAuthService.register).toHaveBeenCalledWith(mockRegisterDto);
+
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -99,7 +103,6 @@ describe("AuthController", () => {
 
   describe("logout", () => {
     it("should logout a user and return a success message", async () => {
-      // For endpoints that require auth, we assume JwtAuthGuard returns true.
       const mockReq = { headers: { authorization: "Bearer valid-token" } } as any;
       mockAuthService.logout.mockResolvedValue(undefined);
 

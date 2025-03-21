@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Controller } from "react-hook-form";
+import { Controller, FieldValues, Resolver } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useApiUrl } from "@refinedev/core";
 import * as yup from "yup";
@@ -12,23 +12,24 @@ import { useNavigate } from "react-router-dom";
 const tomorrow = new Date();
 tomorrow.setDate(tomorrow.getDate() + 1);
 
+// Define time slots constant
+const timeSlots = [
+  "09:00 AM - 10:00 AM",
+  "10:00 AM - 11:00 AM",
+  "11:00 AM - 12:00 PM",
+  "01:00 PM - 02:00 PM",
+  "02:00 PM - 03:00 PM",
+  "03:00 PM - 04:00 PM",
+] as const;
+
+// Define the type for time slots
+type TimeSlot = (typeof timeSlots)[number];
+
+// Define the schema (only once)
 const bookingSchema = yup
   .object({
     date: yup.date().min(tomorrow, "Booking date must be from tomorrow onwards").required("Booking date is required"),
-    timeSlot: yup
-      .string()
-      .oneOf(
-        [
-          "09:00 AM - 10:00 AM",
-          "10:00 AM - 11:00 AM",
-          "11:00 AM - 12:00 PM",
-          "01:00 PM - 02:00 PM",
-          "02:00 PM - 03:00 PM",
-          "03:00 PM - 04:00 PM",
-        ],
-        "Please select a valid time slot",
-      )
-      .required("Time slot is required"),
+    timeSlot: yup.string().oneOf(timeSlots, "Please select a valid time slot").required("Time slot is required"),
     groupSize: yup
       .number()
       .min(1, "Group size must be at least 1")
@@ -38,7 +39,12 @@ const bookingSchema = yup
   })
   .required();
 
-type BookingFormData = yup.InferType<typeof bookingSchema>;
+// Define the form data type
+interface BookingFormData {
+  date: Date;
+  timeSlot: TimeSlot;
+  groupSize: number;
+}
 
 const BookingForm: React.FC = () => {
   const apiUrl = useApiUrl();
@@ -53,7 +59,7 @@ const BookingForm: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<BookingFormData>({
-    resolver: yupResolver(bookingSchema),
+    resolver: yupResolver(bookingSchema) as unknown as Resolver<FieldValues, Record<string, never>>,
     refineCoreProps: {
       action: "create",
       resource: "bookings",
@@ -62,15 +68,14 @@ const BookingForm: React.FC = () => {
     defaultValues: {
       date: tomorrow,
       groupSize: 1,
-      timeSlot: "09:00 AM - 10:00 AM",
+      timeSlot: "09:00 AM - 10:00 AM" as TimeSlot,
     },
   });
 
-  const onSubmit = async (data: BookingFormData) => {
+  const processSubmit = async (data: BookingFormData) => {
     setError("");
     setSuccess(false);
 
-    // Enhanced logging
     console.log(`API URL: ${apiUrl}/bookings`);
     console.log("Creating booking with data:", {
       ...data,
@@ -91,16 +96,12 @@ const BookingForm: React.FC = () => {
         return;
       }
 
-      // Log token length but not the actual token
       console.log(`Token present (length: ${token.length})`);
 
-      // Format the date as YYYY-MM-DD
       const formattedDate = data.date.toISOString().split("T")[0];
 
-      // Log the exact date being sent
       console.log("Sending date to server:", formattedDate);
 
-      // Get user information from localStorage
       const userStr = localStorage.getItem("user");
       const userData = userStr ? JSON.parse(userStr) : null;
 
@@ -110,16 +111,14 @@ const BookingForm: React.FC = () => {
         return;
       }
 
-      // Create booking payload
       const bookingData = {
-        date: formattedDate, // Send date as YYYY-MM-DD string
+        date: formattedDate,
         timeSlot: data.timeSlot,
         groupSize: Number(data.groupSize),
         name: userData.username,
         email: userData.email,
       };
 
-      // Replace the fetch call
       const response = await fetch(`${apiUrl}/bookings`, {
         method: "POST",
         headers: {
@@ -131,7 +130,6 @@ const BookingForm: React.FC = () => {
 
       console.log(`Sent request to: ${apiUrl}/bookings`);
 
-      // Check if response is ok before attempting to parse JSON
       if (!response.ok) {
         const status = response.status;
         console.error(`Server returned status: ${status}`);
@@ -227,6 +225,11 @@ const BookingForm: React.FC = () => {
     }
   };
 
+  // Wrapper function to handle the type conversion
+  const onSubmit = (formData: FieldValues) => {
+    return processSubmit(formData as BookingFormData);
+  };
+
   // Enhanced session verification
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -312,12 +315,11 @@ const BookingForm: React.FC = () => {
             fullWidth
             margin="normal"
           >
-            <MenuItem value="09:00 AM - 10:00 AM">09:00 AM - 10:00 AM</MenuItem>
-            <MenuItem value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</MenuItem>
-            <MenuItem value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</MenuItem>
-            <MenuItem value="01:00 PM - 02:00 PM">01:00 PM - 02:00 PM</MenuItem>
-            <MenuItem value="02:00 PM - 03:00 PM">02:00 PM - 03:00 PM</MenuItem>
-            <MenuItem value="03:00 PM - 04:00 PM">03:00 PM - 04:00 PM</MenuItem>
+            {timeSlots.map((slot) => (
+              <MenuItem key={slot} value={slot}>
+                {slot}
+              </MenuItem>
+            ))}
           </TextField>
         )}
       />

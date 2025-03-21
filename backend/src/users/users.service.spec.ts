@@ -3,14 +3,23 @@ import { UsersService } from "./users.service";
 import { User } from "../database/entities/user.entity";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { ConflictException, NotFoundException, Logger } from "@nestjs/common";
+import { ConflictException, NotFoundException } from "@nestjs/common";
 import { RegisterDto } from "../auth/dto/register.dto";
 import { LoginDto } from "../auth/dto/login.dto";
 import { UpdateUserDto } from "../auth/dto/update-user.dto";
 
+// Remove the Logger mocks since they're causing issues with NestJS v10
+jest.mock("@nestjs/common", () => {
+  const original = jest.requireActual("@nestjs/common");
+  return {
+    ...original,
+  };
+});
+
 describe("UsersService", () => {
   let service: UsersService;
   let userRepository: Repository<User>;
+  let module: TestingModule;
 
   const mockUserRepository = {
     findOne: jest.fn(),
@@ -21,17 +30,19 @@ describe("UsersService", () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UsersService,
-        { provide: getRepositoryToken(User), useValue: mockUserRepository },
-        { provide: Logger, useValue: { debug: jest.fn(), warn: jest.fn(), error: jest.fn() } },
-      ],
-    }).compile();
+    jest.clearAllMocks();
+
+    const moduleBuilder = Test.createTestingModule({
+      providers: [UsersService, { provide: getRepositoryToken(User), useValue: mockUserRepository }],
+    });
+
+    // Disable logger
+    moduleBuilder.setLogger(null);
+
+    module = await moduleBuilder.compile();
 
     service = module.get<UsersService>(UsersService);
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
-    jest.clearAllMocks();
   });
 
   it("should be defined", () => {
@@ -78,7 +89,6 @@ describe("UsersService", () => {
         comparePassword: jest.fn(),
       } as User;
 
-      // Email not taken
       mockUserRepository.findOne.mockResolvedValue(undefined);
       mockUserRepository.create.mockReturnValue(mockUser);
       mockUserRepository.save.mockResolvedValue(mockUser);
@@ -97,7 +107,6 @@ describe("UsersService", () => {
         username: "ExistingUser",
         password: "password",
       };
-      // Simulating an existing user
       mockUserRepository.findOne.mockResolvedValue({
         id: "existing-user-uuid",
         email: "existing@example.com",
@@ -226,9 +235,7 @@ describe("UsersService", () => {
         unhashedPassword: "",
       } as User;
 
-      // Simulate finding the user first
       jest.spyOn(service, "findById").mockResolvedValue(mockUser);
-      // Simulate save returning the updated entity
       mockUserRepository.save.mockResolvedValue({ ...mockUser, ...updateUserDto });
 
       const result = await service.update("user-uuid-1", updateUserDto);
@@ -359,7 +366,6 @@ describe("UsersService", () => {
       expect(result[0]).toHaveProperty("id");
       expect(result[0]).toHaveProperty("username");
       expect(result[0]).toHaveProperty("email");
-      // Password should still be present in the service layer
       expect(result[0]).toHaveProperty("password");
     });
   });

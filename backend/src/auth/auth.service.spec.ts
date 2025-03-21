@@ -97,6 +97,9 @@ describe("AuthService", () => {
     });
 
     it("should throw ConflictException if email is already in use", async () => {
+      // Add a spy to suppress console.error
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
       const registerDto: RegisterDto = {
         email: "test@example.com",
         username: "Test User",
@@ -105,6 +108,12 @@ describe("AuthService", () => {
       mockUsersService.findByEmail.mockResolvedValue(mockUser);
 
       await expect(service.register(registerDto)).rejects.toThrow(ConflictException);
+
+      // Verify the console.error was called (optional)
+      expect(consoleErrorSpy).toHaveBeenCalled();
+
+      // Restore the original console.error implementation
+      consoleErrorSpy.mockRestore();
     });
   });
 

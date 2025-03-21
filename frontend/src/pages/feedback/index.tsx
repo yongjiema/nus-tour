@@ -1,6 +1,5 @@
 import React from "react";
 import { useForm } from "@refinedev/react-hook-form";
-import { SubmitHandler } from "react-hook-form";
 import { Box, Button, TextField, Typography, Rating, FormControlLabel, Checkbox, Paper } from "@mui/material";
 import { useCreate } from "@refinedev/core";
 
@@ -35,7 +34,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
   const { mutate, isLoading } = useCreate();
   const rating = watch("rating");
 
-  const onSubmit: SubmitHandler<FeedbackFormData> = (data) => {
+  const onSubmit = (data: FeedbackFormData) => {
     mutate(
       {
         resource: "bookings",
@@ -54,7 +53,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
       <Typography variant="h6" gutterBottom>
         Share Your Tour Experience
       </Typography>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit((data) => onSubmit(data as FeedbackFormData))}>
         <Box mb={2}>
           <Typography component="legend">Rating</Typography>
           <Rating name="rating" value={rating} onChange={(_, value) => setValue("rating", value || 0)} size="large" />
