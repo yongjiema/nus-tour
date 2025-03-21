@@ -8,7 +8,6 @@ import { styled } from '@mui/material/styles';
 import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import { formatDateDisplay } from "../../utils/dateUtils";
 
-// Define TypeScript interfaces for better type safety
 interface FeedbackUser {
   id: string;
   name: string;
@@ -27,12 +26,6 @@ interface Feedback {
   booking?: FeedbackBooking;
   createdAt: string;
 }
-
-const PageTitle = styled(Typography)(({ theme }) => ({
-  color: '#002147', // NUS blue
-  fontWeight: 'bold',
-  marginBottom: theme.spacing(1)
-}));
 
 const PageSubtitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.text.secondary,

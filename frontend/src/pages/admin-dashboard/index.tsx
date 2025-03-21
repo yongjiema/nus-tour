@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Box, Grid, Paper, Typography, Button, CircularProgress, Alert, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
 import { styled } from "@mui/system";
 import { useNavigate } from "react-router-dom";
-import { authProvider } from "../../authProvider";
 import { useApiUrl, useCustom } from "@refinedev/core";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import EventIcon from '@mui/icons-material/Event';
@@ -10,10 +9,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import { formatDateDisplay } from "../../utils/dateUtils";
 import { useErrorHandler } from "../../utils/errorHandler";
-import { UserRole } from "../../types/auth.types";
-import { DashboardStats, DashboardApiResponse, ActivityItem, ActivityApiResponse } from "../../types/api.types";
+import { DashboardStats, ActivityItem } from "../../types/api.types";
 
-// Import individual components from recharts for better tree-shaking
 import {
   ResponsiveContainer,
   BarChart,
@@ -25,14 +22,13 @@ import {
   Legend
 } from 'recharts';
 
-// Styled components
 const DashboardContainer = styled(Box)({
   padding: '24px',
 });
 
 const SectionTitle = styled(Typography)({
   fontWeight: 'bold',
-  color: '#002147', // NUS blue
+  color: '#002147',
   marginBottom: '16px',
 });
 
