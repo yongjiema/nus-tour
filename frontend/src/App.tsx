@@ -29,12 +29,20 @@ import {
   Canteens,
   ConvenienceStores
 } from "./pages/information";
-import { BookingForm, BookingConfirmation } from "./pages/booking";
-import { Payment } from "./pages/payment";
+import { BookingForm } from "./pages/booking";
+import BookingConfirmation from "./pages/booking/Confirmation";
+import PaymentPage from "./pages/payment";
 import Checkin from "./pages/checkin";
-import * as dataProviders from "./dataProviders";
+import dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
 import { TourInformationHome } from "./pages/tour-information/Home";
+import TestimonialsPage from "./pages/testimonial";
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import UserDashboard from "./pages/user-dashboard";
+import { UserRole } from "./types/auth.types";
+import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";
+import CheckInManagement from "./pages/admin-dashboard/check-in/checkInManagement";
 
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 const TourInfoManagement = lazy(() => import("./pages/admin-dashboard/TourInfoManagement"));
@@ -105,7 +113,7 @@ function App() {
                       <Route index element={<BookingForm />} />
                       <Route path="confirmation" element={<BookingConfirmation />} />
                     </Route>
-                    <Route path="/payment" element={<Payment />} />
+                    <Route path="/payment" element={<PaymentPage />} />
                     <Route path="/checkin" element={<Checkin />} />
                     <Route path="/login" element={<Login />} />
                   </Route>
@@ -133,20 +141,26 @@ function App() {
                     />
                   </Route>
 
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                </Routes>
+                    {/* User Routes */}
+                    <Route element={<PrivateRoute requiredRole={UserRole.USER} />}>
+                      <Route path="/user-dashboard" element={<UserDashboard />} />
+                    </Route>
 
-                <RefineKbar />
-                <UnsavedChangesNotifier />
-                <DocumentTitleHandler />
-              </Refine>
-              <DevtoolsPanel />
-            </DevtoolsProvider>
-          </RefineSnackbarProvider>
-        </ColorModeContextProvider>
-      </RefineKbarProvider>
-    </BrowserRouter>
+                    <Route path="/payment/:bookingId" element={<PaymentPage />} />
+                    <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmation />} />
+                  </Routes>
+
+                  <RefineKbar />
+                  <UnsavedChangesNotifier />
+                  <DocumentTitleHandler />
+                </Refine>
+                <DevtoolsPanel />
+              </DevtoolsProvider>
+            </RefineSnackbarProvider>
+          </ColorModeContextProvider>
+        </RefineKbarProvider>
+      </BrowserRouter>
+    </LocalizationProvider>
   );
 }
 

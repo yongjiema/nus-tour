@@ -1,0 +1,30 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]  # Reference to the CI workflow name
+    types:
+      - completed
+
+jobs:
+  deploy-backend:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger backend deployment
+        env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL_BACKEND }}
+        run: |
+          curl "$deploy_url"
+
+  deploy-frontend:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger frontend deployment
+        env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL_FRONTEND }}
+        run: |
+          curl "$deploy_url"

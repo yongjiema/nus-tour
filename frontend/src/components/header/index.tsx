@@ -6,6 +6,11 @@ import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import { Link } from "react-router-dom";
 import { useGetIdentity } from "@refinedev/core";
 import { HamburgerMenu, RefineThemedLayoutV2HeaderProps } from "@refinedev/mui";
 import React, { useContext } from "react";
@@ -75,6 +80,16 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
           </Stack>
         </Stack>
       </Toolbar>
+      <MenuItem
+        component={Link}
+        to="/dashboard"
+        onClick={close}
+      >
+        <ListItemIcon>
+          <DashboardIcon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText>My Dashboard</ListItemText>
+      </MenuItem>
     </AppBar>
   );
 };

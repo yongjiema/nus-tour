@@ -1,21 +1,34 @@
 import React from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
+import { useNotification, useApiUrl } from "@refinedev/core";
 import {
   Container,
   TextField,
-  Button,
-  Paper,
   Typography,
   Grid,
   Alert,
   Link,
 } from "@mui/material";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { PublicHeader } from "./../../components/header/public";
-import * as dataProviders from "../../dataProviders";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { useErrorHandler } from "../../utils/errorHandler";
+import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
 
-interface RegisterFormInputs {
+const validationSchema = yup.object({
+  username: yup.string().required("Username is required"),
+  email: yup.string()
+    .required("Email is required")
+    .email("Invalid email address"),
+  password: yup.string()
+    .required("Password is required")
+    .min(6, "Password must be at least 6 characters"),
+  confirmPassword: yup.string()
+    .required("Confirm Password is required")
+    .oneOf([yup.ref('password')], "Passwords must match")
+});
+
+type RegisterFormData = {
   username: string;
   email: string;
   password: string;
@@ -23,84 +36,117 @@ interface RegisterFormInputs {
 }
 
 export const Register: React.FC = () => {
+  const apiUrl = useApiUrl();
+  const navigate = useNavigate();
+  const { open } = useNotification();
+  const { handleError } = useErrorHandler();
+  const [apiError, setApiError] = React.useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
-    formState: { errors },
-    watch,
-  } = useForm<RegisterFormInputs>();
-  const [error, setError] = React.useState<string | null>(null);
-  const navigate = useNavigate();
-
-  const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
-    if (data.password !== data.confirmPassword) {
-      setError("Passwords do not match");
-      return;
+    formState: { errors, isValid },    
+  } = useForm<RegisterFormData>({
+    resolver: yupResolver<RegisterFormData>(validationSchema),
+    mode: "onChange",
+    defaultValues: {
+      email: '',
+      password: '',
+      username: '',
+      confirmPassword: ''
     }
+  });
+
+  const onSubmit = async (data: RegisterFormData) => {
+    setApiError(null);
+    console.log("Registration attempt with data:", { ...data, password: "[REDACTED]" });
 
     try {
-      await dataProviders.backend.custom({
-        url: "/auth/register",
-        method: "post",
-        payload: {
-          username: data.username,
-          email: data.email,
-          password: data.password,
+      // Registration API call
+      const response = await fetch(`${apiUrl}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
         },
+        body: JSON.stringify(data)
       });
-      alert("Registration successful!");
-      navigate("/login");
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 409) {
-          setError(
-            "Email is already registered. Please use a different email."
-          );
-        } else if (err.response?.status === 400) {
-          setError("Bad request. Please check your input.");
-        } else {
-          setError("Registration failed. Please try again.");
-        }
-      } else {
-        setError("An unexpected error occurred. Please try again.");
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { status: response.status, data: errorData };
       }
+
+      const responseData = await response.json();
+      
+      // Store token and user info
+      if (responseData.access_token) {
+        localStorage.setItem("access_token", responseData.access_token);
+        
+        // Make sure we have the user data to store
+        if (responseData.user) {
+          localStorage.setItem("user", JSON.stringify(responseData.user));
+          console.log("Stored user data:", { id: responseData.user.id, email: responseData.user.email });
+        } else {
+          console.warn("User data missing in registration response");
+        }
+        
+        // After registration, fetch the user profile to ensure token works
+        try {
+          const profileResponse = await fetch(`${apiUrl}/auth/profile`, {
+            headers: {
+              Authorization: `Bearer ${responseData.access_token}`
+            }
+          });
+          if (profileResponse.ok) {
+            console.log("Token verification successful");
+          }
+        } catch (e) {
+          console.warn("Profile verification failed:", e);
+        }
+      }
+
+      open?.({
+        message: "Registration successful!",
+        type: "success",
+        description: "Proceeding to booking...",
+      });
+
+      // Navigate to booking page
+      navigate("/booking");
+    } catch (err: unknown) {
+      console.error("Registration error:", err);
+      setApiError(handleError(err));
     }
   };
 
   return (
     <>
-      <PublicHeader />
-      <Container maxWidth="sm" style={{ marginTop: "50px" }}>
-        <Paper elevation={5} style={{ padding: "40px", borderRadius: "12px" }}>
-          <Typography
-            variant="h4"
-            gutterBottom
-            style={{
-              color: "#002147",
-              fontWeight: "bold",
-              textAlign: "center",
-            }}
-          >
+      <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
+        <AuthPaper>
+          <PageTitle variant="h4" gutterBottom>
             Register
-          </Typography>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          </PageTitle>
+
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <Grid container spacing={3}>
-              <Grid item xs={12}>
-                {error && <Alert severity="error">{error}</Alert>}
-              </Grid>
+              {apiError && (
+                <Grid item xs={12}>
+                  <Alert severity="error">{apiError}</Alert>
+                </Grid>
+              )}
+
               <Grid item xs={12}>
                 <TextField
                   label="Username"
                   fullWidth
                   required
                   variant="outlined"
-                  {...register("username", {
-                    required: "Username is required",
-                  })}
+                  {...register("username")}
                   error={!!errors.username}
                   helperText={errors.username?.message}
                 />
               </Grid>
+
               <Grid item xs={12}>
                 <TextField
                   label="Email Address"
@@ -108,11 +154,13 @@ export const Register: React.FC = () => {
                   fullWidth
                   required
                   variant="outlined"
-                  {...register("email", { required: "Email is required" })}
+                  autoComplete="email"
+                  {...register("email")}
                   error={!!errors.email}
                   helperText={errors.email?.message}
                 />
               </Grid>
+
               <Grid item xs={12}>
                 <TextField
                   label="Password"
@@ -120,13 +168,13 @@ export const Register: React.FC = () => {
                   fullWidth
                   required
                   variant="outlined"
-                  {...register("password", {
-                    required: "Password is required",
-                  })}
+                  autoComplete="new-password"
+                  {...register("password")}
                   error={!!errors.password}
                   helperText={errors.password?.message}
                 />
               </Grid>
+
               <Grid item xs={12}>
                 <TextField
                   label="Confirm Password"
@@ -134,30 +182,24 @@ export const Register: React.FC = () => {
                   fullWidth
                   required
                   variant="outlined"
-                  {...register("confirmPassword", {
-                    required: "Confirm Password is required",
-                    validate: (value) =>
-                      value === watch("password") || "Passwords do not match",
-                  })}
+                  autoComplete="new-password"
+                  {...register("confirmPassword")}
                   error={!!errors.confirmPassword}
                   helperText={errors.confirmPassword?.message}
                 />
               </Grid>
+
               <Grid item xs={12}>
-                <Button
+                <SubmitButton
                   type="submit"
                   variant="contained"
                   fullWidth
-                  style={{
-                    backgroundColor: "#FF6600",
-                    color: "#FFFFFF",
-                    padding: "10px",
-                    fontSize: "16px",
-                  }}
+                  disabled={!isValid}
                 >
                   Register
-                </Button>
+                </SubmitButton>
               </Grid>
+
               <Grid item xs={12}>
                 <Typography variant="body2" align="center">
                   Already have an account? <Link href="/login">Login</Link>
@@ -165,7 +207,7 @@ export const Register: React.FC = () => {
               </Grid>
             </Grid>
           </form>
-        </Paper>
+        </AuthPaper>
       </Container>
     </>
   );

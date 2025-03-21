@@ -16,10 +16,10 @@ async function bootstrap() {
 
     // Enable CORS
     app.enableCors({
-      origin: true, // Allow all origins
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+      origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:5173'),
+      credentials: configService.get<boolean>('CORS_CREDENTIALS', true),
+      methods: configService.get<string>('CORS_METHODS', 'GET,POST,PUT,DELETE,PATCH,OPTIONS')?.split(','),
+      allowedHeaders: configService.get<string>('CORS_HEADERS', 'Content-Type,Authorization,X-Requested-With,Accept')?.split(','),
     });
     console.log('CORS enabled');
 

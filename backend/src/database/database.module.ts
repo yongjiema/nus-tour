@@ -3,6 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User } from './entities/user.entity';
 import { Booking } from './entities/booking.entity';
+import { Checkin } from './entities/checkin.entity';
+import { Feedback } from './entities/feedback.entity';
+import { Payment } from './entities/payments.entity';
 
 @Module({
   imports: [
@@ -19,9 +22,9 @@ import { Booking } from './entities/booking.entity';
         ssl: {
           rejectUnauthorized: false
         },
-        entities: [User, Booking],
-        synchronize: true,
-        logging: true,
+        entities: [User, Booking, Checkin, Feedback, Payment],
+        synchronize: (configService.get('NODE_ENV') ?? 'development') === 'development',
+        logging: (configService.get('NODE_ENV') ?? 'development') === 'development',
       }),
       inject: [ConfigService],
     }),

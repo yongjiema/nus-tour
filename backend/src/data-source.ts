@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { User } from './database/entities/user.entity';
 import { Booking } from './database/entities/booking.entity';
 import { ConfigModule } from '@nestjs/config';
+import { Payment } from './database/entities/payments.entity';
 
 // Initialize ConfigService
 ConfigModule.forRoot();
@@ -18,7 +19,7 @@ export const AppDataSource = new DataSource({
   ssl: {
     rejectUnauthorized: false
   },
-  entities: [User, Booking],
+  entities: [User, Booking, Payment],
   synchronize: true,
   logging: true,
 });
