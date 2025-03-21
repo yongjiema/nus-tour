@@ -49,118 +49,120 @@ const TourInfoManagement = lazy(() => import("./pages/admin-dashboard/TourInfoMa
 
 function App() {
   return (
-    <BrowserRouter>
-      <RefineKbarProvider>
-        <ColorModeContextProvider>
-          <CssBaseline />
-          <GlobalStyles styles={{ html: { WebkitFontSmoothing: "auto" } }} />
-          <RefineSnackbarProvider>
-            <DevtoolsProvider>
-              <Refine
-                authProvider={authProvider}
-                dataProvider={dataProviders.backend}
-                notificationProvider={notificationProvider}
-                routerProvider={routerBindings}
-                resources={[
-                  {
-                    name: "bookings",
-                    list: "/admin/bookings",
-                    create: "/admin/bookings/create",
-                    edit: "/admin/bookings/edit/:id",
-                  },
-                  {
-                    name: "check_ins",
-                    list: "/admin/check-ins",
-                    create: "/admin/check-ins/create",
-                    edit: "/admin/check-ins/edit/:id",
-                  },
-                  {
-                    name: "information",
-                    list: "/information",
-                  },
-                  {
-                    name: "tourInformation",
-                    list: "/tour-information",
-                  }
-                ]}
-                options={{
-                  syncWithLocation: true,
-                  warnWhenUnsavedChanges: true,
-                  useNewQueryKeys: true,
-                  projectId: "7OkvOR-FCEx0r-2vArZl",
-                }}
-              >
-                <Routes>
-                  <Route
-                    element={
-                      <CustomLayout Header={() => <PublicHeader />}>
-                        <Suspense fallback={<div>Loading...</div>}>
-                          <Outlet />
-                        </Suspense>
-                      </CustomLayout>
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <BrowserRouter>
+        <RefineKbarProvider>
+          <ColorModeContextProvider>
+            <CssBaseline />
+            <GlobalStyles styles={{ html: { WebkitFontSmoothing: "auto" } }} />
+            <RefineSnackbarProvider>
+              <DevtoolsProvider>
+                <Refine
+                  authProvider={authProvider}
+                  dataProvider={dataProviders.backend}
+                  notificationProvider={notificationProvider}
+                  routerProvider={routerBindings}
+                  resources={[
+                    {
+                      name: "bookings",
+                      list: "/admin/bookings",
+                      create: "/admin/bookings/create",
+                      edit: "/admin/bookings/edit/:id",
+                    },
+                    {
+                      name: "check_ins",
+                      list: "/admin/check-ins",
+                      create: "/admin/check-ins/create",
+                      edit: "/admin/check-ins/edit/:id",
+                    },
+                    {
+                      name: "information",
+                      list: "/information",
+                    },
+                    {
+                      name: "tourInformation",
+                      list: "/tour-information",
                     }
-                  >
-                    <Route index element={<Home />} />
-                    <Route path="/information">
-                      <Route index element={<InformationHome />} />
-                      <Route path="academic-programs" element={<AcademicPrograms />} />
-                      <Route path="bus-routes" element={<BusRoutes />} />
-                      <Route path="canteens" element={<Canteens />} />
-                      <Route path="convenience-stores" element={<ConvenienceStores />} />
-                    </Route>
-                    <Route path="/tour-information" element={<TourInformationHome />} />
-                    <Route path="/booking">
-                      <Route index element={<BookingForm />} />
-                      <Route path="confirmation" element={<BookingConfirmation />} />
-                    </Route>
-                    <Route path="/payment" element={<PaymentPage />} />
-                    <Route path="/checkin" element={<Checkin />} />
-                    <Route path="/login" element={<Login />} />
-                  </Route>
-
-                  <Route element={<PrivateRoute />}>
+                  ]}
+                  options={{
+                    syncWithLocation: true,
+                    warnWhenUnsavedChanges: true,
+                    useNewQueryKeys: true,
+                    projectId: "7OkvOR-FCEx0r-2vArZl",
+                  }}
+                >
+                  <Routes>
                     <Route
-                      path="/admin"
                       element={
-                        <CustomLayout Header={Header}>
+                        <CustomLayout Header={() => <PublicHeader />}>
                           <Suspense fallback={<div>Loading...</div>}>
-                            <AdminDashboard />
+                            <Outlet />
                           </Suspense>
                         </CustomLayout>
                       }
-                    />
-                    <Route
-                      path="/admin/tour-info"
-                      element={
-                        <CustomLayout Header={Header}>
-                          <Suspense fallback={<div>Loading...</div>}>
-                            <TourInfoManagement />
-                          </Suspense>
-                        </CustomLayout>
-                      }
-                    />
-                  </Route>
-
-                    {/* User Routes */}
-                    <Route element={<PrivateRoute requiredRole={UserRole.USER} />}>
-                      <Route path="/user-dashboard" element={<UserDashboard />} />
+                    >
+                      <Route index element={<Home />} />
+                      <Route path="/information">
+                        <Route index element={<InformationHome />} />
+                        <Route path="academic-programs" element={<AcademicPrograms />} />
+                        <Route path="bus-routes" element={<BusRoutes />} />
+                        <Route path="canteens" element={<Canteens />} />
+                        <Route path="convenience-stores" element={<ConvenienceStores />} />
+                      </Route>
+                      <Route path="/tour-information" element={<TourInformationHome />} />
+                      <Route path="/booking">
+                        <Route index element={<BookingForm />} />
+                        <Route path="confirmation" element={<BookingConfirmation />} />
+                      </Route>
+                      <Route path="/payment" element={<PaymentPage />} />
+                      <Route path="/checkin" element={<Checkin />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
                     </Route>
 
-                    <Route path="/payment/:bookingId" element={<PaymentPage />} />
-                    <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmation />} />
-                  </Routes>
+                    <Route element={<PrivateRoute />}>
+                      <Route
+                        path="/admin"
+                        element={
+                          <CustomLayout Header={Header}>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <AdminDashboard />
+                            </Suspense>
+                          </CustomLayout>
+                        }
+                      />
+                      <Route
+                        path="/admin/tour-info"
+                        element={
+                          <CustomLayout Header={Header}>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <TourInfoManagement />
+                            </Suspense>
+                          </CustomLayout>
+                        }
+                      />
+                    </Route>
 
-                  <RefineKbar />
-                  <UnsavedChangesNotifier />
-                  <DocumentTitleHandler />
-                </Refine>
-                <DevtoolsPanel />
-              </DevtoolsProvider>
-            </RefineSnackbarProvider>
-          </ColorModeContextProvider>
-        </RefineKbarProvider>
-      </BrowserRouter>
-    </LocalizationProvider>
+                      {/* User Routes */}
+                      <Route element={<PrivateRoute requiredRole={UserRole.USER} />}>
+                        <Route path="/user-dashboard" element={<UserDashboard />} />
+                      </Route>
+
+                      <Route path="/payment/:bookingId" element={<PaymentPage />} />
+                      <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmation />} />
+                    </Routes>
+
+                    <RefineKbar />
+                    <UnsavedChangesNotifier />
+                    <DocumentTitleHandler />
+                  </Refine>
+                  <DevtoolsPanel />
+                </DevtoolsProvider>
+              </RefineSnackbarProvider>
+            </ColorModeContextProvider>
+          </RefineKbarProvider>
+        </BrowserRouter>
+      </LocalizationProvider>
   );
 }
 
