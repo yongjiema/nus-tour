@@ -121,6 +121,18 @@ export const Home: React.FC = () => {
           Check In
         </ActionButton>
       </ButtonContainer>
+      <footer
+        style={{
+          marginTop: "50px",
+          marginBottom: "50px",
+          textAlign: "center",
+          color: "#666",
+        }}
+      >
+        <Typography variant="body2" color="textSecondary" align="center">
+          &copy; {new Date().getFullYear()} NUS Tour. All rights reserved.
+        </Typography>
+      </footer>
     </Container>
   );
 };
