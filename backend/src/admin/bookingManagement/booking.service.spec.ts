@@ -3,7 +3,7 @@ import { BookingService } from "./booking.service";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Booking } from "../../database/entities/booking.entity";
 import { Repository } from "typeorm";
-import { BookingStatus } from "../../database/entities/enums";
+import { BookingStatus, PaymentStatus } from "../../database/entities/enums";
 import { NotFoundException } from "@nestjs/common";
 
 type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
@@ -12,23 +12,29 @@ describe("BookingService", () => {
   let service: BookingService;
   let bookingRepository: MockRepository<Booking>;
 
-  // Create a sample booking
+  // Sample booking data
   const sampleBooking = {
     id: 1,
     bookingId: "test-booking-123",
     name: "Test User",
+    date: "2023-06-01",
     bookingStatus: BookingStatus.PENDING,
+    paymentStatus: PaymentStatus.PENDING,
   };
 
   beforeEach(async () => {
-    // Create our mock repository functions
     const mockBookingRepository = {
+      // For findAll()
+      find: jest.fn().mockResolvedValue([sampleBooking]),
+      // For getFilteredBookings(), we simulate a query builder chain
       createQueryBuilder: jest.fn(() => ({
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([sampleBooking]),
+        getSql: jest.fn().mockReturnValue("SQL STRING"),
+        getParameters: jest.fn().mockReturnValue({}),
       })),
-      find: jest.fn().mockResolvedValue([sampleBooking]),
-      findOne: jest.fn().mockImplementation(({ where }) => {
+      // For update methods
+      findOne: jest.fn().mockImplementation(({ where }: { where: { bookingId: string } }) => {
         if (where.bookingId === "non-existent") {
           return Promise.resolve(null);
         }
@@ -64,10 +70,33 @@ describe("BookingService", () => {
   });
 
   describe("getFilteredBookings", () => {
-    it("should query bookings with filters", async () => {
-      const result = await service.getFilteredBookings("test", "confirmed", "2023-06-01");
+    it("should return filtered bookings based on filterDto", async () => {
+      const filterDto = {
+        search: "Test",
+        bookingStatus: BookingStatus.PENDING,
+        paymentStatus: PaymentStatus.PENDING,
+        date: "2023-06-01",
+      };
+      const result = await service.getFilteredBookings(filterDto);
       expect(result).toEqual([sampleBooking]);
       expect(bookingRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+  });
+
+  describe("updatePaymentStatus", () => {
+    it("should update payment status", async () => {
+      const result = await service.updatePaymentStatus("test-booking-123", PaymentStatus.COMPLETED);
+      expect(bookingRepository.findOne).toHaveBeenCalledWith({ where: { bookingId: "test-booking-123" } });
+      expect(bookingRepository.save).toHaveBeenCalled();
+      expect(result.paymentStatus).toEqual(PaymentStatus.COMPLETED);
+    });
+
+    it("should throw NotFoundException for non-existent booking in payment update", async () => {
+      await expect(service.updatePaymentStatus("non-existent", PaymentStatus.COMPLETED)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(bookingRepository.findOne).toHaveBeenCalledWith({ where: { bookingId: "non-existent" } });
+      expect(bookingRepository.save).not.toHaveBeenCalled();
     });
   });
 
@@ -79,7 +108,7 @@ describe("BookingService", () => {
       expect(result.bookingStatus).toEqual(BookingStatus.CONFIRMED);
     });
 
-    it("should throw NotFoundException for non-existent booking", async () => {
+    it("should throw NotFoundException for non-existent booking in status update", async () => {
       await expect(service.updateBookingStatus("non-existent", BookingStatus.CONFIRMED)).rejects.toThrow(
         NotFoundException,
       );
