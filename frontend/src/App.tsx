@@ -70,7 +70,7 @@ function App() {
                     {
                       name: "tourInformation",
                       list: "/tour-information",
-                    }
+                    },
                   ]}
                   options={{
                     syncWithLocation: true,
@@ -131,26 +131,26 @@ function App() {
                       />
                     </Route>
 
-                      {/* User Routes */}
-                      <Route element={<PrivateRoute requiredRole={UserRole.USER} />}>
-                        <Route path="/user-dashboard" element={<UserDashboard />} />
-                      </Route>
+                    {/* User Routes */}
+                    <Route element={<PrivateRoute requiredRole={UserRole.USER} />}>
+                      <Route path="/user-dashboard" element={<UserDashboard />} />
+                    </Route>
 
-                      <Route path="/payment/:bookingId" element={<PaymentPage />} />
-                      <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmation />} />
-                    </Routes>
+                    <Route path="/payment/:bookingId" element={<PaymentPage />} />
+                    <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmation />} />
+                  </Routes>
 
-                    <RefineKbar />
-                    <UnsavedChangesNotifier />
-                    <DocumentTitleHandler />
-                  </Refine>
-                  <DevtoolsPanel />
-                </DevtoolsProvider>
-              </RefineSnackbarProvider>
-            </ColorModeContextProvider>
-          </RefineKbarProvider>
-        </BrowserRouter>
-      </LocalizationProvider>
+                  <RefineKbar />
+                  <UnsavedChangesNotifier />
+                  <DocumentTitleHandler />
+                </Refine>
+                <DevtoolsPanel />
+              </DevtoolsProvider>
+            </RefineSnackbarProvider>
+          </ColorModeContextProvider>
+        </RefineKbarProvider>
+      </BrowserRouter>
+    </LocalizationProvider>
   );
 }
 

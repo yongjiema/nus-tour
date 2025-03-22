@@ -1,10 +1,7 @@
 import React from "react";
 import { Box } from "@mui/material";
 
-export const CustomLayout: React.FC<{ Header: React.FC; children: React.ReactNode }> = ({
-  Header,
-  children,
-}) => {
+export const CustomLayout: React.FC<{ Header: React.FC; children: React.ReactNode }> = ({ Header, children }) => {
   return (
     <Box display="flex" flexDirection="column">
       <Header />
@@ -21,4 +18,4 @@ export const CustomLayout: React.FC<{ Header: React.FC; children: React.ReactNod
       </Box>
     </Box>
   );
-}; 
+};

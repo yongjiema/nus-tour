@@ -1,8 +1,8 @@
 // filepath: /c:/nus-tour/backend/src/database/entities/information.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Check } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Check } from "typeorm";
 
 @Entity()
-@Check('CHK_modifiedBy_valid', "modifiedBy IN ('ZiMing', 'YongJie', 'GuangZu', 'YanKun')")
+@Check("CHK_modifiedBy_valid", "modifiedBy IN ('ZiMing', 'YongJie', 'GuangZu', 'YanKun')")
 export class Information {
   @PrimaryGeneratedColumn()
   id: number;
@@ -22,7 +22,7 @@ export class Information {
   @Column({ nullable: true }) // Allow NULL values
   image: string;
 
-  @Column({ default: 'YongJie', name: 'modifiedby' })
+  @Column({ default: "YongJie", name: "modifiedby" })
   modifiedBy: string;
 
   @CreateDateColumn()

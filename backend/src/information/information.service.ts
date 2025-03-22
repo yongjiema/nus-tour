@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Information } from '../database/entities/information.entity';
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Information } from "../database/entities/information.entity";
 
 @Injectable()
 export class InformationService {
@@ -12,8 +12,8 @@ export class InformationService {
 
   async createInformation(data: Partial<Information>): Promise<Information> {
     const maxOrder = await this.informationRepository
-      .createQueryBuilder('information')
-      .select('MAX(information.order)', 'max')
+      .createQueryBuilder("information")
+      .select("MAX(information.order)", "max")
       .getRawOne();
 
     const nextOrder = (maxOrder.max || 0) + 1;

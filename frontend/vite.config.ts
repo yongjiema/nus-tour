@@ -7,7 +7,7 @@ export default defineConfig({
     host: "0.0.0.0",
     hmr: false,
     watch: {
-      usePolling: true
+      usePolling: true,
     },
     proxy: {
       "/api": {

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export class NewsEvent {
@@ -8,7 +8,7 @@ export class NewsEvent {
   @Column()
   type: string; // 'news' 或 'event'
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: "timestamp" })
   date: Date;
 
   @Column({ length: 500 })
@@ -22,4 +22,4 @@ export class NewsEvent {
 
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

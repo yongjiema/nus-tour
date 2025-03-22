@@ -45,11 +45,7 @@ export const TourInformation: React.FC = () => {
         >
           NUS Campus Tour
         </Typography>
-        <Typography
-          variant="h5"
-          color="textSecondary"
-          sx={{ mb: 4, color: "#FF6600" }}
-        >
+        <Typography variant="h5" color="textSecondary" sx={{ mb: 4, color: "#FF6600" }}>
           探索新加坡国立大学的魅力之旅
         </Typography>
       </Box>
@@ -105,37 +101,25 @@ export const TourInformation: React.FC = () => {
                   <ListItemIcon>
                     <ScheduleIcon />
                   </ListItemIcon>
-                  <ListItemText
-                    primary="时长"
-                    secondary="约2小时"
-                  />
+                  <ListItemText primary="时长" secondary="约2小时" />
                 </ListItem>
                 <ListItem>
                   <ListItemIcon>
                     <GroupIcon />
                   </ListItemIcon>
-                  <ListItemText
-                    primary="团体规模"
-                    secondary="最多15人/团"
-                  />
+                  <ListItemText primary="团体规模" secondary="最多15人/团" />
                 </ListItem>
                 <ListItem>
                   <ListItemIcon>
                     <LocationOnIcon />
                   </ListItemIcon>
-                  <ListItemText
-                    primary="集合地点"
-                    secondary="NUS访客中心"
-                  />
+                  <ListItemText primary="集合地点" secondary="NUS访客中心" />
                 </ListItem>
                 <ListItem>
                   <ListItemIcon>
                     <InfoIcon />
                   </ListItemIcon>
-                  <ListItemText
-                    primary="语言"
-                    secondary="英语/中文"
-                  />
+                  <ListItemText primary="语言" secondary="英语/中文" />
                 </ListItem>
               </List>
               <Box mt={3}>
@@ -185,4 +169,4 @@ export const TourInformation: React.FC = () => {
       </Paper>
     </Container>
   );
-}; 
+};

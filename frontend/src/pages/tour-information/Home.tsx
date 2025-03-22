@@ -55,7 +55,7 @@ export const TourInformationHome: React.FC = () => {
       const timer = setTimeout(() => {
         setShowBackdrop(false);
       }, 500); // 添加轻微延迟，以确保平滑过渡
-      
+
       return () => clearTimeout(timer);
     }
   }, [isLoading, isError]);
@@ -63,10 +63,7 @@ export const TourInformationHome: React.FC = () => {
   // 处理加载状态
   if (isLoading) {
     return (
-      <Backdrop
-        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={showBackdrop}
-      >
+      <Backdrop sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }} open={showBackdrop}>
         <CircularProgress color="inherit" />
       </Backdrop>
     );
@@ -77,7 +74,8 @@ export const TourInformationHome: React.FC = () => {
     return (
       <Container maxWidth="lg" sx={{ mt: 5 }}>
         <Alert severity="error">
-          Sorry, an error occurred while loading the tour information. Please try again later or contact the administrator.
+          Sorry, an error occurred while loading the tour information. Please try again later or contact the
+          administrator.
         </Alert>
       </Container>
     );
@@ -87,9 +85,7 @@ export const TourInformationHome: React.FC = () => {
   if (!data?.data || data.data.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ mt: 5 }}>
-        <Alert severity="info">
-          There is currently no available tour information. Please check back later.
-        </Alert>
+        <Alert severity="info">There is currently no available tour information. Please check back later.</Alert>
       </Container>
     );
   }
@@ -101,7 +97,7 @@ export const TourInformationHome: React.FC = () => {
     <Fade in={true} timeout={800}>
       <Container maxWidth="lg" sx={{ mt: { xs: 3, md: 5 }, mb: 8 }}>
         {/* 页面标题部分 */}
-        <Box 
+        <Box
           sx={{
             position: "relative",
             mb: 5,
@@ -110,11 +106,11 @@ export const TourInformationHome: React.FC = () => {
             background: "linear-gradient(135deg, #012a5e 0%, #00408f 100%)",
             color: "white",
             boxShadow: "0 8px 32px rgba(0, 32, 71, 0.2)",
-            overflow: "hidden"
+            overflow: "hidden",
           }}
         >
           {/* 背景装饰元素 */}
-          <Box 
+          <Box
             sx={{
               position: "absolute",
               top: -20,
@@ -123,10 +119,10 @@ export const TourInformationHome: React.FC = () => {
               height: { xs: 150, md: 220 },
               borderRadius: "50%",
               background: "rgba(255, 255, 255, 0.1)",
-              zIndex: 0
+              zIndex: 0,
             }}
           />
-          
+
           <Box position="relative" zIndex={1}>
             <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
               <SchoolIcon sx={{ fontSize: { xs: 32, md: 45 }, mr: 2 }} />
@@ -138,28 +134,28 @@ export const TourInformationHome: React.FC = () => {
                   fontWeight: "bold",
                   fontSize: { xs: "2rem", md: "3.25rem" },
                   mb: 0,
-                  textShadow: "1px 1px 3px rgba(0,0,0,0.3)"
+                  textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
                 }}
               >
                 Campus Tour Information
               </Typography>
             </Box>
-            
-            <Typography 
-              variant="h5" 
+
+            <Typography
+              variant="h5"
               align="center"
-              sx={{ 
+              sx={{
                 fontSize: { xs: "1rem", md: "1.25rem" },
                 opacity: 0.85,
                 maxWidth: "80%",
                 mx: "auto",
-                mb: 4
+                mb: 4,
               }}
             >
               Learn how to visit the National University of Singapore campus
             </Typography>
-            
-            <Zoom in={true} timeout={1000} style={{ transitionDelay: '500ms' }}>
+
+            <Zoom in={true} timeout={1000} style={{ transitionDelay: "500ms" }}>
               <Box textAlign="center">
                 <Button
                   variant="contained"
@@ -180,7 +176,7 @@ export const TourInformationHome: React.FC = () => {
                       background: "linear-gradient(to right, #e0a800, #d49600)",
                       boxShadow: "0 6px 15px rgba(0,0,0,0.2)",
                     },
-                    textTransform: "none"
+                    textTransform: "none",
                   }}
                 >
                   Book Campus Tour Now
@@ -189,14 +185,14 @@ export const TourInformationHome: React.FC = () => {
             </Zoom>
           </Box>
         </Box>
-        
+
         {/* 旅游信息内容部分 */}
-        <Paper 
-          elevation={isMobile ? 1 : 3} 
-          sx={{ 
+        <Paper
+          elevation={isMobile ? 1 : 3}
+          sx={{
             p: { xs: 2, sm: 3, md: 4 },
             borderRadius: 2,
-            boxShadow: isMobile ? 1 : "0 8px 25px rgba(0,0,0,0.08)"
+            boxShadow: isMobile ? 1 : "0 8px 25px rgba(0,0,0,0.08)",
           }}
         >
           <TourInfoDetails info={tourInfo} />
@@ -204,4 +200,4 @@ export const TourInformationHome: React.FC = () => {
       </Container>
     </Fade>
   );
-}; 
+};

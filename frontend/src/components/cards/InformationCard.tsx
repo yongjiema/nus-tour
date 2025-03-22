@@ -1,13 +1,5 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardMedia,
-  Typography,
-  Button,
-  Box,
-  Skeleton,
-} from "@mui/material";
+import { Card, CardContent, CardMedia, Typography, Button, Box, Skeleton } from "@mui/material";
 
 interface Information {
   id: number;
@@ -28,12 +20,7 @@ interface InformationCardProps {
   onLearnMore: (info: Information) => void;
 }
 
-export const InformationCard: React.FC<InformationCardProps> = ({
-  info,
-  imagePath,
-  isImageLoading,
-  onLearnMore,
-}) => {
+export const InformationCard: React.FC<InformationCardProps> = ({ info, imagePath, isImageLoading, onLearnMore }) => {
   return (
     <Card
       sx={{
@@ -47,12 +34,7 @@ export const InformationCard: React.FC<InformationCardProps> = ({
       }}
     >
       {isImageLoading ? (
-        <Skeleton
-          variant="rectangular"
-          height={200}
-          animation="wave"
-          sx={{ bgcolor: "grey.200" }}
-        />
+        <Skeleton variant="rectangular" height={200} animation="wave" sx={{ bgcolor: "grey.200" }} />
       ) : (
         <CardMedia
           component="img"
@@ -63,11 +45,7 @@ export const InformationCard: React.FC<InformationCardProps> = ({
         />
       )}
       <CardContent sx={{ flexGrow: 1 }}>
-        <Typography
-          variant="h5"
-          gutterBottom
-          style={{ color: "#002147", fontWeight: "bold" }}
-        >
+        <Typography variant="h5" gutterBottom style={{ color: "#002147", fontWeight: "bold" }}>
           {info.title}
         </Typography>
         <Typography variant="body2" color="textSecondary">
@@ -86,4 +64,4 @@ export const InformationCard: React.FC<InformationCardProps> = ({
       </CardContent>
     </Card>
   );
-}; 
+};

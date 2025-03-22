@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Grid, Card, CardContent, Button, Container, CardMedia } from "@mui/material";
 
@@ -33,7 +32,7 @@ export const InformationHome: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [imagePaths, setImagePaths] = useState<ImageState>({});
-  const [imageLoading, setImageLoading] = useState<{[key: number]: boolean}>({});
+  const [imageLoading, setImageLoading] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,7 +40,7 @@ export const InformationHome: React.FC = () => {
         console.log("正在从API获取数据...");
         const response = await axios.get(`${config.apiBaseUrl}/information`);
         console.log("API响应:", response.data);
-        
+
         if (response.data && Array.isArray(response.data)) {
           setInformationData(response.data);
           setIsError(false);
@@ -64,35 +63,35 @@ export const InformationHome: React.FC = () => {
     const loadImages = async () => {
       if (informationData.length > 0) {
         // 初始化所有图片的加载状态
-        const loadingState: {[key: number]: boolean} = {};
-        informationData.forEach(info => {
+        const loadingState: { [key: number]: boolean } = {};
+        informationData.forEach((info) => {
           loadingState[info.id] = true;
         });
         setImageLoading(loadingState);
 
         // 预加载所有图片
-        const imagePaths = await preloadImages(informationData.map(info => info.image));
+        const imagePaths = await preloadImages(informationData.map((info) => info.image));
         const newImagePaths: ImageState = {};
-        
+
         // 处理每个图片的加载
         for (const info of informationData) {
           try {
             const path = await getAssetPath(info.image);
             newImagePaths[info.id] = path;
-            setImageLoading(prev => ({
+            setImageLoading((prev) => ({
               ...prev,
-              [info.id]: false
+              [info.id]: false,
             }));
           } catch (error) {
             console.error(`Error loading image for ${info.title}:`, error);
-            newImagePaths[info.id] = 'https://via.placeholder.com/400x300?text=No+Image';
-            setImageLoading(prev => ({
+            newImagePaths[info.id] = "https://via.placeholder.com/400x300?text=No+Image";
+            setImageLoading((prev) => ({
               ...prev,
-              [info.id]: false
+              [info.id]: false,
             }));
           }
         }
-        
+
         setImagePaths(newImagePaths);
       }
     };
@@ -101,10 +100,10 @@ export const InformationHome: React.FC = () => {
   }, [informationData]);
 
   const handleLearnMore = (info: Information) => {
-    if (info.title.toLowerCase().includes('tour')) {
-      navigate('/tour-information');
+    if (info.title.toLowerCase().includes("tour")) {
+      navigate("/tour-information");
     } else {
-      window.open(info.hyperlink, '_blank', 'noopener noreferrer');
+      window.open(info.hyperlink, "_blank", "noopener noreferrer");
     }
   };
 
@@ -119,12 +118,7 @@ export const InformationHome: React.FC = () => {
   return (
     <Container maxWidth="lg" style={{ marginTop: "50px" }}>
       <Box textAlign="center" mb={6}>
-        <Typography
-          variant="h2"
-          component="h1"
-          gutterBottom
-          style={{ color: "#002147", fontWeight: "bold" }}
-        >
+        <Typography variant="h2" component="h1" gutterBottom style={{ color: "#002147", fontWeight: "bold" }}>
           Campus Information
         </Typography>
         <Typography variant="h5" color="textSecondary">
