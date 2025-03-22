@@ -1,5 +1,5 @@
-import { IsNotEmpty, IsEnum, IsString, IsOptional } from 'class-validator';
-import { PaymentStatus } from '../../database/entities/enums';
+import { IsNotEmpty, IsEnum, IsString, IsOptional } from "class-validator";
+import { PaymentStatus } from "../../database/entities/enums";
 
 export class UpdatePaymentStatusDto {
   @IsNotEmpty()

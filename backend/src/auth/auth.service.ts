@@ -1,9 +1,9 @@
-import { Injectable, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
-import { TokenBlacklistService } from './token-blacklist.service';
+import { Injectable, ConflictException, BadRequestException, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { UsersService } from "../users/users.service";
+import { LoginDto } from "./dto/login.dto";
+import { RegisterDto } from "./dto/register.dto";
+import { TokenBlacklistService } from "./token-blacklist.service";
 
 @Injectable()
 export class AuthService {
@@ -17,7 +17,7 @@ export class AuthService {
     const user = await this.usersService.validateUser(loginDto);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     // Include username in the token payload
@@ -28,7 +28,7 @@ export class AuthService {
         username: user.username,
         role: user.role,
       },
-      { expiresIn: '60m' },
+      { expiresIn: "60m" },
     );
 
     return {
@@ -48,7 +48,7 @@ export class AuthService {
 
       const existingUser = await this.usersService.findByEmail(userData.email);
       if (existingUser) {
-        throw new ConflictException('Email is already in use');
+        throw new ConflictException("Email is already in use");
       }
 
       const newUser = await this.usersService.register(userData);
@@ -61,7 +61,7 @@ export class AuthService {
           email: newUser.email,
           username: newUser.username,
         },
-        { expiresIn: '60m' },
+        { expiresIn: "60m" },
       );
 
       return {
@@ -69,7 +69,7 @@ export class AuthService {
         user: userWithoutPassword,
       };
     } catch (error) {
-      console.error('Registration error details:', error);
+      console.error("Registration error details:", error);
       if (error instanceof ConflictException) {
         throw error;
       }
@@ -89,7 +89,7 @@ export class AuthService {
     try {
       // Check if token is blacklisted
       if (this.isTokenBlacklisted(token)) {
-        throw new UnauthorizedException('Token is invalid or has been revoked');
+        throw new UnauthorizedException("Token is invalid or has been revoked");
       }
 
       // Verify and decode the token
@@ -98,7 +98,7 @@ export class AuthService {
       // Get the user
       const user = await this.usersService.findById(decoded.sub || decoded.id);
       if (!user) {
-        throw new UnauthorizedException('User not found');
+        throw new UnauthorizedException("User not found");
       }
 
       // Generate a new token
@@ -107,7 +107,7 @@ export class AuthService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Invalid token or token has expired');
+      throw new UnauthorizedException("Invalid token or token has expired");
     }
   }
 
@@ -119,7 +119,7 @@ export class AuthService {
       username: user.username, // Add username to payload
     };
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '60m' }),
+      access_token: this.jwtService.sign(payload, { expiresIn: "60m" }),
     };
   }
 }

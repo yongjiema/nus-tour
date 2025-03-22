@@ -1,9 +1,9 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Booking } from '../database/entities/booking.entity';
-import { Checkin } from '../database/entities/checkin.entity';
-import { CheckinDto } from './dto/checkin.dto';
+import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Booking } from "../database/entities/booking.entity";
+import { Checkin } from "../database/entities/checkin.entity";
+import { CheckinDto } from "./dto/checkin.dto";
 
 @Injectable()
 export class CheckinService {
@@ -22,28 +22,28 @@ export class CheckinService {
 
     const booking = await this.bookingRepository.findOne({
       where: { bookingId },
-      relations: ['checkin'], // Add this to load the existing checkin relation
+      relations: ["checkin"], // Add this to load the existing checkin relation
     });
 
     if (!booking) {
       this.logger.warn(`Booking with id ${bookingId} not found.`);
-      throw new BadRequestException('Invalid booking details.');
+      throw new BadRequestException("Invalid booking details.");
     }
 
     if (booking.email !== email) {
       this.logger.warn(`Email mismatch for bookingId ${bookingId}: Expected ${booking.email}, got ${email}`);
-      throw new BadRequestException('Invalid booking details.');
+      throw new BadRequestException("Invalid booking details.");
     }
 
     if (booking.checkin) {
       this.logger.warn(`Booking ${bookingId} has already been checked in.`);
-      throw new BadRequestException('Booking has already been checked in.');
+      throw new BadRequestException("Booking has already been checked in.");
     }
 
     // Create a new Checkin entity
     const checkin = new Checkin();
     checkin.booking = booking;
-    checkin.status = 'completed';
+    checkin.status = "completed";
     checkin.checkInTime = new Date();
 
     // Save the checkin entity
@@ -54,14 +54,14 @@ export class CheckinService {
 
   async countPending(): Promise<number> {
     return this.checkinRepository.count({
-      where: { status: 'pending' },
+      where: { status: "pending" },
     });
   }
 
   async findRecent(limit: number): Promise<Checkin[]> {
     return this.checkinRepository.find({
-      relations: ['booking'],
-      order: { createdAt: 'DESC' },
+      relations: ["booking"],
+      order: { createdAt: "DESC" },
       take: limit,
     });
   }

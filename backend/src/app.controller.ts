@@ -1,8 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
-import { BookingService } from './booking/booking.service';
-import { CheckinService } from './checkin/checkin.service';
-import { FeedbackService } from './feedback/feedback.service';
+import { Controller, Get } from "@nestjs/common";
+import { AppService } from "./app.service";
+import { BookingService } from "./booking/booking.service";
+import { CheckinService } from "./checkin/checkin.service";
+import { FeedbackService } from "./feedback/feedback.service";
 
 @Controller()
 export class AppController {
@@ -14,7 +14,7 @@ export class AppController {
   }
 }
 
-@Controller('dashboard')
+@Controller("dashboard")
 export class DashboardController {
   constructor(
     private readonly bookingService: BookingService,
@@ -22,7 +22,7 @@ export class DashboardController {
     private readonly feedbackService: FeedbackService,
   ) {}
 
-  @Get('stats')
+  @Get("stats")
   async getDashboardStats() {
     const totalBookings = await this.bookingService.count();
     const pendingCheckIns = await this.checkinService.countPending();

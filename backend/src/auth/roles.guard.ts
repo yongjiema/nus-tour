@@ -1,6 +1,6 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from './role.decorator';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { ROLES_KEY } from "./role.decorator";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -23,7 +23,7 @@ export class RolesGuard implements CanActivate {
 
     // Make sure user exists and has roles
     if (!user || (!user.roles && !user.role)) {
-      throw new ForbiddenException('User has no roles assigned');
+      throw new ForbiddenException("User has no roles assigned");
     }
 
     // Normalize user roles to uppercase array
@@ -35,7 +35,7 @@ export class RolesGuard implements CanActivate {
     const hasRequiredRole = requiredRoles.some((role) => userRoles.includes(role.toUpperCase()));
 
     if (!hasRequiredRole) {
-      throw new ForbiddenException('You do not have permission to access this resource');
+      throw new ForbiddenException("You do not have permission to access this resource");
     }
 
     return hasRequiredRole;

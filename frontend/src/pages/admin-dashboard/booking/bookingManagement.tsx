@@ -1,74 +1,84 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Container, Typography, TextField, Button, MenuItem, Grid, Paper, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Select, FormControl, InputLabel, Alert
+  Container,
+  Typography,
+  TextField,
+  Button,
+  MenuItem,
+  Grid,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Select,
+  FormControl,
+  InputLabel,
+  Alert,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import * as dataProviders from "../../../dataProvider";
 import { CrudFilters } from "@refinedev/core";
+import { PaymentStatus, BookingStatus } from "../../../../../backend/src/database/entities/enums";
 
+// Styled components for buttons
 const RemoveButton = styled(Button)({
   backgroundColor: "red",
   color: "white",
-  "&:hover": {
-    backgroundColor: "darkred",
-  },
-});
-
-const ChangeTimeSlotButton = styled(Button)({
-  backgroundColor: "Green",
-  color: "white",
-  "&:hover": {
-    backgroundColor: "darkblue",
-  },
+  "&:hover": { backgroundColor: "darkred" },
 });
 
 const CheckInButton = styled(Button)({
   backgroundColor: "green",
   color: "white",
-  "&:hover": {
-    backgroundColor: "darkgreen",
-  },
+  "&:hover": { backgroundColor: "darkgreen" },
 });
 
-const CheckOutButton = styled(Button)({
-  backgroundColor: "orange",
+const ConfirmPaymentButton = styled(Button)({
+  backgroundColor: "blue",
   color: "white",
-  "&:hover": {
-    backgroundColor: "darkorange",
-  },
+  "&:hover": { backgroundColor: "darkblue" },
 });
 
+// Interface for booking data
 interface Booking {
   bookingId: string;
   name: string;
   email: string;
   date: string;
-  timeSlot: string;
   groupSize: number;
   deposit: number;
+  timeSlot: string;
   hasFeedback: boolean;
-  bookingStatus: string;
   createdAt: Date;
-  paymentStatus: string;
-  checkedIn: boolean;
+  bookingStatus: BookingStatus;
+  paymentStatus: PaymentStatus;
 }
 
 const BookingManagement = () => {
+  // State management
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [bookingStatusFilter, setBookingStatusFilter] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
 
+  // Fetch all bookings
   const fetchBookings = useCallback(async () => {
     try {
       const { data } = await dataProviders.default.getList({
-        resource: "admin/bookings/findAll",
-        metaData: {}
+        resource: "admin/bookings",
+        filters: undefined, // Remove empty filters array
+        pagination: {
+          current: 1,
+          pageSize: 100, // Adjust based on your needs
+        },
       });
 
-      // Type assertion to tell TypeScript that data matches your Booking interface
+      console.log("Fetched bookings:", data); // Debug log
       setBookings(data as unknown as Booking[]);
       setError(null);
     } catch (error) {
@@ -77,108 +87,114 @@ const BookingManagement = () => {
     }
   }, []);
 
+  // // Initial fetch and polling with more reasonable interval
+  // useEffect(() => {
+  //   fetchBookings();
+  //   const interval = setInterval(fetchBookings, 30000);
+
+  //   // Cleanup function
+  //   return () => {
+  //     console.log('Clearing polling interval'); // Debug log
+  //     clearInterval(interval);
+  //   };
+  // }, [fetchBookings]);
   useEffect(() => {
     fetchBookings();
-    const interval = setInterval(fetchBookings, 100000); // Poll every 10 seconds
-    return () => clearInterval(interval);
   }, [fetchBookings]);
 
+  // Filter bookings
   const filterBookings = async () => {
     try {
-      // Create an array of filters, only including non-empty values
       const filters: CrudFilters = [];
 
       if (search) {
         filters.push({
-          field: "q",
-          operator: "eq",
-          value: search
+          field: "search",
+          operator: "contains",
+          value: search,
         });
       }
-
-      if (statusFilter) {
+      if (bookingStatusFilter) {
         filters.push({
-          field: "status",
+          field: "bookingStatus",
           operator: "eq",
-          value: statusFilter
+          value: bookingStatusFilter,
         });
       }
-
+      if (paymentStatusFilter) {
+        filters.push({
+          field: "paymentStatus",
+          operator: "eq",
+          value: paymentStatusFilter,
+        });
+      }
       if (dateFilter) {
         filters.push({
           field: "date",
           operator: "eq",
-          value: dateFilter
+          value: dateFilter,
         });
       }
 
+      console.log("Sending filters:", filters);
       const { data } = await dataProviders.default.getList({
         resource: "admin/bookings",
-        filters: filters,
+        filters: filters, // pass the array directly
+        pagination: {
+          current: 1,
+          pageSize: 100,
+        },
       });
 
+      console.log("Filtered data:", data);
       setBookings(data as unknown as Booking[]);
       setError(null);
     } catch (error) {
-      console.error("Error fetching bookings:", error);
-      setError("Failed to load bookings.");
+      console.error("Error filtering bookings:", error);
+      setError("Failed to filter bookings.");
     }
   };
 
-  const updateBookingStatus = async (id: string, bookingStatus: string) => {
+  // Booking actions
+  const confirmBooking = async (id: string) => {
     try {
-      await dataProviders.default.update({
-        resource: "admin/bookings",
-        id,
-        variables: { status: bookingStatus }
+      await dataProviders.default.custom({
+        url: `admin/bookings/${id}`,
+        method: "post",
+        payload: { bookingStatus: BookingStatus.CONFIRMED },
       });
-
       fetchBookings();
     } catch (error) {
-      console.error("Error updating booking:", error);
-      setError("Failed to update booking.");
+      console.error("Error confirming booking:", error);
+      setError("Failed to confirm booking.");
     }
   };
 
-  const removeBooking = async (id: string) => {
+  const confirmPayment = async (id: string) => {
     try {
-      await dataProviders.default.deleteOne({
-        resource: "admin/bookings",
-        id
+      await dataProviders.default.custom({
+        url: `admin/bookings/${id}/payment`,
+        method: "post",
+        payload: { status: PaymentStatus.COMPLETED },
       });
-
       fetchBookings();
     } catch (error) {
-      console.error("Error removing booking:", error);
-      setError("Failed to remove booking.");
+      console.error("Error confirming payment:", error);
+      setError("Failed to confirm payment.");
     }
   };
 
   const checkInBooking = async (id: string) => {
     try {
       await dataProviders.default.custom({
-        url: `admin/bookings/${id}/checkin`,
-        method: "patch"
+        url: `admin/bookings/${id}`,
+        method: "post",
+        payload: { bookingStatus: BookingStatus.COMPLETED },
       });
-
       fetchBookings();
     } catch (error) {
       console.error("Error checking in booking:", error);
       setError("Failed to check in booking.");
-    }
-  };
-
-  const checkOutBooking = async (id: string) => {
-    try {
-      await dataProviders.default.custom({
-        url: `admin/bookings/${id}/checkout`,
-        method: "patch"
-      });
-
-      fetchBookings();
-    } catch (error) {
-      console.error("Error checking out booking:", error);
-      setError("Failed to check out booking.");
     }
   };
 
@@ -188,10 +204,8 @@ const BookingManagement = () => {
         Admin Booking Management
       </Typography>
 
-      {/* Error Message Display */}
       {error && <Alert severity="error">{error}</Alert>}
 
-      {/* Search and Filters */}
       <Grid container spacing={4} marginBottom={4}>
         <Grid item xs={4}>
           <TextField
@@ -203,17 +217,27 @@ const BookingManagement = () => {
         </Grid>
         <Grid item xs={4}>
           <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
+            <InputLabel>Booking Status</InputLabel>
+            <Select value={bookingStatusFilter} onChange={(e) => setBookingStatusFilter(e.target.value)}>
               <MenuItem value="">All</MenuItem>
-              <MenuItem value="Pending">Pending</MenuItem>
-              <MenuItem value="Confirmed">Confirmed</MenuItem>
-              <MenuItem value="Canceled">Canceled</MenuItem>
-              <MenuItem value="Checked-In">Checked-In</MenuItem>
-              <MenuItem value="Success">Success</MenuItem>
+              {Object.values(BookingStatus).map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={4}>
+          <FormControl fullWidth>
+            <InputLabel>Payment Status</InputLabel>
+            <Select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              {Object.values(PaymentStatus).map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Grid>
@@ -234,7 +258,6 @@ const BookingManagement = () => {
         </Grid>
       </Grid>
 
-      {/* Bookings Table */}
       <Paper>
         <TableContainer>
           <Table>
@@ -264,31 +287,20 @@ const BookingManagement = () => {
                   <TableCell>{booking.paymentStatus}</TableCell>
                   <TableCell>{booking.bookingStatus}</TableCell>
                   <TableCell>{booking.hasFeedback ? "Yes" : "NA"}</TableCell>
-                  <TableCell>{booking.checkedIn ? "Yes" : "No"}</TableCell>
                   <TableCell>
-                    {booking.paymentStatus === "pending" && (
-                      <RemoveButton onClick={() => removeBooking(booking.bookingId)}>
-                        Remove
-                      </RemoveButton>
+                    {booking.paymentStatus === PaymentStatus.PENDING && (
+                      <ConfirmPaymentButton onClick={() => confirmPayment(booking.bookingId)}>
+                        Confirm Payment
+                      </ConfirmPaymentButton>
                     )}
-
-                    {booking.paymentStatus === "pending" && (
-                      <ChangeTimeSlotButton onClick={() => updateBookingStatus(booking.bookingId, "confirmed")}>
-                        Confirm
-                      </ChangeTimeSlotButton>
-                    )}
-
-                    {booking.paymentStatus === "success"&& (
-                      <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>
-                        Check In
-                      </CheckInButton>
-                    )}
-
-                    {booking.paymentStatus === "checked-in" && (
-                      <CheckOutButton onClick={() => checkOutBooking(booking.bookingId)}>
-                        Check Out
-                      </CheckOutButton>
-                    )}
+                    {booking.paymentStatus === PaymentStatus.COMPLETED &&
+                      booking.bookingStatus === BookingStatus.PENDING && (
+                        <CheckInButton onClick={() => confirmBooking(booking.bookingId)}>Confirm Booking</CheckInButton>
+                      )}
+                    {booking.paymentStatus === PaymentStatus.COMPLETED &&
+                      booking.bookingStatus === BookingStatus.CONFIRMED && (
+                        <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>Check In</CheckInButton>
+                      )}
                   </TableCell>
                 </TableRow>
               ))}

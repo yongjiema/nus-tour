@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Feedback } from '../database/entities/feedback.entity';
-import { Booking } from '../database/entities/booking.entity';
-import { CreateFeedbackDto } from './dto/create-feedback.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Feedback } from "../database/entities/feedback.entity";
+import { Booking } from "../database/entities/booking.entity";
+import { CreateFeedbackDto } from "./dto/create-feedback.dto";
 
 @Injectable()
 export class FeedbackService {
@@ -20,7 +20,7 @@ export class FeedbackService {
     });
 
     if (!booking) {
-      throw new NotFoundException('Booking not found');
+      throw new NotFoundException("Booking not found");
     }
 
     // Create the feedback with proper relation objects
@@ -39,15 +39,15 @@ export class FeedbackService {
   async findAll(query: any = {}): Promise<[Feedback[], number]> {
     return this.feedbackRepository.findAndCount({
       where: query,
-      relations: ['user', 'booking'],
-      order: { createdAt: 'DESC' },
+      relations: ["user", "booking"],
+      order: { createdAt: "DESC" },
     });
   }
 
   async findOne(id: number): Promise<Feedback> {
     return this.feedbackRepository.findOne({
       where: { id },
-      relations: ['user', 'booking'],
+      relations: ["user", "booking"],
     });
   }
 
@@ -66,8 +66,8 @@ export class FeedbackService {
 
   async getAverageRating(): Promise<number> {
     const result = await this.feedbackRepository
-      .createQueryBuilder('feedback')
-      .select('AVG(feedback.rating)', 'average')
+      .createQueryBuilder("feedback")
+      .select("AVG(feedback.rating)", "average")
       .getRawOne();
     return parseFloat(result.average) || 0;
   }
@@ -75,14 +75,14 @@ export class FeedbackService {
   async getFeedbacksByUserId(userId: string): Promise<Feedback[]> {
     return this.feedbackRepository.find({
       where: { user: { id: userId } },
-      order: { createdAt: 'DESC' },
-      relations: ['booking'],
+      order: { createdAt: "DESC" },
+      relations: ["booking"],
     });
   }
 
   async findRecent(limit: number): Promise<Feedback[]> {
     return this.feedbackRepository.find({
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
       take: limit,
     });
   }

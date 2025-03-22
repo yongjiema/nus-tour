@@ -1,10 +1,7 @@
+
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  Container,
-} from "@mui/material";
+import { Box, Typography, Grid, Card, CardContent, Button, Container, CardMedia } from "@mui/material";
+
 import { useList } from "@refinedev/core";
 import { getAssetPath, preloadImages } from "../../utils/assetUtils";
 import { useNavigate } from "react-router-dom";

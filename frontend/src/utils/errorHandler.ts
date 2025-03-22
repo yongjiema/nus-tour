@@ -61,10 +61,7 @@ export const getErrorMessage = (error: unknown): string => {
   return "An unexpected error occurred.";
 };
 
-export const handleSubmissionError = (
-  error: unknown,
-  setError: (error: string) => void
-) => {
+export const handleSubmissionError = (error: unknown, setError: (error: string) => void) => {
   const message = getErrorMessage(error);
   setError(message);
   console.error("Form submission error:", error);

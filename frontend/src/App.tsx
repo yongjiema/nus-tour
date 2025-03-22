@@ -2,16 +2,10 @@ import { Suspense, lazy } from "react";
 import { Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
-import {
-  notificationProvider,
-  RefineSnackbarProvider,
-} from "@refinedev/mui";
+import { notificationProvider, RefineSnackbarProvider, ThemedLayoutV2 } from "@refinedev/mui";
 import CssBaseline from "@mui/material/CssBaseline";
 import GlobalStyles from "@mui/material/GlobalStyles";
-import routerBindings, {
-  DocumentTitleHandler,
-  UnsavedChangesNotifier,
-} from "@refinedev/react-router-v6";
+import routerBindings, { DocumentTitleHandler, UnsavedChangesNotifier } from "@refinedev/react-router-v6";
 import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { authProvider } from "./authProvider";
 import { Header } from "./components/header";
@@ -22,13 +16,7 @@ import { ForgotPassword } from "./pages/forgotPassword";
 import Login from "./pages/login";
 import { Register } from "./pages/register";
 import { Home } from "./pages/home";
-import {
-  InformationHome,
-  AcademicPrograms,
-  BusRoutes,
-  Canteens,
-  ConvenienceStores
-} from "./pages/information";
+import { InformationHome, AcademicPrograms, BusRoutes, Canteens, ConvenienceStores } from "./pages/information";
 import { BookingForm } from "./pages/booking";
 import BookingConfirmation from "./pages/booking/Confirmation";
 import PaymentPage from "./pages/payment";
@@ -37,8 +25,8 @@ import dataProviders from "./dataProviders";
 import PrivateRoute from "./components/PrivateRoute";
 import { TourInformationHome } from "./pages/tour-information/Home";
 import TestimonialsPage from "./pages/testimonial";
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import UserDashboard from "./pages/user-dashboard";
 import { UserRole } from "./types/auth.types";
 import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";

@@ -1,25 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Container,
-  Typography,
-  Box,
-  Paper,
-  Button,
-  Divider,
-  Grid,
-  styled,
-  CircularProgress
-} from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { PublicHeader } from '../../components/header/public';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Container, Typography, Box, Paper, Button, Divider, Grid, styled, CircularProgress } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { PublicHeader } from "../../components/header/public";
 
 const SuccessPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
   marginTop: theme.spacing(3),
   marginBottom: theme.spacing(3),
-  borderRadius: '8px',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+  borderRadius: "8px",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
 }));
 
 const SuccessIcon = styled(CheckCircleIcon)(({ theme }) => ({
@@ -29,21 +19,21 @@ const SuccessIcon = styled(CheckCircleIcon)(({ theme }) => ({
 }));
 
 const DetailRow = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  justifyContent: 'space-between',
+  display: "flex",
+  justifyContent: "space-between",
   padding: theme.spacing(1.5, 0),
-  borderBottom: '1px solid #eaeaea',
-  '&:last-child': {
-    borderBottom: 'none',
+  borderBottom: "1px solid #eaeaea",
+  "&:last-child": {
+    borderBottom: "none",
   },
 }));
 
 const ActionButton = styled(Button)(({ theme }) => ({
   marginTop: theme.spacing(3),
   padding: theme.spacing(1.5, 4),
-  backgroundColor: '#002147',
-  '&:hover': {
-    backgroundColor: '#001a38',
+  backgroundColor: "#002147",
+  "&:hover": {
+    backgroundColor: "#001a38",
   },
 }));
 
@@ -62,29 +52,29 @@ const PaymentSuccessPage: React.FC = () => {
 
   useEffect(() => {
     // Retrieve payment confirmation from localStorage
-    const storedData = localStorage.getItem('payment_confirmation');
+    const storedData = localStorage.getItem("payment_confirmation");
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
         setPaymentDetails(parsedData);
       } catch (e) {
-        console.error('Error parsing payment confirmation data:', e);
+        console.error("Error parsing payment confirmation data:", e);
       }
     }
     setLoading(false);
   }, [id]);
 
   const handleViewBookings = () => {
-    navigate('/my-bookings');
+    navigate("/my-bookings");
   };
 
   const handleReturnHome = () => {
-    navigate('/');
+    navigate("/");
   };
 
   if (loading) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>
+      <Container maxWidth="sm" sx={{ mt: 6, display: "flex", justifyContent: "center" }}>
         <CircularProgress />
       </Container>
     );
@@ -168,11 +158,7 @@ const PaymentSuccessPage: React.FC = () => {
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <ActionButton
-                variant="contained"
-                fullWidth
-                onClick={handleViewBookings}
-              >
+              <ActionButton variant="contained" fullWidth onClick={handleViewBookings}>
                 View My Bookings
               </ActionButton>
             </Grid>
@@ -181,7 +167,7 @@ const PaymentSuccessPage: React.FC = () => {
                 variant="outlined"
                 fullWidth
                 onClick={handleReturnHome}
-                sx={{ backgroundColor: 'transparent', color: '#002147', border: '1px solid #002147' }}
+                sx={{ backgroundColor: "transparent", color: "#002147", border: "1px solid #002147" }}
               >
                 Return to Home
               </ActionButton>
@@ -193,4 +179,4 @@ const PaymentSuccessPage: React.FC = () => {
   );
 };
 
-export default PaymentSuccessPage; 
+export default PaymentSuccessPage;

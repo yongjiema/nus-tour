@@ -1,109 +1,72 @@
 import nestjsxCrudDataProvider from "@refinedev/nestjsx-crud";
 import axiosInstance from "../axiosConfig";
 import config from "../config";
+import {
+  BaseRecord,
+  GetListParams,
+  GetOneParams,
+  CreateParams,
+  UpdateParams,
+  DeleteOneParams,
+  GetManyParams,
+  CreateManyParams,
+  DeleteManyParams,
+  CustomParams,
+  GetListResponse,
+  GetOneResponse,
+  CreateResponse,
+  UpdateResponse,
+  DeleteOneResponse,
+  GetManyResponse,
+  CreateManyResponse,
+  DeleteManyResponse,
+  CustomResponse,
+} from "@refinedev/core";
 
 const dataProvider = nestjsxCrudDataProvider(config.apiBaseUrl, axiosInstance);
 
-// Add logging wrapper
 export const backend = {
   ...dataProvider,
-  getList: async (...args) => {
-    console.log("Data Provider getList args:", args);
-    try {
-      const response = await dataProvider.getList(...args);
-      console.log("Data Provider getList response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider getList error:", error);
-      throw error;
-    }
+
+  getList: async <TData extends BaseRecord = BaseRecord>(params: GetListParams): Promise<GetListResponse<TData>> => {
+    return dataProvider.getList<TData>(params);
   },
-  getOne: async (...args) => {
-    console.log("Data Provider getOne args:", args);
-    try {
-      const response = await dataProvider.getOne(...args);
-      console.log("Data Provider getOne response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider getOne error:", error);
-      throw error;
-    }
+
+  getOne: async <TData extends BaseRecord = BaseRecord>(params: GetOneParams): Promise<GetOneResponse<TData>> => {
+    return dataProvider.getOne<TData>(params);
   },
-  create: async (...args) => {
-    console.log("Data Provider create args:", args);
-    try {
-      const response = await dataProvider.create(...args);
-      console.log("Data Provider create response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider create error:", error);
-      throw error;
-    }
+
+  create: async <TData extends BaseRecord = BaseRecord>(params: CreateParams): Promise<CreateResponse<TData>> => {
+    return dataProvider.create<TData>(params);
   },
-  update: async (...args) => {
-    console.log("Data Provider update args:", args);
-    try {
-      const response = await dataProvider.update(...args);
-      console.log("Data Provider update response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider update error:", error);
-      throw error;
-    }
+
+  update: async <TData extends BaseRecord = BaseRecord>(params: UpdateParams): Promise<UpdateResponse<TData>> => {
+    return dataProvider.update<TData>(params);
   },
-  deleteOne: async (...args) => {
-    console.log("Data Provider deleteOne args:", args);
-    try {
-      const response = await dataProvider.deleteOne(...args);
-      console.log("Data Provider deleteOne response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider deleteOne error:", error);
-      throw error;
-    }
+
+  deleteOne: async <TData extends BaseRecord = BaseRecord>(
+    params: DeleteOneParams,
+  ): Promise<DeleteOneResponse<TData>> => {
+    return dataProvider.deleteOne<TData>(params);
   },
-  getMany: async (...args) => {
-    console.log("Data Provider getMany args:", args);
-    try {
-      const response = await dataProvider.getMany(...args);
-      console.log("Data Provider getMany response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider getMany error:", error);
-      throw error;
-    }
+
+  getMany: async <TData extends BaseRecord = BaseRecord>(params: GetManyParams): Promise<GetManyResponse<TData>> => {
+    return dataProvider.getMany<TData>(params);
   },
-  createMany: async (...args) => {
-    console.log("Data Provider createMany args:", args);
-    try {
-      const response = await dataProvider.createMany(...args);
-      console.log("Data Provider createMany response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider createMany error:", error);
-      throw error;
-    }
+
+  createMany: async <TData extends BaseRecord = BaseRecord>(
+    params: CreateManyParams,
+  ): Promise<CreateManyResponse<TData>> => {
+    return dataProvider.createMany<TData>(params);
   },
-  deleteMany: async (...args) => {
-    console.log("Data Provider deleteMany args:", args);
-    try {
-      const response = await dataProvider.deleteMany(...args);
-      console.log("Data Provider deleteMany response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider deleteMany error:", error);
-      throw error;
-    }
+
+  deleteMany: async <TData extends BaseRecord = BaseRecord>(
+    params: DeleteManyParams,
+  ): Promise<DeleteManyResponse<TData>> => {
+    return dataProvider.deleteMany<TData>(params);
   },
-  custom: async (...args) => {
-    console.log("Data Provider custom args:", args);
-    try {
-      const response = await dataProvider.custom(...args);
-      console.log("Data Provider custom response:", response);
-      return response;
-    } catch (error) {
-      console.error("Data Provider custom error:", error);
-      throw error;
-    }
+
+  custom: async <TData extends BaseRecord = BaseRecord>(params: CustomParams): Promise<CustomResponse<TData>> => {
+    return dataProvider.custom<TData>(params);
   },
 };
