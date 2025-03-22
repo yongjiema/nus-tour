@@ -4,9 +4,11 @@ const cors = require('cors');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 const app = express();
-const PORT = 3456;
+const PORT = 3000;
 
 // 数据库连接参数
 const dbConfig = {
@@ -195,7 +197,7 @@ app.get('/events', async (req, res) => {
 
 // 根路径
 app.get('/', (req, res) => {
-  res.send('NUS Tour Backend 临时服务器');
+  res.send('NUS Tour Backend Server');
 });
 
 // 测试数据库连接的API
@@ -563,6 +565,508 @@ app.get('/api/fetch-news-events', async (req, res) => {
       message: '抓取新闻和活动时出错',
       error: error.message
     });
+  }
+});
+
+// 认证相关路由
+app.post('/auth/register', async (req, res) => {
+  console.log('收到注册请求:', { ...req.body, password: '[REDACTED]' });
+  
+  const { username, email, password } = req.body;
+  
+  // 验证必需字段
+  if (!username || !email || !password) {
+    const error = {
+      message: 'Missing required fields',
+      details: {
+        username: !username ? 'Username is required' : null,
+        email: !email ? 'Email is required' : null,
+        password: !password ? 'Password is required' : null
+      }
+    };
+    console.log('注册验证失败:', error);
+    return res.status(400).json(error);
+  }
+
+  // 验证邮箱格式
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    const error = { message: 'Invalid email format' };
+    console.log('邮箱格式验证失败:', error);
+    return res.status(400).json(error);
+  }
+
+  const client = await pool.connect();
+  
+  try {
+    // 检查邮箱是否已存在
+    const existingUser = await client.query(
+      'SELECT * FROM "user" WHERE email = $1',
+      [email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      const error = { message: 'Email is already in use' };
+      console.log('邮箱已存在:', error);
+      return res.status(409).json(error);
+    }
+
+    // 加密密码
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 创建新用户
+    const result = await client.query(
+      'INSERT INTO "user" (username, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, role',
+      [username, email, hashedPassword, 'USER']
+    );
+
+    const user = result.rows[0];
+    const response = {
+      success: true,
+      message: 'Registration successful',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    };
+    console.log('注册成功:', { userId: user.id, username: user.username });
+    res.status(201).json(response);
+  } catch (error) {
+    console.error('注册错误:', error);
+    if (error.constraint === 'CHK_email_format') {
+      res.status(400).json({ message: 'Invalid email format' });
+    } else if (error.constraint === 'UQ_user_email') {
+      res.status(409).json({ message: 'Email is already in use' });
+    } else {
+      res.status(500).json({ message: 'Registration failed', error: error.message });
+    }
+  } finally {
+    client.release();
+  }
+});
+
+app.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  console.log('收到登录请求:', { email, password: '[REDACTED]' });
+  
+  const client = await pool.connect();
+  
+  try {
+    // 首先检查用户是否存在
+    const userCheck = await client.query(
+      'SELECT * FROM "user" WHERE email = $1',
+      [email]
+    );
+
+    if (userCheck.rows.length === 0) {
+      console.log('登录失败: 用户不存在', { email });
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const user = userCheck.rows[0];
+    
+    // 验证密码
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      console.log('登录失败: 密码不正确', { email });
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // 生成JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    console.log('登录成功:', { userId: user.id, username: user.username });
+    res.json({
+      access_token: token,
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('登录错误:', error);
+    res.status(500).json({ message: 'Login failed', error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 获取预订信息
+app.get('/bookings', async (req, res) => {
+  const client = await pool.connect();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+  
+  try {
+    // 获取总记录数
+    const countResult = await client.query('SELECT COUNT(*) FROM booking');
+    const total = parseInt(countResult.rows[0].count);
+    
+    // 获取分页数据
+    const result = await client.query(
+      `SELECT b.*, u.username, u.email 
+       FROM booking b 
+       LEFT JOIN "user" u ON b.email = u.email 
+       ORDER BY b."createdAt" DESC 
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    // 返回符合refine格式的响应
+    res.json({
+      data: result.rows,
+      total,
+      pageCount: Math.ceil(total / limit),
+      page,
+      perPage: limit
+    });
+  } catch (error) {
+    console.error('获取预订信息失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch bookings', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 创建新预订
+app.post('/bookings', async (req, res) => {
+  const client = await pool.connect();
+  const { date, time_slot, group_size, user_id } = req.body;
+  
+  try {
+    const result = await client.query(
+      `INSERT INTO booking (date, time_slot, group_size, user_id, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 'pending', NOW(), NOW())
+       RETURNING *`,
+      [date, time_slot, group_size, user_id]
+    );
+
+    res.status(201).json({
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('创建预订失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to create booking', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 更新预订状态
+app.put('/bookings/:id', async (req, res) => {
+  const client = await pool.connect();
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  try {
+    const result = await client.query(
+      `UPDATE booking 
+       SET status = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    res.json({
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('更新预订失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to update booking', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 获取支付信息
+app.get('/payments', async (req, res) => {
+  const client = await pool.connect();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+  
+  try {
+    // 获取总记录数
+    const countResult = await client.query('SELECT COUNT(*) FROM payment');
+    const total = parseInt(countResult.rows[0].count);
+    
+    // 获取分页数据
+    const result = await client.query(
+      `SELECT p.*, b.date as booking_date, b.email 
+       FROM payment p 
+       LEFT JOIN booking b ON p."bookingId" = b.id 
+       ORDER BY p."createdAt" DESC 
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    // 返回符合refine格式的响应
+    res.json({
+      data: result.rows,
+      total,
+      pageCount: Math.ceil(total / limit),
+      page,
+      perPage: limit
+    });
+  } catch (error) {
+    console.error('获取支付信息失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch payments', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 创建新支付
+app.post('/payments', async (req, res) => {
+  const client = await pool.connect();
+  const { bookingId, amount, status, paymentMethod } = req.body;
+  
+  try {
+    const result = await client.query(
+      `INSERT INTO payment ("bookingId", amount, status, "paymentMethod", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, NOW(), NOW())
+       RETURNING *`,
+      [bookingId, amount, status, paymentMethod]
+    );
+
+    res.status(201).json({
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('创建支付失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to create payment', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 更新支付状态
+app.put('/payments/:id', async (req, res) => {
+  const client = await pool.connect();
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  try {
+    const result = await client.query(
+      `UPDATE payment 
+       SET status = $1, "updatedAt" = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    res.json({
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('更新支付失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to update payment', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 获取反馈信息
+app.get('/feedbacks', async (req, res) => {
+  const client = await pool.connect();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+  
+  try {
+    // 获取总记录数
+    const countResult = await client.query('SELECT COUNT(*) FROM feedback');
+    const total = parseInt(countResult.rows[0].count);
+    
+    // 获取分页数据
+    const result = await client.query(
+      `SELECT f.*, u.username, u.email 
+       FROM feedback f 
+       LEFT JOIN "user" u ON f."userId" = u.id 
+       ORDER BY f."createdAt" DESC 
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    // 返回符合refine格式的响应
+    res.json({
+      data: result.rows,
+      total,
+      pageCount: Math.ceil(total / limit),
+      page,
+      perPage: limit
+    });
+  } catch (error) {
+    console.error('获取反馈信息失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch feedbacks', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 创建新反馈
+app.post('/feedbacks', async (req, res) => {
+  const client = await pool.connect();
+  const { userId, rating, comment } = req.body;
+  
+  try {
+    const result = await client.query(
+      `INSERT INTO feedback ("userId", rating, comment, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, NOW(), NOW())
+       RETURNING *`,
+      [userId, rating, comment]
+    );
+
+    res.status(201).json({
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('创建反馈失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to create feedback', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 更新反馈
+app.put('/feedbacks/:id', async (req, res) => {
+  const client = await pool.connect();
+  const { id } = req.params;
+  const { rating, comment } = req.body;
+  
+  try {
+    const result = await client.query(
+      `UPDATE feedback 
+       SET rating = $1, comment = $2, "updatedAt" = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [rating, comment, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Feedback not found' });
+    }
+
+    res.json({
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('更新反馈失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to update feedback', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// 获取用户的反馈信息
+app.get('/feedbacks/user', async (req, res) => {
+  const client = await pool.connect();
+  const userId = req.query.userId; // 从查询参数获取用户ID
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+  
+  try {
+    let query, countQuery, queryParams;
+    
+    if (userId) {
+      // 如果提供了用户ID，只获取该用户的反馈
+      countQuery = 'SELECT COUNT(*) FROM feedback WHERE "userId" = $1';
+      query = `
+        SELECT f.*, u.username, u.email 
+        FROM feedback f 
+        LEFT JOIN "user" u ON f."userId" = u.id 
+        WHERE f."userId" = $1
+        ORDER BY f."createdAt" DESC 
+        LIMIT $2 OFFSET $3
+      `;
+      queryParams = [userId, limit, offset];
+    } else {
+      // 否则获取所有反馈
+      countQuery = 'SELECT COUNT(*) FROM feedback';
+      query = `
+        SELECT f.*, u.username, u.email 
+        FROM feedback f 
+        LEFT JOIN "user" u ON f."userId" = u.id 
+        ORDER BY f."createdAt" DESC 
+        LIMIT $1 OFFSET $2
+      `;
+      queryParams = [limit, offset];
+    }
+    
+    // 获取总记录数
+    const countResult = await client.query(countQuery, userId ? [userId] : []);
+    const total = parseInt(countResult.rows[0].count);
+    
+    // 获取分页数据
+    const result = await client.query(query, queryParams);
+
+    // 返回符合refine格式的响应
+    res.json({
+      data: result.rows,
+      total,
+      pageCount: Math.ceil(total / limit),
+      page,
+      perPage: limit
+    });
+  } catch (error) {
+    console.error('获取用户反馈信息失败:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch user feedbacks', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
   }
 });
 
