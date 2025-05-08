@@ -2,7 +2,7 @@ import { Suspense, lazy } from "react";
 import { Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
-import { notificationProvider, RefineSnackbarProvider, ThemedLayoutV2 } from "@refinedev/mui";
+import { RefineSnackbarProvider, ThemedLayoutV2, useNotificationProvider } from "@refinedev/mui";
 import CssBaseline from "@mui/material/CssBaseline";
 import GlobalStyles from "@mui/material/GlobalStyles";
 import routerBindings, { DocumentTitleHandler, UnsavedChangesNotifier } from "@refinedev/react-router-v6";
@@ -36,6 +36,8 @@ const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 const TourInfoManagement = lazy(() => import("./pages/admin-dashboard/TourInfoManagement"));
 
 function App() {
+  const notificationProvider = useNotificationProvider();
+  
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <BrowserRouter>
