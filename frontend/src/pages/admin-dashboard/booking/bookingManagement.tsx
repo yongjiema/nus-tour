@@ -166,7 +166,7 @@ const BookingManagement = () => {
   const changeStatus = async (id: string, status: BookingLifecycleStatus) => {
     try {
       await dataProviders.default.custom({
-        url: `admin/bookings/${id}`,
+        url: `admin/bookings/${id}/status`,
         method: "post",
         payload: { status: status },
       });
@@ -253,23 +253,66 @@ const BookingManagement = () => {
                   <TableCell>{booking.hasFeedback ? "Yes" : "NA"}</TableCell>
                   <TableCell>
                     {booking.status === BookingLifecycleStatus.PENDING_PAYMENT && (
-                      <ConfirmPaymentButton
-                        onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_COMPLETED)}
-                      >
-                        Confirm Payment
-                      </ConfirmPaymentButton>
+                      <Grid container spacing={2} direction="row">
+                        <Grid item>
+                          <ConfirmPaymentButton
+                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_COMPLETED)}
+                          >
+                            Confirm Payment
+                          </ConfirmPaymentButton>
+                        </Grid>
+                        <Grid item>
+                          <RemoveButton
+                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CANCELLED)}
+                          >
+                            Cancel Booking
+                          </RemoveButton>
+                        </Grid>
+                      </Grid>
                     )}
                     {booking.status === BookingLifecycleStatus.PAYMENT_COMPLETED && (
-                      <CheckInButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CONFIRMED)}>
-                        Confirm Booking
-                      </CheckInButton>
+                      <Grid container spacing={2} direction="row">
+                        <Grid item>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CONFIRMED)}
+                          >
+                            Confirm Booking
+                          </Button>
+                        </Grid>
+                        <Grid item>
+                          <RemoveButton
+                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_REFUNDED)}
+                          >
+                            Payment Refunded
+                          </RemoveButton>
+                        </Grid>
+                        <Grid item>
+                          <RemoveButton
+                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CANCELLED)}
+                          >
+                            Cancel Booking
+                          </RemoveButton>
+                        </Grid>
+                      </Grid>
                     )}
                     {booking.status === BookingLifecycleStatus.CONFIRMED && (
-                      <CheckInButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CHECKED_IN)}>
-                        Check In
-                      </CheckInButton>
+                      <Grid container spacing={2} direction="row">
+                        <Grid item>
+                          <CheckInButton
+                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CHECKED_IN)}
+                          >
+                            Check In
+                          </CheckInButton>
+                        </Grid>
+                        <Grid item>
+                          <RemoveButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.NO_SHOW)}>
+                            No Show
+                          </RemoveButton>
+                        </Grid>
+                      </Grid>
                     )}
-
                     {booking.status === BookingLifecycleStatus.CHECKED_IN && (
                       <TourCompletedButton
                         onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.COMPLETED)}
@@ -278,24 +321,11 @@ const BookingManagement = () => {
                       </TourCompletedButton>
                     )}
 
-                    {booking.status === BookingLifecycleStatus.PAYMENT_COMPLETED ||
-                      (booking.status === BookingLifecycleStatus.COMPLETED && (
-                        <RemoveButton
-                          onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_REFUNDED)}
-                        >
-                          Payment Refunded
-                        </RemoveButton>
-                      ))}
-
-                    {(booking.status === BookingLifecycleStatus.PENDING_PAYMENT ||
-                      booking.status === BookingLifecycleStatus.PAYMENT_COMPLETED) && (
-                      <RemoveButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CANCELLED)}>
-                        Cancel Booking
-                      </RemoveButton>
-                    )}
-                    {booking.status === BookingLifecycleStatus.CONFIRMED && (
-                      <RemoveButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.NO_SHOW)}>
-                        No Show
+                    {booking.status === BookingLifecycleStatus.COMPLETED && (
+                      <RemoveButton
+                        onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_REFUNDED)}
+                      >
+                        Payment Refunded
                       </RemoveButton>
                     )}
                   </TableCell>
