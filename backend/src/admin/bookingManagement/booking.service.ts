@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Booking } from "../../database/entities/booking.entity";
-import { BookingStatus, PaymentStatus } from "../../database/entities/enums";
+import { BookingLifecycleStatus } from "../../database/entities/enums";
 import { BookingFilterDto } from "./dto/booking-filter.dto";
 
 @Injectable()
@@ -24,18 +24,11 @@ export class BookingService {
       );
     }
 
-    if (filterDto.bookingStatus) {
-      query.andWhere('booking."bookingStatus"::text = :bookingStatus', {
-        bookingStatus: filterDto.bookingStatus,
+    if (filterDto.status) {
+      query.andWhere('booking."status"::text = :status', {
+        status: filterDto.status,
       });
     }
-
-    if (filterDto.paymentStatus) {
-      query.andWhere('booking."paymentStatus"::text = :paymentStatus', {
-        paymentStatus: filterDto.paymentStatus,
-      });
-    }
-
     if (filterDto.date) {
       query.andWhere("DATE(booking.date) = :date", { date: filterDto.date });
     }
@@ -50,21 +43,34 @@ export class BookingService {
     return this.bookingRepository.find();
   }
 
-  async updatePaymentStatus(id: string, paymentStatus: PaymentStatus) {
+  async updatePaymentStatus(id: string, status: BookingLifecycleStatus) {
     const booking = await this.bookingRepository.findOne({ where: { bookingId: id } });
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
-    booking.paymentStatus = paymentStatus;
+    booking.status = status;
     return this.bookingRepository.save(booking);
   }
 
-  async updateBookingStatus(id: string, bookingStatus: BookingStatus) {
+  async updateBookingStatus(id: string, status: BookingLifecycleStatus) {
     const booking = await this.bookingRepository.findOne({ where: { bookingId: id } });
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
-    booking.bookingStatus = bookingStatus;
+    booking.status = status;
+    return this.bookingRepository.save(booking);
+  }
+
+  async updateStatus(bookingId: string, status: BookingLifecycleStatus): Promise<Booking> {
+    const booking = await this.bookingRepository.findOne({
+      where: { bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${bookingId} not found`);
+    }
+
+    booking.status = status;
     return this.bookingRepository.save(booking);
   }
 }

@@ -22,7 +22,8 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException, InternalServerErrorException, Logger } from "@nestjs/common";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { BookingValidationException } from "../common/exceptions/http-exceptions";
-import { PaymentStatus, BookingStatus } from "../database/entities/enums";
+import { BookingLifecycleStatus } from "../database/entities/enums";
+import { stat } from "fs";
 
 // Use xdescribe to temporarily skip these tests
 xdescribe("BookingService", () => {
@@ -40,8 +41,9 @@ xdescribe("BookingService", () => {
       groupSize: 10,
       deposit: 50,
       timeSlot: "09:00 AM - 10:00 AM",
-      paymentStatus: PaymentStatus.PENDING,
-      bookingStatus: BookingStatus.PENDING,
+      // paymentStatus: PaymentStatus.PENDING,
+      // bookingStatus: BookingStatus.PENDING,
+      status: BookingLifecycleStatus.PENDING_PAYMENT,
       checkin: false,
       hasFeedback: false,
       createdAt: new Date("2023-01-01"),
@@ -58,13 +60,14 @@ xdescribe("BookingService", () => {
       groupSize: 5,
       deposit: 50,
       timeSlot: "10:00 AM - 11:00 AM",
-      paymentStatus: PaymentStatus.COMPLETED,
-      bookingStatus: BookingStatus.CONFIRMED,
+      // paymentStatus: PaymentStatus.COMPLETED,
+      // bookingStatus: BookingStatus.CONFIRMED,
+      status: BookingLifecycleStatus.COMPLETED,
       checkin: false,
       hasFeedback: false,
       createdAt: new Date("2023-01-02"),
       updatedAt: new Date("2023-01-02"),
-      payment: { id: 1, status: PaymentStatus.COMPLETED },
+      // payment: { id: 1, status: PaymentStatus.COMPLETED },
       generateBookingId: jest.fn(),
     },
     {
@@ -76,8 +79,7 @@ xdescribe("BookingService", () => {
       groupSize: 3,
       deposit: 50,
       timeSlot: "11:00 AM - 12:00 PM",
-      paymentStatus: PaymentStatus.PENDING,
-      bookingStatus: BookingStatus.PENDING,
+      status: BookingLifecycleStatus.PENDING_PAYMENT,
       checkin: false,
       hasFeedback: false,
       createdAt: new Date("2023-01-03"),
@@ -217,8 +219,7 @@ xdescribe("BookingService", () => {
         groupSize: createBookingDto.groupSize,
         deposit: createBookingDto.deposit,
         timeSlot: createBookingDto.timeSlot,
-        paymentStatus: PaymentStatus.PENDING,
-        bookingStatus: BookingStatus.PENDING,
+        status: BookingLifecycleStatus.PENDING_PAYMENT,
         checkin: false,
         hasFeedback: false,
       };

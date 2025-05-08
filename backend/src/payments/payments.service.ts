@@ -4,11 +4,10 @@ import { Repository, In } from "typeorm";
 import { Payment } from "../database/entities/payments.entity";
 import { User } from "../database/entities/user.entity";
 import { Booking } from "../database/entities/booking.entity";
-import { PaymentStatus } from "../database/entities/enums";
 import { BookingService } from "../booking/booking.service";
 import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
-import { BookingStatus } from "../database/entities/enums";
+import { BookingLifecycleStatus } from "../database/entities/enums";
 
 @Injectable()
 export class PaymentsService {
@@ -51,7 +50,7 @@ export class PaymentsService {
       this.logger.log(`Payment already exists for booking: ${booking.id}, updating status`);
       return this.updatePaymentStatus({
         bookingId: booking.id,
-        status: createPaymentDto.status || PaymentStatus.PENDING,
+        status: createPaymentDto.status || BookingLifecycleStatus.PENDING_PAYMENT,
         transactionId: createPaymentDto.transactionId,
         paymentMethod: createPaymentDto.paymentMethod,
       });
@@ -61,7 +60,7 @@ export class PaymentsService {
     const payment = this.paymentsRepository.create({
       bookingId: booking.id,
       amount: createPaymentDto.amount || booking.deposit,
-      status: createPaymentDto.status || PaymentStatus.PENDING,
+      status: createPaymentDto.status || BookingLifecycleStatus.PENDING_PAYMENT,
       transactionId: createPaymentDto.transactionId,
       paymentMethod: createPaymentDto.paymentMethod,
     });
@@ -110,7 +109,7 @@ export class PaymentsService {
       payment = this.paymentsRepository.create({
         bookingId: booking.id,
         amount: booking.deposit,
-        status: PaymentStatus.PENDING,
+        status: BookingLifecycleStatus.PENDING_PAYMENT,
       });
     }
 
@@ -122,10 +121,10 @@ export class PaymentsService {
     if (updateDto.paymentMethod) {
       payment.paymentMethod = updateDto.paymentMethod;
     }
-
-    // Update booking status (not paymentStatus)
-    booking.bookingStatus =
-      updateDto.status === PaymentStatus.COMPLETED ? BookingStatus.CONFIRMED : BookingStatus.PENDING;
+    booking.status =
+      updateDto.status === BookingLifecycleStatus.PAYMENT_COMPLETED
+        ? BookingLifecycleStatus.CONFIRMED
+        : BookingLifecycleStatus.PENDING_PAYMENT;
     await this.bookingRepository.save(booking);
 
     const updatedPayment = await this.paymentsRepository.save(payment);
