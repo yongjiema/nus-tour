@@ -5,7 +5,7 @@ import { Booking } from "../database/entities/booking.entity";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { BookingValidationException } from "../common/exceptions/http-exceptions";
 import { v4 as uuidv4 } from "uuid";
-import { PaymentStatus, BookingStatus } from "../database/entities/enums";
+import { BookingLifecycleStatus } from "../database/entities/enums";
 import { Logger } from "@nestjs/common";
 
 @Injectable()
@@ -91,8 +91,7 @@ export class BookingService {
         date: bookingDate,
         hasFeedback: false,
         bookingId: uuidv4(),
-        paymentStatus: PaymentStatus.PENDING,
-        bookingStatus: BookingStatus.PENDING,
+        status: BookingLifecycleStatus.PENDING_PAYMENT,
       });
 
       return await this.bookingRepository.save(booking);
@@ -193,5 +192,41 @@ export class BookingService {
       where: { bookingId },
       relations: ["payment"],
     });
+  }
+
+  async updateStatus(bookingId: string, status: BookingLifecycleStatus): Promise<Booking> {
+    const booking = await this.getBookingByUuid(bookingId);
+
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${bookingId} not found`);
+    }
+
+    booking.status = status;
+
+    // Additional logic based on status change (you can customize this)
+    switch (status) {
+      case BookingLifecycleStatus.PAYMENT_COMPLETED:
+        this.logger.log(`Payment completed for booking ${bookingId}`);
+        break;
+      case BookingLifecycleStatus.CONFIRMED:
+        this.logger.log(`Booking ${bookingId} confirmed`);
+        break;
+      case BookingLifecycleStatus.CHECKED_IN:
+        this.logger.log(`Customer checked in for booking ${bookingId}`);
+        break;
+      case BookingLifecycleStatus.COMPLETED:
+        this.logger.log(`Tour completed for booking ${bookingId}`);
+        break;
+      case BookingLifecycleStatus.CANCELLED:
+        this.logger.log(`Booking ${bookingId} cancelled`);
+        break;
+      case BookingLifecycleStatus.NO_SHOW:
+        this.logger.log(`Customer no-show for booking ${bookingId}`);
+        break;
+      default:
+        this.logger.log(`Booking ${bookingId} status updated to ${status}`);
+    }
+
+    return this.bookingRepository.save(booking);
   }
 }

@@ -9,10 +9,13 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 import { Booking } from "./booking.entity";
-import { PaymentStatus } from "./enums";
+import { BookingLifecycleStatus } from "./enums";
 
 @Entity("payment")
-@Check("CHK_payment_status_valid", "\"status\" IN ('pending', 'completed')")
+@Check(
+  "CHK_payment_status_valid",
+  "\"status\" IN ('pending_payment', 'payment_completed', 'payment_failed', 'payment_refunded', 'confirmed', 'checked_in', 'completed', 'cancelled', 'no_show')",
+)
 @Check("CHK_amount_positive", '"amount" > 0')
 export class Payment {
   @PrimaryGeneratedColumn()
@@ -26,10 +29,10 @@ export class Payment {
 
   @Column({
     type: "enum",
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
+    enum: BookingLifecycleStatus,
+    default: BookingLifecycleStatus.PENDING_PAYMENT,
   })
-  status: PaymentStatus;
+  status: BookingLifecycleStatus;
 
   @Column({ nullable: true })
   transactionId: string;
@@ -47,4 +50,5 @@ export class Payment {
   @JoinColumn({ name: "bookingId" })
   booking: Booking;
 }
-export { PaymentStatus };
+
+export { BookingLifecycleStatus };

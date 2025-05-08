@@ -3,8 +3,8 @@ import { BookingController } from "./booking.controller";
 import { BookingService } from "./booking.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { Booking } from "../database/entities/booking.entity";
-import { BadRequestException, NotFoundException, Logger } from "@nestjs/common";
-import { PaymentStatus, BookingStatus } from "../database/entities/enums";
+import { BadRequestException, NotFoundException, Logger, ForbiddenException } from "@nestjs/common";
+import { BookingLifecycleStatus } from "../database/entities/enums";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { JwtService } from "@nestjs/jwt";
 import { TokenBlacklistService } from "../auth/token-blacklist.service";
@@ -28,6 +28,7 @@ describe("BookingController", () => {
     getAvailableTimeSlots: jest.fn(),
     getAllBookingByEmail: jest.fn(),
     getBookingByBookingId: jest.fn(),
+    updateStatus: jest.fn(),
   };
 
   const mockJwtService = {
@@ -112,8 +113,7 @@ describe("BookingController", () => {
         groupSize: createBookingDto.groupSize,
         deposit: createBookingDto.deposit,
         timeSlot: createBookingDto.timeSlot,
-        paymentStatus: PaymentStatus.PENDING,
-        bookingStatus: BookingStatus.PENDING,
+        status: BookingLifecycleStatus.PENDING_PAYMENT,
         hasFeedback: false,
         generateBookingId: () => {},
       };
@@ -142,13 +142,9 @@ describe("BookingController", () => {
         deposit: 50,
       };
 
-      // Simulate the service throwing the error due to invalid input.
       mockBookingService.createBooking.mockRejectedValue(new BadRequestException("Group size must be at least 1"));
 
-      // Pass the mock request object as the second argument
       await expect(controller.createBooking(invalidBookingDto, mockRequest)).rejects.toThrow(BadRequestException);
-
-      // The controller should pass a modified version of the DTO to the service
       expect(mockBookingService.createBooking).toHaveBeenCalledWith({
         ...invalidBookingDto,
         email: mockRequest.user.email,
@@ -175,7 +171,6 @@ describe("BookingController", () => {
 
   describe("getAllBookings", () => {
     it("should return a list of all bookings", async () => {
-      // Create bookings with correct types
       const bookings: Partial<Booking>[] = [
         {
           id: 1,
@@ -186,8 +181,7 @@ describe("BookingController", () => {
           groupSize: 10,
           deposit: 50,
           timeSlot: "09:00 AM - 10:00 AM",
-          paymentStatus: PaymentStatus.PENDING,
-          bookingStatus: BookingStatus.PENDING,
+          status: BookingLifecycleStatus.PENDING_PAYMENT,
           hasFeedback: false,
           generateBookingId: () => {},
         },
@@ -200,8 +194,7 @@ describe("BookingController", () => {
           groupSize: 5,
           deposit: 50,
           timeSlot: "10:00 AM - 11:00 AM",
-          paymentStatus: PaymentStatus.PENDING,
-          bookingStatus: BookingStatus.PENDING,
+          status: BookingLifecycleStatus.PENDING_PAYMENT,
           hasFeedback: false,
           generateBookingId: () => {},
         },
@@ -223,6 +216,7 @@ describe("BookingController", () => {
           name: "Test User",
           email: "test@example.com",
           date: new Date("2025-01-01"),
+          status: BookingLifecycleStatus.PENDING_PAYMENT,
         },
       ];
 
@@ -239,7 +233,6 @@ describe("BookingController", () => {
 
   describe("getBookingById", () => {
     it("should return a booking when found", async () => {
-      // Create a booking with correct types
       const booking: Partial<Booking> = {
         id: 1,
         bookingId: "abc-123",
@@ -249,8 +242,7 @@ describe("BookingController", () => {
         groupSize: 10,
         deposit: 50,
         timeSlot: "09:00 AM - 10:00 AM",
-        paymentStatus: PaymentStatus.PENDING,
-        bookingStatus: BookingStatus.PENDING,
+        status: BookingLifecycleStatus.PENDING_PAYMENT,
         hasFeedback: false,
         generateBookingId: () => {},
       };
@@ -277,6 +269,7 @@ describe("BookingController", () => {
         name: "Test User",
         email: mockRequest.user.email,
         date: new Date("2025-01-01"),
+        status: BookingLifecycleStatus.PENDING_PAYMENT,
       };
 
       mockBookingService.getBookingByBookingId.mockResolvedValue(booking);
@@ -294,13 +287,12 @@ describe("BookingController", () => {
         name: "Test User",
         email: "different@example.com", // Different from the authenticated user
         date: new Date("2025-01-01"),
+        status: BookingLifecycleStatus.PENDING_PAYMENT,
       };
 
       mockBookingService.getBookingByBookingId.mockResolvedValue(booking);
 
-      await expect(controller.getBookingByBookingId(bookingId, mockRequest)).rejects.toThrow(
-        "You do not have access to this booking",
-      );
+      await expect(controller.getBookingByBookingId(bookingId, mockRequest)).rejects.toThrow(ForbiddenException);
       expect(mockBookingService.getBookingByBookingId).toHaveBeenCalledWith(bookingId);
     });
 

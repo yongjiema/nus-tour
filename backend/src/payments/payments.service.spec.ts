@@ -9,7 +9,7 @@ import { Repository } from "typeorm";
 import { Logger, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
-import { PaymentStatus, BookingStatus } from "../database/entities/enums";
+import { BookingLifecycleStatus } from "../database/entities/enums";
 
 type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
@@ -36,14 +36,14 @@ describe("PaymentsService", () => {
     name: "Test Booking",
     email: "test@example.com",
     deposit: 50,
-    bookingStatus: BookingStatus.PENDING,
+    bookingStatus: BookingLifecycleStatus.PENDING_PAYMENT,
   };
 
   const mockPayment = {
     id: 1,
     bookingId: mockBooking.id,
     amount: 50,
-    status: PaymentStatus.PENDING,
+    status: BookingLifecycleStatus.PENDING_PAYMENT,
     transactionId: "tx-123",
     paymentMethod: "credit_card",
     createdAt: new Date(),
@@ -186,7 +186,7 @@ describe("PaymentsService", () => {
     it("should update existing payment when one exists", async () => {
       const createPaymentDto = {
         bookingId: "booking-123",
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       };
       const user = { id: "user-1", email: "test@example.com" };
 
@@ -199,7 +199,7 @@ describe("PaymentsService", () => {
       // Mock updated payment
       paymentsRepository.save.mockResolvedValue({
         ...mockPayment,
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       });
 
       // Mock finding booking directly
@@ -207,7 +207,7 @@ describe("PaymentsService", () => {
 
       const result = await service.createPayment(createPaymentDto, user);
 
-      expect(result.status).toBe(PaymentStatus.COMPLETED);
+      expect(result.status).toBe(BookingLifecycleStatus.PAYMENT_COMPLETED);
       expect(paymentsRepository.save).toHaveBeenCalled();
     });
   });
@@ -216,7 +216,7 @@ describe("PaymentsService", () => {
     it("should update payment status by numeric ID", async () => {
       const updateDto: UpdatePaymentStatusDto = {
         bookingId: 123,
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       };
 
       // Mock finding booking by ID
@@ -228,26 +228,26 @@ describe("PaymentsService", () => {
       // Mock updated payment
       paymentsRepository.save.mockResolvedValue({
         ...mockPayment,
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       });
 
       // Mock updated booking
       bookingRepository.save.mockResolvedValue({
         ...mockBooking,
-        bookingStatus: BookingStatus.CONFIRMED,
+        bookingStatus: BookingLifecycleStatus.PAYMENT_COMPLETED,
       });
 
       const result = await service.updatePaymentStatus(updateDto);
 
       expect(bookingRepository.findOne).toHaveBeenCalled();
       expect(paymentsRepository.findOne).toHaveBeenCalled();
-      expect(result.status).toBe(PaymentStatus.COMPLETED);
+      expect(result.status).toBe(BookingLifecycleStatus.PAYMENT_COMPLETED);
     });
 
     it("should update payment status by string ID", async () => {
       const updateDto: UpdatePaymentStatusDto = {
         bookingId: "booking-123",
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       };
 
       // Mock getting booking by bookingId
@@ -259,26 +259,26 @@ describe("PaymentsService", () => {
       // Mock updated payment
       paymentsRepository.save.mockResolvedValue({
         ...mockPayment,
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       });
 
       // Mock updated booking
       bookingRepository.save.mockResolvedValue({
         ...mockBooking,
-        bookingStatus: BookingStatus.CONFIRMED,
+        bookingStatus: BookingLifecycleStatus.PAYMENT_COMPLETED,
       });
 
       const result = await service.updatePaymentStatus(updateDto);
 
       expect(bookingService.getBookingByBookingId).toHaveBeenCalledWith("booking-123");
       expect(paymentsRepository.findOne).toHaveBeenCalled();
-      expect(result.status).toBe(PaymentStatus.COMPLETED);
+      expect(result.status).toBe(BookingLifecycleStatus.PAYMENT_COMPLETED);
     });
 
     it("should create a new payment if none exists", async () => {
       const updateDto: UpdatePaymentStatusDto = {
         bookingId: 123,
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       };
 
       // Mock finding booking by ID
@@ -291,25 +291,25 @@ describe("PaymentsService", () => {
       paymentsRepository.create.mockReturnValue({
         bookingId: mockBooking.id,
         amount: mockBooking.deposit,
-        status: PaymentStatus.PENDING,
+        status: BookingLifecycleStatus.PENDING_PAYMENT,
       });
 
       // Mock updated payment
       paymentsRepository.save.mockResolvedValue({
         ...mockPayment,
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       });
 
       const result = await service.updatePaymentStatus(updateDto);
 
       expect(paymentsRepository.create).toHaveBeenCalled();
-      expect(result.status).toBe(PaymentStatus.COMPLETED);
+      expect(result.status).toBe(BookingLifecycleStatus.PAYMENT_COMPLETED);
     });
 
     it("should throw NotFoundException when booking is not found", async () => {
       const updateDto: UpdatePaymentStatusDto = {
         bookingId: 999,
-        status: PaymentStatus.COMPLETED,
+        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
       };
 
       // Mock not finding booking
