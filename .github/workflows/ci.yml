@@ -27,6 +27,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: ./${{ matrix.project }}/package-lock.json
 
+      - name: Update package-lock.json
+        run: npm install --package-lock-only
+        working-directory: ./${{ matrix.project }}
+        env:
+          HUSKY: 0
+
       - name: Install Dependencies
         run: npm ci --no-audit --no-fund
         working-directory: ./${{ matrix.project }}
