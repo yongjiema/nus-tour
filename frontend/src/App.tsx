@@ -37,7 +37,7 @@ const TourInfoManagement = lazy(() => import("./pages/admin-dashboard/TourInfoMa
 
 function App() {
   const notificationProvider = useNotificationProvider();
-  
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <BrowserRouter>
