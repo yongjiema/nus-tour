@@ -2,7 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, Check, OneToOne, 
 import { v4 as uuidv4 } from "uuid";
 import { Checkin } from "./checkin.entity";
 import { Payment } from "./payments.entity";
-import { PaymentStatus, BookingStatus } from "./enums";
+import { BookingLifecycleStatus } from "./enums";
 
 @Entity("booking")
 @Check("CHK_email_format", "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'")
@@ -41,17 +41,10 @@ export class Booking {
 
   @Column({
     type: "enum",
-    enum: BookingStatus,
-    default: BookingStatus.PENDING,
+    enum: BookingLifecycleStatus,
+    default: BookingLifecycleStatus.PENDING_PAYMENT,
   })
-  bookingStatus: BookingStatus;
-
-  @Column({
-    type: "enum",
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
-  })
-  paymentStatus: PaymentStatus;
+  status: BookingLifecycleStatus;
 
   @CreateDateColumn()
   createdAt: Date; // When the booking record was created

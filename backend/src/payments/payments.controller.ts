@@ -4,7 +4,7 @@ import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Payment } from "../database/entities/payments.entity";
-import { PaymentStatus } from "../database/entities/enums";
+import { BookingLifecycleStatus } from "../database/entities/enums";
 import { Public } from "../auth/decorators/public.decorator";
 
 @Controller("payments")
@@ -55,7 +55,7 @@ export class PaymentsController {
     this.logger.log(`Payment completion request for booking: ${bookingId}`);
     return this.paymentsService.updatePaymentStatus({
       bookingId: bookingId,
-      status: PaymentStatus.COMPLETED,
+      status: BookingLifecycleStatus.COMPLETED,
       transactionId: `TXN-${Date.now()}`,
     });
   }
@@ -67,7 +67,7 @@ export class PaymentsController {
     this.logger.log(`Admin payment completion request for booking: ${bookingId}`);
     return this.paymentsService.updatePaymentStatus({
       bookingId: +bookingId,
-      status: PaymentStatus.COMPLETED,
+      status: BookingLifecycleStatus.COMPLETED,
     });
   }
 

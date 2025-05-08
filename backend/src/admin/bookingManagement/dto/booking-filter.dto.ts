@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsEnum, IsDateString } from "class-validator";
-import { BookingStatus, PaymentStatus } from "../../../database/entities/enums";
+import { BookingLifecycleStatus } from "../../../database/entities/enums";
 
 export class BookingFilterDto {
   @IsOptional()
@@ -7,12 +7,8 @@ export class BookingFilterDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(BookingStatus)
-  bookingStatus?: BookingStatus;
-
-  @IsOptional()
-  @IsEnum(PaymentStatus)
-  paymentStatus?: PaymentStatus;
+  @IsEnum(BookingLifecycleStatus)
+  status?: BookingLifecycleStatus;
 
   @IsOptional()
   @IsDateString()

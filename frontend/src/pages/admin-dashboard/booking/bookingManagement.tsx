@@ -21,7 +21,7 @@ import {
 import { styled } from "@mui/material/styles";
 import * as dataProviders from "../../../dataProvider";
 import { CrudFilters } from "@refinedev/core";
-import { PaymentStatus, BookingStatus } from "../../../../../backend/src/database/entities/enums";
+import { BookingLifecycleStatus } from "../../../../../backend/src/database/entities/enums";
 
 // Styled components for buttons
 const RemoveButton = styled(Button)({
@@ -42,6 +42,12 @@ const ConfirmPaymentButton = styled(Button)({
   "&:hover": { backgroundColor: "darkblue" },
 });
 
+const TourCompletedButton = styled(Button)({
+  backgroundColor: "orange",
+  color: "white",
+  "&:hover": { backgroundColor: "darkorange" },
+});
+
 // Interface for booking data
 interface Booking {
   bookingId: string;
@@ -53,8 +59,7 @@ interface Booking {
   timeSlot: string;
   hasFeedback: boolean;
   createdAt: Date;
-  bookingStatus: BookingStatus;
-  paymentStatus: PaymentStatus;
+  status: BookingLifecycleStatus;
 }
 
 const BookingManagement = () => {
@@ -87,17 +92,6 @@ const BookingManagement = () => {
     }
   }, []);
 
-  // // Initial fetch and polling with more reasonable interval
-  // useEffect(() => {
-  //   fetchBookings();
-  //   const interval = setInterval(fetchBookings, 30000);
-
-  //   // Cleanup function
-  //   return () => {
-  //     console.log('Clearing polling interval'); // Debug log
-  //     clearInterval(interval);
-  //   };
-  // }, [fetchBookings]);
   useEffect(() => {
     fetchBookings();
   }, [fetchBookings]);
@@ -161,7 +155,7 @@ const BookingManagement = () => {
       await dataProviders.default.custom({
         url: `admin/bookings/${id}`,
         method: "post",
-        payload: { bookingStatus: BookingStatus.CONFIRMED },
+        payload: { status: BookingLifecycleStatus.CONFIRMED },
       });
       fetchBookings();
     } catch (error) {
@@ -169,32 +163,17 @@ const BookingManagement = () => {
       setError("Failed to confirm booking.");
     }
   };
-
-  const confirmPayment = async (id: string) => {
+  const changeStatus = async (id: string, status: BookingLifecycleStatus) => {
     try {
       await dataProviders.default.custom({
-        url: `admin/bookings/${id}/payment`,
+        url: `admin/bookings/${id}`,
         method: "post",
-        payload: { status: PaymentStatus.COMPLETED },
+        payload: { status: status },
       });
       fetchBookings();
     } catch (error) {
       console.error("Error confirming payment:", error);
       setError("Failed to confirm payment.");
-    }
-  };
-
-  const checkInBooking = async (id: string) => {
-    try {
-      await dataProviders.default.custom({
-        url: `admin/bookings/${id}`,
-        method: "post",
-        payload: { bookingStatus: BookingStatus.COMPLETED },
-      });
-      fetchBookings();
-    } catch (error) {
-      console.error("Error checking in booking:", error);
-      setError("Failed to check in booking.");
     }
   };
 
@@ -220,20 +199,7 @@ const BookingManagement = () => {
             <InputLabel>Booking Status</InputLabel>
             <Select value={bookingStatusFilter} onChange={(e) => setBookingStatusFilter(e.target.value)}>
               <MenuItem value="">All</MenuItem>
-              {Object.values(BookingStatus).map((status) => (
-                <MenuItem key={status} value={status}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={4}>
-          <FormControl fullWidth>
-            <InputLabel>Payment Status</InputLabel>
-            <Select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              {Object.values(PaymentStatus).map((status) => (
+              {Object.values(BookingLifecycleStatus).map((status) => (
                 <MenuItem key={status} value={status}>
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </MenuItem>
@@ -269,7 +235,6 @@ const BookingManagement = () => {
                 <TableCell>Date</TableCell>
                 <TableCell>Time Slot</TableCell>
                 <TableCell>Group Size</TableCell>
-                <TableCell>Payment Status</TableCell>
                 <TableCell>Booking Status</TableCell>
                 <TableCell>Feedback</TableCell>
                 <TableCell>Actions</TableCell>
@@ -284,23 +249,55 @@ const BookingManagement = () => {
                   <TableCell>{booking.date}</TableCell>
                   <TableCell>{booking.timeSlot}</TableCell>
                   <TableCell>{booking.groupSize}</TableCell>
-                  <TableCell>{booking.paymentStatus}</TableCell>
-                  <TableCell>{booking.bookingStatus}</TableCell>
+                  <TableCell>{booking.status}</TableCell>
                   <TableCell>{booking.hasFeedback ? "Yes" : "NA"}</TableCell>
                   <TableCell>
-                    {booking.paymentStatus === PaymentStatus.PENDING && (
-                      <ConfirmPaymentButton onClick={() => confirmPayment(booking.bookingId)}>
+                    {booking.status === BookingLifecycleStatus.PENDING_PAYMENT && (
+                      <ConfirmPaymentButton
+                        onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_COMPLETED)}
+                      >
                         Confirm Payment
                       </ConfirmPaymentButton>
                     )}
-                    {booking.paymentStatus === PaymentStatus.COMPLETED &&
-                      booking.bookingStatus === BookingStatus.PENDING && (
-                        <CheckInButton onClick={() => confirmBooking(booking.bookingId)}>Confirm Booking</CheckInButton>
-                      )}
-                    {booking.paymentStatus === PaymentStatus.COMPLETED &&
-                      booking.bookingStatus === BookingStatus.CONFIRMED && (
-                        <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>Check In</CheckInButton>
-                      )}
+                    {booking.status === BookingLifecycleStatus.PAYMENT_COMPLETED && (
+                      <CheckInButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CONFIRMED)}>
+                        Confirm Booking
+                      </CheckInButton>
+                    )}
+                    {booking.status === BookingLifecycleStatus.CONFIRMED && (
+                      <CheckInButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CHECKED_IN)}>
+                        Check In
+                      </CheckInButton>
+                    )}
+
+                    {booking.status === BookingLifecycleStatus.CHECKED_IN && (
+                      <TourCompletedButton
+                        onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.COMPLETED)}
+                      >
+                        Tour Completed
+                      </TourCompletedButton>
+                    )}
+
+                    {booking.status === BookingLifecycleStatus.PAYMENT_COMPLETED ||
+                      (booking.status === BookingLifecycleStatus.COMPLETED && (
+                        <RemoveButton
+                          onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_REFUNDED)}
+                        >
+                          Payment Refunded
+                        </RemoveButton>
+                      ))}
+
+                    {(booking.status === BookingLifecycleStatus.PENDING_PAYMENT ||
+                      booking.status === BookingLifecycleStatus.PAYMENT_COMPLETED) && (
+                      <RemoveButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CANCELLED)}>
+                        Cancel Booking
+                      </RemoveButton>
+                    )}
+                    {booking.status === BookingLifecycleStatus.CONFIRMED && (
+                      <RemoveButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.NO_SHOW)}>
+                        No Show
+                      </RemoveButton>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -311,5 +308,4 @@ const BookingManagement = () => {
     </Container>
   );
 };
-
 export default BookingManagement;

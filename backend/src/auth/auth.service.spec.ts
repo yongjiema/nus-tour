@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { JwtService } from "@nestjs/jwt";
-import { ConflictException, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, UnauthorizedException, BadRequestException } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { UsersService } from "../users/users.service";
 import { User } from "../database/entities/user.entity";
@@ -97,9 +97,7 @@ describe("AuthService", () => {
     });
 
     it("should throw ConflictException if email is already in use", async () => {
-      // Add a spy to suppress console.error
       const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-
       const registerDto: RegisterDto = {
         email: "test@example.com",
         username: "Test User",
@@ -108,11 +106,23 @@ describe("AuthService", () => {
       mockUsersService.findByEmail.mockResolvedValue(mockUser);
 
       await expect(service.register(registerDto)).rejects.toThrow(ConflictException);
-
-      // Verify the console.error was called (optional)
       expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
 
-      // Restore the original console.error implementation
+    it("should throw BadRequestException for other errors", async () => {
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const registerDto: RegisterDto = {
+        email: "test@example.com",
+        username: "Test User",
+        password: "password",
+      };
+
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.register.mockRejectedValue(new Error("Some other error"));
+
+      await expect(service.register(registerDto)).rejects.toThrow(BadRequestException);
+      expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
     });
   });
@@ -125,7 +135,6 @@ describe("AuthService", () => {
       };
 
       mockUsersService.validateUser.mockResolvedValue(mockUser);
-      // Ensure JWT mock returns 'test-token'
       mockJwtService.sign.mockReturnValue("test-token");
 
       const result = await service.login(loginDto);
@@ -186,6 +195,44 @@ describe("AuthService", () => {
 
       expect(result).toEqual({ access_token: "new-token" });
       expect(mockUsersService.findById).toHaveBeenCalledWith("1");
+    });
+
+    it("should throw UnauthorizedException when user not found", async () => {
+      mockTokenBlacklistService.isBlacklisted.mockReturnValue(false);
+      mockJwtService.verify.mockReturnValue({ id: "999" });
+      mockUsersService.findById.mockResolvedValue(null);
+
+      await expect(service.refreshToken("valid-token")).rejects.toThrow(UnauthorizedException);
+    });
+
+    it("should throw UnauthorizedException when token verification fails", async () => {
+      mockTokenBlacklistService.isBlacklisted.mockReturnValue(false);
+      mockJwtService.verify.mockImplementation(() => {
+        throw new Error("Invalid token");
+      });
+
+      await expect(service.refreshToken("invalid-token")).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe("createToken", () => {
+    it("should create a token with the correct payload", async () => {
+      // Set up the mock to return "test-token" specifically for this test
+      mockJwtService.sign.mockReturnValue("test-token");
+
+      const result = await service.createToken(mockUser);
+
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: "1", // Your implementation uses sub instead of id
+          email: "test@example.com",
+          username: "Test User",
+          role: "user",
+        },
+        { expiresIn: "60m" },
+      );
+
+      expect(result).toEqual({ access_token: "test-token" });
     });
   });
 });
