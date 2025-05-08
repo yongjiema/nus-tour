@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Container, Typography, Box, Paper, Button, CircularProgress, styled } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { usePayment } from "../../hooks/usePayment";
-import { useCustom } from "@refinedev/core";
+import { useCustom, useCustomMutation } from "@refinedev/core";
 import { PublicHeader } from "../../components/header/public";
+import { BookingLifecycleStatus } from "../../types/enums";
 
 const PaymentPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -55,6 +56,7 @@ const PaymentPage = () => {
   const { processPayment, isProcessing } = usePayment();
   const [timeLeft, setTimeLeft] = useState(300);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const { mutate } = useCustomMutation();
 
   // Single state for booking details
   const [bookingDetails, setBookingDetails] = useState<{
@@ -132,23 +134,47 @@ const PaymentPage = () => {
     }
 
     try {
-      // Call the processPayment function - it handles navigation internally
+      // Generate a transaction ID
+      const transactionId = `TXN-${Date.now()}`;
+
+      // 1. Process the payment first
       await processPayment({
         bookingId: bookingDetails.bookingId,
         amount: bookingDetails.amount,
         paymentMethod: "paynow",
       });
 
-      // Store payment confirmation details for the success page
+      // 2. Update booking status to PAYMENT_COMPLETED
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        await mutate({
+          url: `admin/bookings/${bookingDetails.bookingId}/status`,
+          method: "post",
+          values: {
+            status: BookingLifecycleStatus.PAYMENT_COMPLETED,
+            transactionId: transactionId,
+          },
+          meta: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        });
+      }
+
+      // 3. Store payment confirmation details for the success page
       localStorage.setItem(
         "payment_confirmation",
         JSON.stringify({
           bookingId: typeof bookingDetails.bookingId === "string" ? bookingDetails.bookingId : "",
           amount: bookingDetails.amount,
           date: new Date().toISOString(),
-          transactionId: `TXN-${Date.now()}`,
+          transactionId: transactionId,
         }),
       );
+
+      // 4. Navigate to success page
+      navigate(`/payment/success/${bookingDetails.bookingId}`);
     } catch (error) {
       console.error("Payment processing error:", error);
     }
