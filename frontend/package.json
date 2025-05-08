@@ -56,7 +56,7 @@
     "tsc:check": "tsc --noEmit",
     "eslint": "eslint",
     "eslint:fix": "eslint --fix",
-    "prettier:check": "prettier --ignore-path ./.gitignore --ignore-pattern 'src/App.tsx' --check .",
+    "prettier:check": "prettier --ignore-path ./.gitignore --check .",
     "prettier:fix": "prettier --ignore-path ./.gitignore --write .",
     "test": ""
   },
