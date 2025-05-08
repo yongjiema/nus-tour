@@ -2,14 +2,14 @@ import { Suspense, lazy } from "react";
 import { Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
-import { notificationProvider, RefineSnackbarProvider, ThemedLayoutV2 } from "@refinedev/mui";
+import { notificationProvider, RefineSnackbarProvider } from "@refinedev/mui";
 import CssBaseline from "@mui/material/CssBaseline";
 import GlobalStyles from "@mui/material/GlobalStyles";
 import routerBindings, { DocumentTitleHandler, UnsavedChangesNotifier } from "@refinedev/react-router-v6";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { authProvider } from "./authProvider";
-import { Header } from "./components/header";
 import { PublicHeader } from "./components/header/public";
+import { AdminLayout } from "./components/AdminLayout";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { ForgotPassword } from "./pages/forgotPassword";
 import Login from "./pages/login";
@@ -91,31 +91,31 @@ function App() {
                       <Route
                         path="/admin"
                         element={
-                          <ThemedLayoutV2 Header={Header}>
+                          <AdminLayout>
                             <Suspense fallback={<div>Loading...</div>}>
                               <AdminDashboard />
                             </Suspense>
-                          </ThemedLayoutV2>
+                          </AdminLayout>
                         }
                       />
                       <Route
                         path="/admin/bookings"
                         element={
-                          <ThemedLayoutV2 Header={Header}>
+                          <AdminLayout>
                             <Suspense fallback={<div>Loading...</div>}>
                               <BookingManagement />
                             </Suspense>
-                          </ThemedLayoutV2>
+                          </AdminLayout>
                         }
                       />
                       <Route
                         path="/admin/check-ins"
                         element={
-                          <ThemedLayoutV2 Header={Header}>
+                          <AdminLayout>
                             <Suspense fallback={<div>Loading...</div>}>
                               <CheckInManagement />
                             </Suspense>
-                          </ThemedLayoutV2>
+                          </AdminLayout>
                         }
                       />
                     </Route>
