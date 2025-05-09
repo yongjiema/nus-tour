@@ -5,6 +5,7 @@ import { usePayment } from "../../hooks/usePayment";
 import { useCustom, useCustomMutation } from "@refinedev/core";
 import { PublicHeader } from "../../components/header/public";
 import { BookingLifecycleStatus } from "../../types/enums";
+import * as dataProviders from "../../dataProvider";
 
 const PaymentPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -97,6 +98,39 @@ const PaymentPage = () => {
     },
   });
 
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      setSessionExpired(true);
+
+      // Update booking status to PAYMENT_FAILED
+      const updateBookingStatus = async () => {
+        try {
+          await dataProviders.default.custom({
+            url: `bookings/${bookingDetails.bookingId}/payment-status`,
+            method: "post",
+            payload: {
+              status: BookingLifecycleStatus.PAYMENT_FAILED,
+              transactionId: `EXPIRED-${Date.now()}`,
+            },
+          });
+          console.log("Payment session expired, booking status updated to PAYMENT_FAILED");
+        } catch (error) {
+          console.error("Failed to update booking status on expiration:", error);
+        }
+      };
+
+      // Call the function to update status
+      updateBookingStatus();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, bookingDetails.bookingId]);
+
   // Update from API data if available
   useEffect(() => {
     if (apiData?.data) {
@@ -107,19 +141,6 @@ const PaymentPage = () => {
       }));
     }
   }, [apiData]);
-
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      setSessionExpired(true);
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -134,35 +155,26 @@ const PaymentPage = () => {
     }
 
     try {
-      // Generate a transaction ID
       const transactionId = `TXN-${Date.now()}`;
 
-      // 1. Process the payment first
+      // 1. Process payment
       await processPayment({
         bookingId: bookingDetails.bookingId,
         amount: bookingDetails.amount,
         paymentMethod: "paynow",
       });
 
-      // 2. Update booking status to PAYMENT_COMPLETED
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        await mutate({
-          url: `admin/bookings/${bookingDetails.bookingId}/status`,
-          method: "post",
-          values: {
-            status: BookingLifecycleStatus.PAYMENT_COMPLETED,
-            transactionId: transactionId,
-          },
-          meta: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        });
-      }
+      // 2. Update booking status AND create payment record
+      await dataProviders.default.custom({
+        url: `bookings/${bookingDetails.bookingId}/payment-status`,
+        method: "post",
+        payload: {
+          status: BookingLifecycleStatus.PAYMENT_COMPLETED,
+          transactionId: transactionId,
+        },
+      });
 
-      // 3. Store payment confirmation details for the success page
+      // 3. Store confirmation details and navigate
       localStorage.setItem(
         "payment_confirmation",
         JSON.stringify({
@@ -172,11 +184,12 @@ const PaymentPage = () => {
           transactionId: transactionId,
         }),
       );
-
-      // 4. Navigate to success page
+      console.log("Navigating to success page");
       navigate(`/payment/success/${bookingDetails.bookingId}`);
     } catch (error) {
       console.error("Payment processing error:", error);
+
+      alert("Payment processing failed. Please try again or contact support.");
     }
   };
 

@@ -99,7 +99,6 @@ const PaymentSuccessPage: React.FC = () => {
 
   return (
     <>
-      <PublicHeader />
       <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
         <SuccessPaper>
           <Box display="flex" flexDirection="column" alignItems="center" mb={4}>

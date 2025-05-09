@@ -17,6 +17,11 @@ import {
   FormControl,
   InputLabel,
   Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import * as dataProviders from "../../../dataProvider";
@@ -47,7 +52,6 @@ const TourCompletedButton = styled(Button)({
   color: "white",
   "&:hover": { backgroundColor: "darkorange" },
 });
-
 // Interface for booking data
 interface Booking {
   bookingId: string;
@@ -70,7 +74,48 @@ const BookingManagement = () => {
   const [error, setError] = useState<string | null>(null);
   const [bookingStatusFilter, setBookingStatusFilter] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    id: string;
+    status: BookingLifecycleStatus;
+    actionName: string;
+  } | null>(null);
 
+  // Open confirmation dialog
+  const openConfirmDialog = (id: string, status: BookingLifecycleStatus, actionName: string) => {
+    setConfirmAction({ id, status, actionName });
+    setConfirmDialogOpen(true);
+  };
+
+  const clearFilters = () => {
+    // Clear all filter states
+    setSearch("");
+    setBookingStatusFilter("");
+    setDateFilter("");
+    if (document.getElementById("hidden-date-input")) {
+      (document.getElementById("hidden-date-input") as HTMLInputElement).value = "";
+    }
+
+    // Reload all bookings
+    fetchBookings();
+  };
+  // Handle confirmed action
+  const handleConfirm = async () => {
+    if (confirmAction) {
+      try {
+        await dataProviders.default.custom({
+          url: `admin/bookings/${confirmAction.id}/status`,
+          method: "post",
+          payload: { status: confirmAction.status },
+        });
+        fetchBookings();
+        setConfirmDialogOpen(false);
+      } catch (error) {
+        console.error(`Error ${confirmAction.actionName}:`, error);
+        setError(`Failed to ${confirmAction.actionName.toLowerCase()}.`);
+      }
+    }
+  };
   // Fetch all bookings
   const fetchBookings = useCallback(async () => {
     try {
@@ -107,6 +152,7 @@ const BookingManagement = () => {
           operator: "contains",
           value: search,
         });
+        console.log("Adding search filter:", search);
       }
       if (bookingStatusFilter) {
         filters.push({
@@ -133,7 +179,7 @@ const BookingManagement = () => {
       console.log("Sending filters:", filters);
       const { data } = await dataProviders.default.getList({
         resource: "admin/bookings",
-        filters: filters, // pass the array directly
+        filters: filters,
         pagination: {
           current: 1,
           pageSize: 100,
@@ -208,18 +254,56 @@ const BookingManagement = () => {
           </FormControl>
         </Grid>
         <Grid item xs={4}>
-          <TextField
+          <Button
             fullWidth
-            type="date"
-            label="Filter by Date"
-            InputLabelProps={{ shrink: true }}
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          />
+            variant="outlined"
+            onClick={() => {
+              // Focus on a hidden date input when button is clicked
+              const dateInput = document.getElementById("hidden-date-input");
+              if (dateInput) dateInput.click();
+            }}
+            sx={{
+              justifyContent: "flex-start",
+              height: "56px",
+              padding: "8px 14px",
+              border: "1px solid rgba(0, 0, 0, 0.23)",
+              color: dateFilter ? "text.primary" : "text.secondary",
+            }}
+          >
+            <span>{dateFilter || "Select a date to filter bookings"}</span>
+            <input
+              id="hidden-date-input"
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              style={{
+                position: "absolute",
+                opacity: 0,
+                width: "100%",
+                height: "100%",
+                cursor: "pointer",
+              }}
+            />
+          </Button>
+          <InputLabel
+            shrink
+            sx={{
+              position: "absolute",
+              top: "-6px",
+              left: "14px",
+              backgroundColor: "white",
+              padding: "0 4px",
+            }}
+          >
+            Filter by Date
+          </InputLabel>
         </Grid>
         <Grid item xs={12}>
           <Button variant="contained" color="primary" onClick={filterBookings}>
             Apply Filters
+          </Button>
+          <Button variant="contained" color="primary" onClick={clearFilters}>
+            Clear Filters
           </Button>
         </Grid>
       </Grid>
@@ -256,14 +340,22 @@ const BookingManagement = () => {
                       <Grid container spacing={2} direction="row">
                         <Grid item>
                           <ConfirmPaymentButton
-                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_COMPLETED)}
+                            onClick={() =>
+                              openConfirmDialog(
+                                booking.bookingId,
+                                BookingLifecycleStatus.PAYMENT_COMPLETED,
+                                "Confirm Payment",
+                              )
+                            }
                           >
                             Confirm Payment
                           </ConfirmPaymentButton>
                         </Grid>
                         <Grid item>
                           <RemoveButton
-                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CANCELLED)}
+                            onClick={() =>
+                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.CANCELLED, "Cancel Booking")
+                            }
                           >
                             Cancel Booking
                           </RemoveButton>
@@ -276,21 +368,31 @@ const BookingManagement = () => {
                           <Button
                             variant="contained"
                             color="primary"
-                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CONFIRMED)}
+                            onClick={() =>
+                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.CONFIRMED, "Confirm Payment")
+                            }
                           >
                             Confirm Booking
                           </Button>
                         </Grid>
                         <Grid item>
                           <RemoveButton
-                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_REFUNDED)}
+                            onClick={() =>
+                              openConfirmDialog(
+                                booking.bookingId,
+                                BookingLifecycleStatus.PAYMENT_REFUNDED,
+                                "Payment Refunded",
+                              )
+                            }
                           >
                             Payment Refunded
                           </RemoveButton>
                         </Grid>
                         <Grid item>
                           <RemoveButton
-                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CANCELLED)}
+                            onClick={() =>
+                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.CANCELLED, "Cancel Booking")
+                            }
                           >
                             Cancel Booking
                           </RemoveButton>
@@ -301,13 +403,19 @@ const BookingManagement = () => {
                       <Grid container spacing={2} direction="row">
                         <Grid item>
                           <CheckInButton
-                            onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.CHECKED_IN)}
+                            onClick={() =>
+                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.CHECKED_IN, "Check In")
+                            }
                           >
                             Check In
                           </CheckInButton>
                         </Grid>
                         <Grid item>
-                          <RemoveButton onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.NO_SHOW)}>
+                          <RemoveButton
+                            onClick={() =>
+                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.NO_SHOW, "No Show")
+                            }
+                          >
                             No Show
                           </RemoveButton>
                         </Grid>
@@ -315,7 +423,9 @@ const BookingManagement = () => {
                     )}
                     {booking.status === BookingLifecycleStatus.CHECKED_IN && (
                       <TourCompletedButton
-                        onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.COMPLETED)}
+                        onClick={() =>
+                          openConfirmDialog(booking.bookingId, BookingLifecycleStatus.COMPLETED, "Tour Completed")
+                        }
                       >
                         Tour Completed
                       </TourCompletedButton>
@@ -323,7 +433,13 @@ const BookingManagement = () => {
 
                     {booking.status === BookingLifecycleStatus.COMPLETED && (
                       <RemoveButton
-                        onClick={() => changeStatus(booking.bookingId, BookingLifecycleStatus.PAYMENT_REFUNDED)}
+                        onClick={() =>
+                          openConfirmDialog(
+                            booking.bookingId,
+                            BookingLifecycleStatus.PAYMENT_REFUNDED,
+                            "Payment Refunded",
+                          )
+                        }
                       >
                         Payment Refunded
                       </RemoveButton>
@@ -335,6 +451,25 @@ const BookingManagement = () => {
           </Table>
         </TableContainer>
       </Paper>
+      <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
+        <DialogTitle>Confirm Action</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to {confirmAction?.actionName.toLowerCase()} this booking?
+            {confirmAction?.status === BookingLifecycleStatus.CANCELLED && (
+              <strong> This action cannot be undone.</strong>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirm} color="primary" variant="contained">
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
