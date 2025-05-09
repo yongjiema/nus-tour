@@ -38,7 +38,7 @@ import config from "../ormconfig";
       },
       entities: [User, Booking, Payment, Information, TourInformation, NewsEvent],
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
       logging: true,
     }),
     DatabaseModule,

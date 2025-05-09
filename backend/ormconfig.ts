@@ -14,7 +14,7 @@ const config: TypeOrmModuleOptions = {
     sslmode: process.env.DB_SSLMODE,
   },
   entities: [__dirname + "/**/*.entity{.ts,.js}"],
-  synchronize: true,
+  synchronize: false,
   logging: true,
 };
 

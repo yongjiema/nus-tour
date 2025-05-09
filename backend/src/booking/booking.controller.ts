@@ -56,13 +56,14 @@ export class BookingController {
 
   @Get("user")
   @UseGuards(JwtAuthGuard)
-  async getUserBookings(@Request() req) {
+  async getUserBookings(@Request() req, @Query("page") page?: number, @Query("limit") limit?: number) {
     this.logger.log(`Getting bookings for user: ${JSON.stringify(req.user)}`);
-    const bookings = await this.bookingService.getAllBookingByEmail(req.user.email);
-    this.logger.log(`Found ${bookings.length} bookings for user`);
+    this.logger.log(`Query params: page: ${page}, limit: ${limit}`);
+    const { bookings, total } = await this.bookingService.getAllBookingByEmail(req.user.email, page, limit);
+    this.logger.log(`Found ${total} bookings in total, returning ${bookings.length} for this page`);
     return {
       data: bookings,
-      total: bookings.length,
+      total: total,
     };
   }
 

@@ -134,12 +134,22 @@ export class BookingService {
     return this.bookingRepository.find();
   }
 
-  async getAllBookingByEmail(email: string): Promise<Booking[]> {
-    return this.bookingRepository.find({
+  async getAllBookingByEmail(email: string, page?: number, limit?: number): Promise<{ bookings: Booking[]; total: number }> {
+    const skip = page && limit ? (page - 1) * limit : 0;
+    const take = limit || 10; // Default limit to 10 if not provided
+
+    this.logger.log(`Fetching bookings for email: ${email}, page: ${page}, limit: ${limit}, skip: ${skip}, take: ${take}`);
+
+    const [bookings, total] = await this.bookingRepository.findAndCount({
       where: { email },
       order: { createdAt: "DESC" } as any,
       relations: ["payment"],
+      skip: skip,
+      take: take,
     });
+
+    this.logger.log(`Found ${total} bookings in total, returning ${bookings.length} for this page.`);
+    return { bookings, total };
   }
 
   async getBookingById(id: number): Promise<Booking> {

@@ -18,7 +18,7 @@ export const AppDataSource = new DataSource({
   username: configService.get("DB_USER", "postgres"),
   password: configService.get("DB_PASSWORD", "password"),
   entities: [User, Booking, Payment],
-  synchronize: true,
+  synchronize: false, // Changed from true
   logging: true,
 });
 
