@@ -43,6 +43,7 @@ interface Booking {
   groupSize: number;
   bookingStatus: string;
   checkedIn: boolean;
+  status: string;
 }
 
 const CheckInManagement = () => {
@@ -54,12 +55,21 @@ const CheckInManagement = () => {
   const fetchBookings = useCallback(async () => {
     try {
       const { data } = await dataProviders.default.getList({
-        resource: "admin/bookings/findAll",
-        metaData: {
-          filters: [{ field: "bookingStatus", operator: "eq", value: "confirmed" }],
+        resource: "admin/bookings",
+        filters: [
+          {
+            field: "status",
+            operator: "eq",
+            value: "confirmed",
+          },
+        ],
+        pagination: {
+          current: 1,
+          pageSize: 100,
         },
       });
 
+      console.log("Fetched bookings:", data);
       setBookings(data as unknown as Booking[]);
       setError(null);
     } catch (error) {
@@ -80,8 +90,8 @@ const CheckInManagement = () => {
 
       if (search) {
         filters.push({
-          field: "q",
-          operator: "eq",
+          field: "search",
+          operator: "contains",
           value: search,
         });
       }
@@ -94,9 +104,20 @@ const CheckInManagement = () => {
         });
       }
 
+      // Always include the status filter for "confirmed" bookings
+      filters.push({
+        field: "status",
+        operator: "eq",
+        value: "confirmed",
+      });
+
       const { data } = await dataProviders.default.getList({
         resource: "admin/bookings",
         filters: filters,
+        pagination: {
+          current: 1,
+          pageSize: 100,
+        },
       });
 
       setBookings(data as unknown as Booking[]);
@@ -110,8 +131,9 @@ const CheckInManagement = () => {
   const checkInBooking = async (id: string) => {
     try {
       await dataProviders.default.custom({
-        url: `admin/bookings/${id}/checkin`,
-        method: "patch",
+        url: `admin/bookings/${id}/status`,
+        method: "post",
+        payload: { status: "checked_in" },
       });
 
       fetchBookings();
@@ -124,8 +146,9 @@ const CheckInManagement = () => {
   const checkOutBooking = async (id: string) => {
     try {
       await dataProviders.default.custom({
-        url: `admin/bookings/${id}/checkout`,
-        method: "patch",
+        url: `admin/bookings/${id}/status`,
+        method: "post",
+        payload: { status: "completed" },
       });
 
       fetchBookings();
@@ -197,9 +220,9 @@ const CheckInManagement = () => {
                   <TableCell>{booking.date}</TableCell>
                   <TableCell>{booking.timeSlot}</TableCell>
                   <TableCell>{booking.groupSize}</TableCell>
-                  <TableCell>{booking.checkedIn ? "Checked In" : "Not Checked In"}</TableCell>
+                  <TableCell>{booking.status}</TableCell>
                   <TableCell>
-                    {!booking.checkedIn ? (
+                    {booking.status !== "checked_in" ? (
                       <CheckInButton onClick={() => checkInBooking(booking.bookingId)}>Check In</CheckInButton>
                     ) : (
                       <CheckOutButton onClick={() => checkOutBooking(booking.bookingId)}>Check Out</CheckOutButton>

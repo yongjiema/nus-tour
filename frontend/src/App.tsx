@@ -2,14 +2,14 @@ import { Suspense, lazy } from "react";
 import { Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
-import { RefineSnackbarProvider, ThemedLayoutV2, useNotificationProvider } from "@refinedev/mui";
+import { RefineSnackbarProvider, useNotificationProvider } from "@refinedev/mui";
 import CssBaseline from "@mui/material/CssBaseline";
 import GlobalStyles from "@mui/material/GlobalStyles";
 import routerBindings, { DocumentTitleHandler, UnsavedChangesNotifier } from "@refinedev/react-router-v6";
 import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { authProvider } from "./authProvider";
-import { Header } from "./components/header";
 import { PublicHeader } from "./components/header/public";
+import { AdminLayout } from "./components/AdminLayout";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { CustomLayout } from "./components/layout";
 import { ForgotPassword } from "./pages/forgotPassword";
@@ -114,21 +114,41 @@ function App() {
                       <Route
                         path="/admin"
                         element={
-                          <CustomLayout Header={Header}>
+                          <AdminLayout>
                             <Suspense fallback={<div>Loading...</div>}>
                               <AdminDashboard />
                             </Suspense>
-                          </CustomLayout>
+                          </AdminLayout>
                         }
                       />
                       <Route
                         path="/admin/tour-info"
                         element={
-                          <CustomLayout Header={Header}>
+                          <AdminLayout>
                             <Suspense fallback={<div>Loading...</div>}>
                               <TourInfoManagement />
                             </Suspense>
-                          </CustomLayout>
+                          </AdminLayout>
+                        }
+                      />
+                      <Route
+                        path="/admin/check-ins"
+                        element={
+                          <AdminLayout>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <CheckInManagement />
+                            </Suspense>
+                          </AdminLayout>
+                        }
+                      />
+                      <Route
+                        path="/admin/bookings"
+                        element={
+                          <AdminLayout>
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <BookingManagement />
+                            </Suspense>
+                          </AdminLayout>
                         }
                       />
                     </Route>

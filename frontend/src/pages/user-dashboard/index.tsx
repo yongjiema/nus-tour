@@ -1,463 +1,418 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
-  Grid,
-  Paper,
   Typography,
-  Button,
   Tabs,
   Tab,
   CircularProgress,
   Alert,
-  Divider,
-  Card,
-  CardContent,
-  Chip,
-  List,
-  ListItem,
+  Grid,
+  Badge,
+  useTheme,
+  Container,
+  AppBar,
+  Toolbar,
+  Button,
+  Paper,
 } from "@mui/material";
-import { styled } from "@mui/system";
-import { useNavigate } from "react-router-dom";
-import { useList } from "@refinedev/core";
-import { authProvider } from "../../authProvider";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import PaymentIcon from "@mui/icons-material/Payment";
 import RateReviewIcon from "@mui/icons-material/RateReview";
-import FeedbackForm from "../feedback/form";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import LogoutButton from "../../components/LogoutButton";
+import { useAuthentication } from "../../hooks/useAuthentication";
+import { useResourceData } from "../../hooks/useResourceData";
 import { Booking, Payment, Feedback } from "../../types/api.types";
-import { formatDateDisplay } from "../../utils/dateUtils";
+import { TabPanel } from "./components/TabPanel";
+import { BookingsTab } from "./components/BookingsTab";
+import { PaymentsTab } from "./components/PaymentsTab";
+import { FeedbackTab } from "./components/FeedbackTab";
+import {
+  DashboardContainer,
+  SectionTitle,
+  StatCard,
+  StatsGrid,
+  TabsContainer,
+  EmptyStateContainer,
+} from "./components/StyledComponents";
 
-// Interfaces
-interface TabPanelProps {
-  children: React.ReactNode;
-  value: number;
-  index: number;
-  "aria-controls"?: string;
-  "aria-labelledby"?: string;
-  role?: string;
-}
-
-// Styled components for consistent UI
-const DashboardContainer = styled(Box)({
-  padding: "24px",
-});
-
-const StatusChip = styled(Chip)({
-  fontWeight: "medium",
-});
-
-const SectionTitle = styled(Typography)({
-  fontWeight: "bold",
-  marginBottom: "16px",
-  color: "#002147", // NUS blue
-});
-
-const DashboardCard = styled(Card)({
-  transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
-  "&:hover": {
-    transform: "translateY(-4px)",
-    boxShadow: "0 4px 20px 0 rgba(0,0,0,0.12)",
-  },
-});
-
-const ActionButton = styled(Button)({
-  fontWeight: "bold",
-  textTransform: "none",
-});
-
-// TabPanel component
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
-  return (
-    <div hidden={value !== index} {...other}>
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-};
-
-// Main component
+// Main component with improved organization
 const UserDashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const theme = useTheme();
 
-  // Fetch user's bookings using Refine's useList hook
+  // Custom hook for authentication
+  const { userId, isLoading, authError } = useAuthentication();
+
+  // Use custom hook for data fetching with improved error handling
   const {
     data: bookingsData,
     isLoading: bookingsLoading,
     isError: bookingsError,
-    error: bookingsErrorData,
     refetch: refetchBookings,
-  } = useList<Booking>({
-    resource: "bookings",
-    queryOptions: {
-      enabled: !!userId,
-      onError: (error) => {
-        console.error("Bookings fetch error:", error);
-        console.error("Bookings fetch error details:", {
-          status: error?.response?.status,
-          data: error?.response?.data,
-          headers: error?.response?.headers,
-        });
-      },
-      onSuccess: (data) => {
-        console.log("Bookings fetch success:", data);
-      },
-    },
-  });
+  } = useResourceData<Booking>("bookings/user", userId);
 
-  // Standardize on useList for all resources
   const {
     data: paymentsData,
     isLoading: paymentsLoading,
     isError: paymentsError,
-    error: paymentsErrorData,
-  } = useList<Payment>({
-    resource: "payments",
-    queryOptions: {
-      enabled: !!userId,
-      onError: (error) => {
-        console.error("Payments fetch error:", error);
-        console.error("Payments fetch error details:", {
-          status: error?.response?.status,
-          data: error?.response?.data,
-          headers: error?.response?.headers,
-        });
-      },
-      onSuccess: (data) => {
-        console.log("Payments fetch success:", data);
-      },
-    },
-  });
+  } = useResourceData<Payment>("payments", userId);
 
   const {
     data: feedbacksData,
     isLoading: feedbacksLoading,
     isError: feedbacksError,
-    error: feedbacksErrorData,
     refetch: refetchFeedbacks,
-  } = useList<Feedback>({
-    resource: "feedback/user",
-    queryOptions: {
-      enabled: !!userId,
-      onError: (error) => {
-        console.error("Feedbacks fetch error:", error);
-        console.error("Feedbacks fetch error details:", {
-          status: error?.response?.status,
-          data: error?.response?.data,
-          headers: error?.response?.headers,
-        });
-      },
-      onSuccess: (data) => {
-        console.log("Feedbacks fetch success:", data);
-      },
-    },
-  });
+  } = useResourceData<Feedback>("feedback/user", userId);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setIsLoading(true);
-        setAuthError(null);
-
-        // Get auth data from localStorage first as backup
-        const storedUserId = localStorage.getItem("userId");
-        const storedRole = localStorage.getItem("role");
-        const token = localStorage.getItem("access_token");
-
-        console.log("Auth data from localStorage:", {
-          userId: storedUserId,
-          role: storedRole,
-          hasToken: !!token,
-          tokenValue: token, // Log the actual token for debugging
-        });
-
-        // Try getting from authProvider
-        const result = await authProvider.check();
-        console.log("Auth check result:", result);
-
-        if (result.authenticated && result.id) {
-          console.log("Setting userId from auth check:", result.id);
-          setUserId(result.id);
-        } else if (storedUserId && storedRole === "user") {
-          console.log("Setting userId from localStorage:", storedUserId);
-          setUserId(storedUserId);
-        } else {
-          console.log("Auth failed, redirecting to login");
-          setAuthError("Authentication failed. Please log in again.");
-          setTimeout(() => navigate("/login"), 2000);
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        setAuthError("Authentication error. Please try again.");
-        setTimeout(() => navigate("/login"), 2000);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
-
-  // Add logging for data fetching states
-  useEffect(() => {
-    if (userId) {
-      console.log("User ID set, data fetching should begin:", userId);
-      // Force refetch when userId changes
-      refetchBookings();
-    }
-  }, [userId, refetchBookings]);
-
-  useEffect(() => {
-    if (bookingsData) {
-      console.log("Bookings data received:", {
-        total: bookingsData.total,
-        count: bookingsData.data?.length,
-        data: bookingsData.data,
-      });
-    }
-    if (bookingsError) {
-      console.error("Bookings error:", bookingsErrorData);
-    }
-    if (paymentsData) {
-      console.log("Payments data received:", {
-        total: paymentsData.total,
-        count: paymentsData.data?.length,
-        data: paymentsData.data,
-      });
-    }
-    if (paymentsError) {
-      console.error("Payments error:", paymentsErrorData);
-    }
-    if (feedbacksData) {
-      console.log("Feedbacks data received:", {
-        total: feedbacksData.total,
-        count: feedbacksData.data?.length,
-        data: feedbacksData.data,
-      });
-    }
-    if (feedbacksError) {
-      console.error("Feedbacks error:", feedbacksErrorData);
-    }
-  }, [
-    bookingsData,
-    bookingsError,
-    bookingsErrorData,
-    paymentsData,
-    paymentsError,
-    paymentsErrorData,
-    feedbacksData,
-    feedbacksError,
-    feedbacksErrorData,
-  ]);
-
-  if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (authError) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Alert severity="error">{authError}</Alert>
-      </Box>
-    );
-  }
-
-  if (!userId) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Alert severity="warning">Unable to load user information. Redirecting to login...</Alert>
-      </Box>
-    );
-  }
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  // Handle tab changes
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  // Extract data safely
-  const bookings = bookingsData?.data || [];
-  const payments = paymentsData?.data || [];
-  const feedbacks = feedbacksData?.data || [];
+  // Handle on feedback success
+  const handleFeedbackSuccess = () => {
+    refetchBookings();
+    refetchFeedbacks();
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <>
+        <DashboardHeader />
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+          <CircularProgress size={60} thickness={4} />
+        </Box>
+      </>
+    );
+  }
+
+  // Show auth error
+  if (authError) {
+    return (
+      <>
+        <DashboardHeader />
+        <EmptyStateContainer minHeight="80vh">
+          <Alert severity="error" sx={{ maxWidth: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", mb: 2 }}>
+            {authError}
+          </Alert>
+          <Typography variant="body1" color="text.secondary">
+            Please try signing in again or contact support if the issue persists.
+          </Typography>
+        </EmptyStateContainer>
+      </>
+    );
+  }
+
+  // Show missing user error
+  if (!userId) {
+    return (
+      <>
+        <DashboardHeader />
+        <EmptyStateContainer minHeight="80vh">
+          <Alert severity="warning" sx={{ maxWidth: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", mb: 2 }}>
+            Unable to load user information. Redirecting to login...
+          </Alert>
+          <Typography variant="body1" color="text.secondary">
+            This may take a few moments. If you're not redirected automatically, please click <a href="/login">here</a>.
+          </Typography>
+        </EmptyStateContainer>
+      </>
+    );
+  }
+
+  // Extract data safely with proper typing
+  const bookings = bookingsData?.data?.map((item) => item as unknown as Booking) || [];
+  const payments = paymentsData?.data?.map((item) => item as unknown as Payment) || [];
+  const feedbacks = feedbacksData?.data?.map((item) => item as unknown as Feedback) || [];
+
+  // Calculate statistics with proper typing
+  const activeBookings = bookings.filter(
+    (booking) => booking.status !== "cancelled" && booking.status !== "completed",
+  ).length;
+  const completedBookings = bookings.filter((booking) => booking.status === "completed").length;
+  const totalFeedbacksGiven = feedbacks.length;
+  const pendingPayments = payments.filter((payment) => payment.status === "pending").length;
 
   return (
-    <DashboardContainer>
-      <SectionTitle variant="h4" gutterBottom>
-        My Dashboard
-      </SectionTitle>
-
-      <Paper sx={{ width: "100%", mb: 4 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} centered indicatorColor="primary" textColor="primary">
-          <Tab icon={<EventNoteIcon />} label="My Bookings" />
-          <Tab icon={<PaymentIcon />} label="Payments" />
-          <Tab icon={<RateReviewIcon />} label="Feedback" />
-        </Tabs>
-
-        {/* Bookings Tab */}
-        <TabPanel value={tabValue} index={0}>
-          {bookingsLoading ? (
-            <CircularProgress />
-          ) : bookingsError ? (
-            <Alert severity="error">Failed to load your bookings</Alert>
-          ) : bookings.length === 0 ? (
-            <Alert severity="info">
-              You don't have any bookings yet.
-              <ActionButton color="primary" size="small" onClick={() => navigate("/booking")} sx={{ ml: 2 }}>
-                Book a Tour
-              </ActionButton>
-            </Alert>
-          ) : (
-            <Grid container spacing={2}>
-              {bookings.map((booking: Booking) => (
-                <Grid item xs={12} key={booking.id}>
-                  <DashboardCard>
-                    <CardContent>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="h6">Tour on {formatDateDisplay(booking.date)}</Typography>
-                        <StatusChip
-                          label={booking.status}
-                          color={
-                            booking.status === "completed"
-                              ? "success"
-                              : booking.status === "confirmed"
-                              ? "primary"
-                              : "default"
-                          }
-                        />
-                      </Box>
-                      <Divider sx={{ my: 1 }} />
-                      <Typography variant="body1">Time: {booking.timeSlot}</Typography>
-                      <Typography variant="body1">Group Size: {booking.groupSize}</Typography>
-                      <Box mt={2} display="flex" justifyContent="flex-end">
-                        {booking.status === "completed" && !booking.hasFeedback && (
-                          <ActionButton variant="contained" color="primary" onClick={() => setTabValue(2)}>
-                            Leave Feedback
-                          </ActionButton>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </DashboardCard>
-                </Grid>
-              ))}
-            </Grid>
-          )}
-        </TabPanel>
-
-        {/* Payments Tab */}
-        <TabPanel value={tabValue} index={1}>
-          {paymentsLoading ? (
-            <CircularProgress />
-          ) : paymentsError ? (
-            <Alert severity="error">Failed to load payment information</Alert>
-          ) : (
-            <List>
-              {payments.map((payment: Payment) => (
-                <ListItem key={payment.id} divider>
-                  <Box width="100%">
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="subtitle1">Payment #{payment.id}</Typography>
-                      <StatusChip
-                        label={payment.status}
-                        color={payment.status === "completed" ? "success" : "default"}
-                      />
-                    </Box>
-                    <Typography variant="body2" color="textSecondary">
-                      Amount: ${payment.amount}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Date: {formatDateDisplay(payment.createdAt)}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Method: {payment.method}
-                    </Typography>
-                  </Box>
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </TabPanel>
-
-        {/* Feedback Tab */}
-        <TabPanel value={tabValue} index={2}>
-          {bookingsLoading ? (
-            <CircularProgress />
-          ) : (
-            <Box>
-              <SectionTitle variant="h6" gutterBottom>
-                Your Completed Tours
-              </SectionTitle>
-
-              {!bookings.some((b: Booking) => b.status === "completed" && !b.hasFeedback) ? (
-                <Alert severity="info">
-                  You don't have any completed tours to review, or you've already provided feedback for all of them.
-                </Alert>
-              ) : (
-                <Grid container spacing={3}>
-                  {bookings
-                    .filter((b: Booking) => b.status === "completed" && !b.hasFeedback)
-                    .map((booking: Booking) => (
-                      <Grid item xs={12} key={booking.id}>
-                        <Paper sx={{ p: 2 }}>
-                          <Typography variant="subtitle1">
-                            Tour on {formatDateDisplay(booking.date)} ({booking.timeSlot})
-                          </Typography>
-                          <Divider sx={{ my: 1 }} />
-                          <FeedbackForm
-                            bookingId={booking.id}
-                            onSuccess={() => {
-                              refetchBookings();
-                              refetchFeedbacks();
-                            }}
-                          />
-                        </Paper>
-                      </Grid>
-                    ))}
-                </Grid>
-              )}
-
-              <Box mt={4}>
-                <SectionTitle variant="h6" gutterBottom>
-                  Your Past Reviews
-                </SectionTitle>
-                {feedbacksLoading ? (
-                  <CircularProgress />
-                ) : feedbacksError ? (
-                  <Alert severity="error">Failed to load your feedback history</Alert>
-                ) : feedbacks.length === 0 ? (
-                  <Alert severity="info">You haven't submitted any reviews yet.</Alert>
-                ) : (
-                  <List>
-                    {feedbacks.map((feedback: Feedback) => (
-                      <ListItem key={feedback.id} divider>
-                        <Box width="100%">
-                          <Box display="flex" justifyContent="space-between">
-                            <Typography variant="subtitle1">Rating: {feedback.rating}/5</Typography>
-                            <Typography variant="body2" color="textSecondary">
-                              {formatDateDisplay(feedback.createdAt)}
-                            </Typography>
-                          </Box>
-                          <Typography variant="body1" mt={1}>
-                            "{feedback.comments}"
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            {feedback.isPublic ? "Public review" : "Private review"}
-                          </Typography>
-                        </Box>
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
+    <>
+      <DashboardHeader />
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
+        <DashboardContainer>
+          {/* Header Section */}
+          <Paper
+            elevation={2}
+            sx={{
+              p: 3,
+              mb: 4,
+              borderRadius: 2,
+              background:
+                theme.palette.mode === "dark"
+                  ? `linear-gradient(45deg, ${theme.palette.primary.dark} 0%, ${theme.palette.background.paper} 100%)`
+                  : `linear-gradient(45deg, ${theme.palette.primary.light} 0%, ${theme.palette.background.paper} 100%)`,
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "flex-start", sm: "center" },
+              justifyContent: "space-between",
+            }}
+          >
+            <Box display="flex" alignItems="center">
+              <DashboardIcon sx={{ mr: 2, color: theme.palette.primary.main, fontSize: 42 }} />
+              <Box>
+                <SectionTitle variant="h4">My Dashboard</SectionTitle>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Manage your bookings, payments, and feedback all in one place
+                </Typography>
               </Box>
             </Box>
-          )}
-        </TabPanel>
-      </Paper>
-    </DashboardContainer>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                mt: { xs: 2, sm: 0 },
+                alignSelf: { xs: "flex-end", sm: "center" },
+              }}
+            >
+              <Button startIcon={<AccountCircleIcon />} variant="outlined" color="primary" sx={{ mr: 2 }}>
+                Profile
+              </Button>
+            </Box>
+          </Paper>
+
+          {/* Stats Overview Section */}
+          <StatsGrid container spacing={3} mb={4}>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                elevation={3}
+                sx={{
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)", // Replace theme.shadows with direct value
+                  },
+                }}
+              >
+                <Badge
+                  badgeContent={activeBookings}
+                  color="primary"
+                  max={99}
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      fontSize: "0.9rem",
+                      height: "1.5rem",
+                      minWidth: "1.5rem",
+                    },
+                  }}
+                >
+                  <EventNoteIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+                </Badge>
+                <Typography variant="h3" color="primary.main" fontWeight="bold">
+                  {activeBookings}
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Active Bookings
+                </Typography>
+              </StatCard>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                elevation={3}
+                sx={{
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)", // Replace theme.shadows with direct value
+                  },
+                }}
+              >
+                <CheckCircleIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
+                <Typography variant="h3" color="success.main" fontWeight="bold">
+                  {completedBookings}
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Completed Tours
+                </Typography>
+              </StatCard>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                elevation={3}
+                sx={{
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)", // Replace theme.shadows with direct value
+                  },
+                }}
+              >
+                <Badge
+                  badgeContent={pendingPayments}
+                  color="error"
+                  max={99}
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      fontSize: "0.9rem",
+                      height: "1.5rem",
+                      minWidth: "1.5rem",
+                    },
+                  }}
+                >
+                  <PaymentIcon color="info" sx={{ fontSize: 40, mb: 1 }} />
+                </Badge>
+                <Typography variant="h3" color="info.main" fontWeight="bold">
+                  {pendingPayments}
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Pending Payments
+                </Typography>
+              </StatCard>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                elevation={3}
+                sx={{
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)", // Replace theme.shadows with direct value
+                  },
+                }}
+              >
+                <RateReviewIcon color="secondary" sx={{ fontSize: 40, mb: 1 }} />
+                <Typography variant="h3" color="secondary.main" fontWeight="bold">
+                  {totalFeedbacksGiven}
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Feedback Given
+                </Typography>
+              </StatCard>
+            </Grid>
+          </StatsGrid>
+
+          {/* Main Content Section */}
+          <TabsContainer elevation={3}>
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              variant="fullWidth"
+              indicatorColor="primary"
+              textColor="primary"
+              aria-label="User dashboard navigation tabs"
+              sx={{
+                borderBottom: 1,
+                borderColor: "divider",
+                bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)"),
+                "& .MuiTab-root": {
+                  py: 2.5,
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)"),
+                  },
+                },
+              }}
+            >
+              <Tab
+                icon={<EventNoteIcon />}
+                iconPosition="start"
+                label={
+                  <Badge badgeContent={activeBookings || null} color="primary" sx={{ mr: 1 }}>
+                    <Typography variant="button" sx={{ fontWeight: tabValue === 0 ? "bold" : "normal" }}>
+                      My Bookings
+                    </Typography>
+                  </Badge>
+                }
+                id="dashboard-tab-0"
+                aria-controls="dashboard-tabpanel-0"
+              />
+              <Tab
+                icon={<PaymentIcon />}
+                iconPosition="start"
+                label={
+                  <Badge badgeContent={pendingPayments || null} color="error" sx={{ mr: 1 }}>
+                    <Typography variant="button" sx={{ fontWeight: tabValue === 1 ? "bold" : "normal" }}>
+                      Payments
+                    </Typography>
+                  </Badge>
+                }
+                id="dashboard-tab-1"
+                aria-controls="dashboard-tabpanel-1"
+              />
+              <Tab
+                icon={<RateReviewIcon />}
+                iconPosition="start"
+                label={
+                  <Typography variant="button" sx={{ fontWeight: tabValue === 2 ? "bold" : "normal" }}>
+                    Feedback
+                  </Typography>
+                }
+                id="dashboard-tab-2"
+                aria-controls="dashboard-tabpanel-2"
+              />
+            </Tabs>
+
+            {/* Bookings Tab */}
+            <TabPanel value={tabValue} index={0}>
+              <BookingsTab
+                bookings={bookings}
+                isLoading={bookingsLoading}
+                isError={bookingsError}
+                onFeedbackClick={() => setTabValue(2)}
+              />
+            </TabPanel>
+
+            {/* Payments Tab */}
+            <TabPanel value={tabValue} index={1}>
+              <PaymentsTab payments={payments} isLoading={paymentsLoading} isError={paymentsError} />
+            </TabPanel>
+
+            {/* Feedback Tab */}
+            <TabPanel value={tabValue} index={2}>
+              <FeedbackTab
+                bookings={bookings}
+                feedbacks={feedbacks}
+                isBookingsLoading={bookingsLoading}
+                isFeedbacksLoading={feedbacksLoading}
+                isFeedbacksError={feedbacksError}
+                onFeedbackSuccess={handleFeedbackSuccess}
+              />
+            </TabPanel>
+          </TabsContainer>
+        </DashboardContainer>
+      </Container>
+    </>
+  );
+};
+
+// Dashboard Header Component
+const DashboardHeader: React.FC = () => {
+  return (
+    <AppBar position="static" sx={{ bgcolor: "#002147", mb: 2 }}>
+      <Container maxWidth="lg">
+        <Toolbar>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              flexGrow: 1,
+              color: "#FF6600",
+              cursor: "pointer",
+              fontWeight: "bold",
+              display: "flex",
+              alignItems: "center",
+            }}
+            onClick={() => (window.location.href = "/")}
+          >
+            NUS Tour
+          </Typography>
+          <Box>
+            <LogoutButton />
+          </Box>
+        </Toolbar>
+      </Container>
+    </AppBar>
   );
 };
 
