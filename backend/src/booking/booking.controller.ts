@@ -9,12 +9,14 @@ import {
   Request,
   Logger,
   ForbiddenException,
+  NotFoundException,
 } from "@nestjs/common";
 import { BookingService } from "./booking.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Booking } from "../database/entities/booking.entity";
 import { Public } from "../auth/decorators/public.decorator";
+import { BookingLifecycleStatus } from "src/database/entities/enums";
 
 @Controller("bookings")
 export class BookingController {
@@ -88,6 +90,40 @@ export class BookingController {
       return booking;
     } catch (error) {
       this.logger.error(`Failed to find booking by ID ${bookingId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // Backend controller
+  @Post(":bookingId/payment-status")
+  @UseGuards(JwtAuthGuard)
+  async updatePaymentStatus(
+    @Param("bookingId") bookingId: string,
+    @Body()
+    updateData: {
+      status: BookingLifecycleStatus;
+      transactionId: string;
+    },
+    @Request() req,
+  ) {
+    try {
+      // 1. Verify booking belongs to user
+      const booking = await this.bookingService.getBookingByBookingId(bookingId);
+      if (!booking) {
+        throw new NotFoundException(`Booking with ID ${bookingId} not found`);
+      }
+      if (booking.email !== req.user.email) {
+        throw new ForbiddenException("You do not have permission to update this booking");
+      }
+      // 2. Update both tables in a transaction
+      return await this.bookingService.updatePaymentAndBookingStatus(bookingId, updateData.status, {
+        transactionId: updateData.transactionId,
+        amount: booking.deposit,
+        method: "paynow",
+        userId: req.user.id,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to update payment status: ${error.message}`);
       throw error;
     }
   }

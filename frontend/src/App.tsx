@@ -29,6 +29,7 @@ import UserDashboard from "./pages/user-dashboard";
 import { UserRole } from "./types/auth.types";
 import BookingManagement from "./pages/admin-dashboard/booking/bookingManagement";
 import CheckInManagement from "./pages/admin-dashboard/check-in/checkInManagement";
+import PaymentSuccessPage from "./pages/payment/success";
 
 const AdminDashboard = lazy(() => import("./pages/admin-dashboard"));
 
@@ -84,6 +85,7 @@ function App() {
                       <Route path="/payment" element={<PaymentPage />} />
                       <Route path="/checkin" element={<Checkin />} />
                       <Route path="/testimonials" element={<TestimonialsPage />} />
+                      <Route path="/payment/success/:id" element={<PaymentSuccessPage />} />
                     </Route>
 
                     {/* Admin Routes */}

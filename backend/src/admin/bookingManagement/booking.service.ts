@@ -13,32 +13,35 @@ export class BookingService {
   ) {}
 
   async getFilteredBookings(filterDto: BookingFilterDto): Promise<Booking[]> {
-    const query = this.bookingRepository.createQueryBuilder("booking");
+    const queryBuilder = this.bookingRepository.createQueryBuilder("booking");
 
     console.log("Received filterDto:", filterDto);
 
+    // Apply search filter
     if (filterDto.search) {
-      query.andWhere(
-        '(LOWER(booking."bookingId") LIKE LOWER(:search) OR LOWER(booking.name) LIKE LOWER(:search) OR LOWER(booking.email) LIKE LOWER(:search))',
+      queryBuilder.andWhere(
+        "(booking.bookingId LIKE :search OR booking.name LIKE :search OR booking.email LIKE :search)",
         { search: `%${filterDto.search}%` },
       );
     }
 
+    // Apply status filter
     if (filterDto.status) {
-      query.andWhere('booking."status"::text = :status', {
-        status: filterDto.status,
-      });
+      console.log(`Applying status filter: ${filterDto.status}`);
+      queryBuilder.andWhere("booking.status = :status", { status: filterDto.status });
     }
+
+    // Apply date filter
     if (filterDto.date) {
-      query.andWhere("DATE(booking.date) = :date", { date: filterDto.date });
+      console.log(`Applying date filter: ${filterDto.date}`);
+      queryBuilder.andWhere("booking.date = :date", { date: filterDto.date });
     }
 
-    console.log("Generated SQL:", query.getSql());
-    console.log("Query Parameters:", query.getParameters());
+    console.log("Generated SQL:", queryBuilder.getSql());
+    console.log("Query Parameters:", queryBuilder.getParameters());
 
-    return query.getMany();
+    return await queryBuilder.getMany();
   }
-
   async findAll(): Promise<Booking[]> {
     return this.bookingRepository.find();
   }

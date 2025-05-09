@@ -1,12 +1,13 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from "@nestjs/common";
+import { Injectable, NotFoundException, InternalServerErrorException, Inject } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 import { Booking } from "../database/entities/booking.entity";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { BookingValidationException } from "../common/exceptions/http-exceptions";
 import { v4 as uuidv4 } from "uuid";
 import { BookingLifecycleStatus } from "../database/entities/enums";
 import { Logger } from "@nestjs/common";
+import { Payment } from "../database/entities/payments.entity";
 
 @Injectable()
 export class BookingService {
@@ -15,6 +16,8 @@ export class BookingService {
   constructor(
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
+    @Inject(DataSource)
+    private dataSource: DataSource,
   ) {}
 
   async createBooking(createBookingDto: CreateBookingDto): Promise<Booking> {
@@ -194,6 +197,18 @@ export class BookingService {
     });
   }
 
+  // In booking.service.ts
+  async updateBookingStatus(id: string, status: BookingLifecycleStatus) {
+    const booking = await this.bookingRepository.findOne({ where: { bookingId: id } });
+
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    booking.status = status;
+    return this.bookingRepository.save(booking);
+  }
+
   async updateStatus(bookingId: string, status: BookingLifecycleStatus): Promise<Booking> {
     const booking = await this.getBookingByUuid(bookingId);
 
@@ -228,5 +243,66 @@ export class BookingService {
     }
 
     return this.bookingRepository.save(booking);
+  }
+  async updatePaymentAndBookingStatus(
+    bookingId: string,
+    status: BookingLifecycleStatus,
+    paymentInfo: {
+      transactionId: string;
+      amount: number;
+      method: string;
+      userId: number;
+    },
+  ) {
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        // 1. Find the booking
+        const booking = await manager.findOne(Booking, {
+          where: { bookingId },
+          relations: ["payment"], // Include payment to check if it exists
+        });
+
+        if (!booking) {
+          throw new NotFoundException(`Booking with ID ${bookingId} not found`);
+        }
+
+        // 2. Update booking status
+        booking.status = status;
+        await manager.save(Booking, booking);
+
+        // 3. Create or update payment record if status is PAYMENT_COMPLETED
+        if (status === BookingLifecycleStatus.PAYMENT_COMPLETED) {
+          let payment;
+
+          // Check if payment exists
+          if (booking.payment) {
+            // Update existing payment
+            payment = booking.payment;
+            payment.transactionId = paymentInfo.transactionId;
+            payment.amount = paymentInfo.amount;
+            payment.paymentMethod = paymentInfo.method;
+            payment.status = status;
+            payment.updatedAt = new Date();
+          } else {
+            // Create new payment
+            payment = new Payment();
+            payment.bookingId = booking.id;
+            payment.transactionId = paymentInfo.transactionId;
+            payment.amount = paymentInfo.amount;
+            payment.paymentMethod = paymentInfo.method;
+            payment.status = status;
+            payment.createdAt = new Date();
+            payment.updatedAt = new Date();
+          }
+
+          await manager.save(Payment, payment);
+        }
+
+        return booking;
+      });
+    } catch (error) {
+      console.error("Transaction failed:", error);
+      throw new InternalServerErrorException(`Failed to update payment: ${error.message}`);
+    }
   }
 }

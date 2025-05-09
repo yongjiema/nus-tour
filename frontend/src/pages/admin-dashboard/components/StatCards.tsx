@@ -97,6 +97,24 @@ const StatCards: React.FC<StatCardsProps> = React.memo(({ stats, isLoading }) =>
     );
   }
 
+  const renderStat = (title: string, value: number, icon: React.ReactNode, color: string) => (
+    <StatCard elevation={2}>
+      <IconWrapper color={color as "primary" | "secondary" | "success" | "warning"}>{icon}</IconWrapper>
+      <Box>
+        <Typography variant="h6" color="text.secondary">
+          {title}
+        </Typography>
+        {isLoading ? (
+          <Skeleton variant="text" width={80} height={40} />
+        ) : (
+          <Typography variant="h4" fontWeight="bold">
+            {value}
+          </Typography>
+        )}
+      </Box>
+    </StatCard>
+  );
+
   const statItems = [
     {
       icon: <CalendarMonthIcon />,
