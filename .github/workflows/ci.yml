@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Run Tests and Linting
+    name: CI
     runs-on: ubuntu-latest
 
     strategy:
@@ -22,7 +22,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/Jod'
+          node-version: '22.x'
 
       - name: Install Dependencies
         run: npm ci

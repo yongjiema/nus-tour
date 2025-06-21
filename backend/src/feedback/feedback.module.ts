@@ -13,4 +13,8 @@ import { AuthModule } from "../auth/auth.module";
   providers: [FeedbackService],
   exports: [FeedbackService],
 })
-export class FeedbackModule {}
+export class FeedbackModule {
+  onModuleInit(): void {
+    // Feedback module initialization logic if needed
+  }
+}

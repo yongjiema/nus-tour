@@ -9,23 +9,30 @@ import { Payment } from "./entities/payments.entity";
 
 @Module({
   imports: [
-    ConfigModule.forRoot(), // Ensure environment variables are loaded
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: "postgres",
-        host: configService.get("DB_HOST", "localhost"),
-        port: configService.get<number>("DB_PORT", 5432),
-        ssl: configService.get("DB_SSL") === "true" ? { rejectUnauthorized: false } : false,
-        database: configService.get("DB_NAME", "nus_tour"),
-        username: configService.get("DB_USER", "postgres"),
-        password: configService.get("DB_PASSWORD", "password"),
-        entities: [User, Booking, Checkin, Feedback, Payment],
-        synchronize: (configService.get("NODE_ENV") ?? "development") === "development",
-        logging: (configService.get("NODE_ENV") ?? "development") === "development",
-      }),
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const isSslEnabled = (configService.get<string>("DB_SSL") ?? "false").toLowerCase() === "true";
+
+        return {
+          type: "postgres",
+          host: configService.get("DB_HOST"),
+          port: configService.get<number>("DB_PORT") ?? 5432,
+          username: configService.get("DB_USER"),
+          password: configService.get("DB_PASSWORD"),
+          database: configService.get("DB_NAME"),
+          entities: [User, Booking, Feedback, Payment, Checkin],
+          synchronize: configService.get("NODE_ENV") !== "production",
+          ssl: isSslEnabled ? { rejectUnauthorized: false } : undefined,
+          extra: isSslEnabled ? { sslmode: "require" } : undefined,
+        };
+      },
     }),
   ],
 })
-export class DatabaseModule {}
+export class DatabaseModule {
+  onModuleInit(): void {
+    // Database module initialization logic if needed
+  }
+}

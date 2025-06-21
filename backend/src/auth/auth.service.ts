@@ -1,38 +1,40 @@
-import { Injectable, ConflictException, BadRequestException, UnauthorizedException } from "@nestjs/common";
+import { Injectable, UnauthorizedException, Logger } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { TokenBlacklistService } from "./token-blacklist.service";
+import { User } from "../database/entities/user.entity";
+import * as bcrypt from "bcrypt";
+import { UserResponseDto } from "./dto/user-response.dto";
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly tokenBlacklistService: TokenBlacklistService,
   ) {}
 
-  async login(loginDto: LoginDto): Promise<{ access_token: string; user: any }> {
-    const user = await this.usersService.validateUser(loginDto);
+  async validateUser(email: string, password: string): Promise<User | null> {
+    const user = await this.usersService.findByEmail(email);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      return user;
+    }
+    return null;
+  }
 
+  async login(loginDto: LoginDto): Promise<{ access_token: string; user: UserResponseDto }> {
+    const user = await this.validateUser(loginDto.email, loginDto.password);
     if (!user) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    // Include username in the token payload
-    const access_token = this.jwtService.sign(
-      {
-        email: user.email,
-        id: user.id,
-        username: user.username,
-        role: user.role,
-      },
-      { expiresIn: "60m" },
-    );
-
+    const payload = { email: user.email, sub: user.id, role: user.role.toUpperCase(), username: user.username };
     return {
-      access_token,
+      access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         email: user.email,
@@ -42,42 +44,27 @@ export class AuthService {
     };
   }
 
-  async register(registerDto: RegisterDto): Promise<{ access_token: string; user: any }> {
-    try {
-      const { ...userData } = registerDto as any;
+  async register(registerDto: RegisterDto): Promise<{ access_token: string; user: UserResponseDto }> {
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const user = await this.usersService.register({
+      email: registerDto.email,
+      username: registerDto.username,
+      password: hashedPassword,
+    });
 
-      const existingUser = await this.usersService.findByEmail(userData.email);
-      if (existingUser) {
-        throw new ConflictException("Email is already in use");
-      }
-
-      const newUser = await this.usersService.register(userData);
-      const { ...userWithoutPassword } = newUser;
-
-      // Include username in the token payload
-      const access_token = this.jwtService.sign(
-        {
-          id: newUser.id,
-          email: newUser.email,
-          username: newUser.username,
-        },
-        { expiresIn: "60m" },
-      );
-
-      return {
-        access_token,
-        user: userWithoutPassword,
-      };
-    } catch (error) {
-      console.error("Registration error details:", error);
-      if (error instanceof ConflictException) {
-        throw error;
-      }
-      throw new BadRequestException(`Registration failed: ${error.message}`);
-    }
+    const payload = { email: user.email, sub: user.id, role: user.role.toUpperCase(), username: user.username };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
+    };
   }
 
-  async logout(token: string): Promise<void> {
+  logout(token: string): void {
     this.tokenBlacklistService.addToBlacklist(token);
   }
 
@@ -85,41 +72,59 @@ export class AuthService {
     return this.tokenBlacklistService.isBlacklisted(token);
   }
 
-  async refreshToken(token: string): Promise<{ access_token: string }> {
+  async refreshToken(token: string): Promise<{ access_token: string; user: UserResponseDto }> {
     try {
-      // Check if token is blacklisted
-      if (this.isTokenBlacklisted(token)) {
-        throw new UnauthorizedException("Token is invalid or has been revoked");
+      const decoded: unknown = this.jwtService.verify(token);
+      if (this.isValidTokenPayload(decoded)) {
+        const user = await this.usersService.findById(decoded.sub);
+        return this.createToken(user);
       }
-
-      // Verify and decode the token
-      const decoded = this.jwtService.verify(token);
-
-      // Get the user
-      const user = await this.usersService.findById(decoded.sub || decoded.id);
-      if (!user) {
-        throw new UnauthorizedException("User not found");
-      }
-
-      // Generate a new token
-      return this.createToken(user);
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new UnauthorizedException("Invalid token or token has expired");
+      throw new UnauthorizedException("Invalid token payload");
+    } catch {
+      throw new UnauthorizedException("Invalid token");
     }
   }
 
-  async createToken(user: any) {
+  private isValidTokenPayload(payload: unknown): payload is { sub: string; email: string } {
+    return (
+      typeof payload === "object" &&
+      payload !== null &&
+      "sub" in payload &&
+      typeof (payload as { sub: unknown }).sub === "string" &&
+      "email" in payload &&
+      typeof (payload as { email: unknown }).email === "string"
+    );
+  }
+
+  createToken(user: User): { access_token: string; user: UserResponseDto } {
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
-      username: user.username, // Add username to payload
+      role: user.role.toUpperCase(),
+      username: user.username,
     };
+
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: "60m" }),
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
     };
+  }
+
+  async getUserFromToken(token: string): Promise<{ id: string; email: string } | null> {
+    try {
+      const decoded: unknown = this.jwtService.verify(token);
+      if (this.isValidTokenPayload(decoded)) {
+        const user = await this.usersService.findById(decoded.sub);
+        return { id: user.id, email: user.email };
+      }
+      return null;
+    } catch (_error) {
+      return null;
+    }
   }
 }

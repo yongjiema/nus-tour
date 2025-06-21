@@ -1,104 +1,134 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, BadRequestException } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, Query, UseGuards, BadRequestException, Logger } from "@nestjs/common";
 import { BookingService } from "./booking.service";
 import { BookingFilterDto } from "./dto/booking-filter.dto";
 import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
 import { BookingLifecycleStatus } from "../../database/entities/enums";
 
+// Define interfaces for type safety
+interface FilterCondition {
+  field: string;
+  value: string | number | boolean;
+}
+
+interface QueryCondition {
+  $eq?: string | number;
+  $contL?: string;
+}
+
+interface ParsedCondition {
+  status?: QueryCondition;
+  bookingStatus?: QueryCondition;
+  date?: QueryCondition;
+  search?: QueryCondition;
+}
+
+interface ParsedQuery {
+  $and?: ParsedCondition[];
+  status?: QueryCondition;
+  bookingStatus?: QueryCondition;
+  date?: QueryCondition;
+  search?: QueryCondition;
+}
+
+interface BookingQuery {
+  filters?: string;
+  s?: string;
+  [key: string]: unknown;
+}
+
 @Controller("admin/bookings")
 @UseGuards(JwtAuthGuard)
 export class BookingController {
+  private readonly logger = new Logger(BookingController.name);
+
   constructor(private readonly bookingService: BookingService) {}
 
   @Get()
-  async getBookings(@Query() query: any) {
+  async getBookings(@Query() query: BookingQuery) {
     const filterDto = new BookingFilterDto();
-    console.log("Raw query params:", query);
+    this.logger.debug(`Raw query params: ${JSON.stringify(query)}`);
 
-    try {
-      // Handle filters from Refine data provider
-      if (query.filters) {
-        const filters = JSON.parse(query.filters);
-        console.log("Parsed filters:", filters);
+    // Handle filters from Refine data provider
+    if (query.filters) {
+      const filters = JSON.parse(query.filters) as FilterCondition[];
+      this.logger.debug(`Parsed filters: ${JSON.stringify(filters)}`);
 
-        // Process each filter
-        filters.forEach((filter) => {
-          if (filter.field === "search" && filter.value) {
-            filterDto.search = filter.value;
-            console.log(`Setting search filter to: ${filterDto.search}`);
-          }
-
-          if (filter.field === "status" && filter.value) {
-            filterDto.status = filter.value;
-          }
-
-          if (filter.field === "date" && filter.value) {
-            filterDto.date = filter.value;
-          }
-        });
-      }
-
-      // Legacy support for NestJS CRUD filters
-      if (query.s) {
-        try {
-          const parsed = JSON.parse(query.s);
-          console.log("Parsed 's' parameter:", parsed);
-
-          // Process $and conditions
-          if (parsed.$and && Array.isArray(parsed.$and)) {
-            parsed.$and.forEach((condition) => {
-              // Handle 'status' condition
-              if (condition.status && condition.status.$eq) {
-                filterDto.status = condition.status.$eq;
-                console.log(`Found status filter: ${filterDto.status}`);
-              }
-
-              // Handle bookingStatus condition (alternative field name)
-              if (condition.bookingStatus && condition.bookingStatus.$eq) {
-                filterDto.status = condition.bookingStatus.$eq;
-                console.log(`Found bookingStatus filter: ${filterDto.status}`);
-              }
-
-              // Handle date condition
-              if (condition.date && condition.date.$eq) {
-                filterDto.date = condition.date.$eq;
-                console.log(`Found date filter: ${filterDto.date}`);
-              }
-
-              // Handle search condition
-              if (condition.search && condition.search.$contL) {
-                filterDto.search = condition.search.$contL;
-                console.log(`Found search filter: ${filterDto.search}`);
-              }
-            });
-          }
-
-          // Handle single conditions without $and
-          if (parsed.status && parsed.status.$eq) {
-            filterDto.status = parsed.status.$eq;
-          }
-          if (parsed.bookingStatus && parsed.bookingStatus.$eq) {
-            filterDto.status = parsed.bookingStatus.$eq;
-          }
-          if (parsed.date && parsed.date.$eq) {
-            filterDto.date = parsed.date.$eq;
-          }
-          if (parsed.search && parsed.search.$contL) {
-            filterDto.search = parsed.search.$contL;
-          }
-        } catch (e) {
-          console.error("Error parsing 's' parameter:", e);
+      // Process each filter
+      filters.forEach((filter: FilterCondition) => {
+        if (filter.field === "search" && filter.value) {
+          filterDto.search = String(filter.value);
+          this.logger.debug(`Setting search filter to: ${filterDto.search}`);
         }
-      }
 
-      console.log("Final filter DTO:", filterDto);
+        if (filter.field === "status" && filter.value) {
+          filterDto.status = String(filter.value) as BookingLifecycleStatus;
+        }
 
-      // Now apply these filters in your service
-      const bookings = await this.bookingService.getFilteredBookings(filterDto);
-      return bookings;
-    } catch (e) {
-      console.error("Error processing filters:", e);
-      throw new BadRequestException("Invalid filter parameters");
+        if (filter.field === "date" && filter.value) {
+          filterDto.date = String(filter.value);
+        }
+      });
     }
+
+    // Legacy support for NestJS CRUD filters
+    if (query.s) {
+      try {
+        const parsed = JSON.parse(query.s) as ParsedQuery;
+        this.logger.debug(`Parsed 's' parameter: ${JSON.stringify(parsed)}`);
+
+        // Process $and conditions
+        if (parsed.$and && Array.isArray(parsed.$and)) {
+          parsed.$and.forEach((condition: ParsedCondition) => {
+            // Handle 'status' condition
+            if (condition.status?.$eq) {
+              filterDto.status = String(condition.status.$eq) as BookingLifecycleStatus;
+              this.logger.debug(`Found status filter: ${filterDto.status}`);
+            }
+
+            // Handle bookingStatus condition (alternative field name)
+            if (condition.bookingStatus?.$eq) {
+              filterDto.status = String(condition.bookingStatus.$eq) as BookingLifecycleStatus;
+              this.logger.debug(`Found bookingStatus filter: ${filterDto.status}`);
+            }
+
+            // Handle date condition
+            if (condition.date?.$eq) {
+              filterDto.date = String(condition.date.$eq);
+              this.logger.debug(`Found date filter: ${filterDto.date}`);
+            }
+
+            // Handle search condition
+            if (condition.search?.$contL) {
+              filterDto.search = String(condition.search.$contL);
+              this.logger.debug(`Found search filter: ${filterDto.search}`);
+            }
+          });
+        }
+
+        // Handle single conditions without $and
+        if (parsed.status?.$eq) {
+          filterDto.status = String(parsed.status.$eq) as BookingLifecycleStatus;
+        }
+        if (parsed.bookingStatus?.$eq) {
+          filterDto.status = String(parsed.bookingStatus.$eq) as BookingLifecycleStatus;
+        }
+        if (parsed.date?.$eq) {
+          filterDto.date = String(parsed.date.$eq);
+        }
+        if (parsed.search?.$contL) {
+          filterDto.search = String(parsed.search.$contL);
+        }
+      } catch (e) {
+        this.logger.error(`Error parsing 's' parameter: ${e instanceof Error ? e.message : String(e)}`);
+        throw new BadRequestException("Invalid 's' parameter: must be valid JSON");
+      }
+    }
+
+    this.logger.debug(`Final filter DTO: ${JSON.stringify(filterDto)}`);
+
+    // Now apply these filters in your service
+    const bookings = await this.bookingService.getFilteredBookings(filterDto);
+    return bookings;
   }
 
   @Post(":id/status")

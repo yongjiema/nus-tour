@@ -1,11 +1,11 @@
-import { Controller, Post, Body, Patch, Param, Get, UseGuards, Logger, Query, Request } from "@nestjs/common";
+import { Controller, Post, Body, Get, Param, UseGuards, Request, Logger, Query } from "@nestjs/common";
 import { PaymentsService } from "./payments.service";
 import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Payment } from "../database/entities/payments.entity";
 import { BookingLifecycleStatus } from "../database/entities/enums";
-import { Public } from "../auth/decorators/public.decorator";
+import { AuthenticatedRequest } from "../common/types/request.types";
 
 @Controller("payments")
 export class PaymentsController {
@@ -13,9 +13,8 @@ export class PaymentsController {
 
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Public()
   @Get()
-  async findAll(@Query("limit") limit = 10, @Query("page") page = 1) {
+  findAll(@Query("limit") limit = 10, @Query("page") page = 1) {
     this.logger.log(`Getting payments list with limit: ${limit}, page: ${page}`);
 
     // Get payments by user ID if provided, otherwise return empty result
@@ -30,19 +29,21 @@ export class PaymentsController {
 
   @Post()
   @UseGuards(JwtAuthGuard) // Require authentication
-  async createPayment(@Body() createPaymentDto: CreatePaymentDto, @Request() req): Promise<Payment> {
+  async createPayment(
+    @Body() createPaymentDto: CreatePaymentDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<Payment> {
     this.logger.log(`Payment creation request from user ${req.user.email} for booking: ${createPaymentDto.bookingId}`);
     return this.paymentsService.createPayment(createPaymentDto, req.user);
   }
 
-  @Patch("status")
+  @Post("status")
   async updatePaymentStatus(@Body() updateDto: UpdatePaymentStatusDto): Promise<Payment> {
     this.logger.log(`Payment status update request received for booking: ${updateDto.bookingId}`);
     return this.paymentsService.updatePaymentStatus(updateDto);
   }
 
   @Get("booking/:bookingId")
-  @Public()
   async getPaymentByBookingId(@Param("bookingId") bookingId: string): Promise<Payment> {
     this.logger.log(`Payment lookup request for booking: ${bookingId}`);
     // Pass the ID as is - the service will handle both string UUIDs and numeric IDs
@@ -73,7 +74,7 @@ export class PaymentsController {
 
   @Get("user")
   @UseGuards(JwtAuthGuard)
-  async getUserPayments(@Request() req) {
+  async getUserPayments(@Request() req: AuthenticatedRequest) {
     this.logger.log(`Getting payments for user: ${JSON.stringify(req.user)}`);
     const userId = req.user.id;
     const payments = await this.paymentsService.getPaymentsByUserId(userId);

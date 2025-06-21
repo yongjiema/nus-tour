@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Booking } from "../../database/entities/booking.entity";
@@ -7,6 +7,8 @@ import { BookingFilterDto } from "./dto/booking-filter.dto";
 
 @Injectable()
 export class BookingService {
+  private readonly logger = new Logger(BookingService.name);
+
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
@@ -15,7 +17,7 @@ export class BookingService {
   async getFilteredBookings(filterDto: BookingFilterDto): Promise<Booking[]> {
     const queryBuilder = this.bookingRepository.createQueryBuilder("booking");
 
-    console.log("Received filterDto:", filterDto);
+    this.logger.debug(`Received filterDto: ${JSON.stringify(filterDto)}`);
 
     // Apply search filter
     if (filterDto.search) {
@@ -27,21 +29,22 @@ export class BookingService {
 
     // Apply status filter
     if (filterDto.status) {
-      console.log(`Applying status filter: ${filterDto.status}`);
+      this.logger.debug(`Applying status filter: ${filterDto.status}`);
       queryBuilder.andWhere("booking.status = :status", { status: filterDto.status });
     }
 
     // Apply date filter
     if (filterDto.date) {
-      console.log(`Applying date filter: ${filterDto.date}`);
+      this.logger.debug(`Applying date filter: ${filterDto.date}`);
       queryBuilder.andWhere("booking.date = :date", { date: filterDto.date });
     }
 
-    console.log("Generated SQL:", queryBuilder.getSql());
-    console.log("Query Parameters:", queryBuilder.getParameters());
+    this.logger.debug(`Generated SQL: ${queryBuilder.getSql()}`);
+    this.logger.debug(`Query Parameters: ${JSON.stringify(queryBuilder.getParameters())}`);
 
     return await queryBuilder.getMany();
   }
+
   async findAll(): Promise<Booking[]> {
     return this.bookingRepository.find();
   }

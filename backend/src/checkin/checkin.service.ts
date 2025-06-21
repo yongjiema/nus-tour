@@ -16,13 +16,13 @@ export class CheckinService {
     private readonly checkinRepository: Repository<Checkin>,
   ) {}
 
-  async checkIn(checkinDto: CheckinDto): Promise<void> {
+  async checkIn(checkinDto: CheckinDto): Promise<{ message: string }> {
     const { bookingId, email } = checkinDto;
     this.logger.log(`Attempting check-in for bookingId: ${bookingId}`);
 
     const booking = await this.bookingRepository.findOne({
       where: { bookingId },
-      relations: ["checkin"], // Add this to load the existing checkin relation
+      relations: ["checkin"],
     });
 
     if (!booking) {
@@ -50,6 +50,7 @@ export class CheckinService {
     await this.checkinRepository.save(checkin);
 
     this.logger.log(`Booking ${bookingId} successfully checked in.`);
+    return { message: "Check-in successful" };
   }
 
   async countPending(): Promise<number> {

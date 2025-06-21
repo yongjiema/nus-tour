@@ -9,7 +9,6 @@ import {
   Request,
   Logger,
   ForbiddenException,
-  NotFoundException,
 } from "@nestjs/common";
 import { BookingService } from "./booking.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
@@ -17,6 +16,7 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Booking } from "../database/entities/booking.entity";
 import { Public } from "../auth/decorators/public.decorator";
 import { BookingLifecycleStatus } from "src/database/entities/enums";
+import { AuthenticatedRequest } from "../common/types/request.types";
 
 @Controller("bookings")
 export class BookingController {
@@ -26,24 +26,25 @@ export class BookingController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async createBooking(@Body() createBookingDto: CreateBookingDto, @Request() req): Promise<Booking> {
-    try {
-      this.logger.log(`Creating booking for user: ${req.user.email}`);
+  async createBooking(
+    @Body() createBookingDto: CreateBookingDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<Booking> {
+    this.logger.log(`Creating booking for user: ${req.user.email}`);
 
-      // Add user information from token
-      const bookingData = {
-        ...createBookingDto,
-        email: req.user.email,
-        name: req.user.username,
-      };
+    // Add user information from token
+    const bookingData = {
+      name: req.user.username,
+      email: req.user.email,
+      date: createBookingDto.date,
+      timeSlot: createBookingDto.timeSlot,
+      groupSize: createBookingDto.groupSize,
+      deposit: createBookingDto.deposit,
+    };
 
-      const newBooking = await this.bookingService.createBooking(bookingData);
-      this.logger.log(`Booking created with ID: ${newBooking.bookingId}`);
-      return newBooking;
-    } catch (error) {
-      this.logger.error(`Failed to create booking: ${error.message}`);
-      throw error;
-    }
+    const newBooking = await this.bookingService.createBooking(bookingData);
+    this.logger.log(`Booking created with ID: ${newBooking.bookingId}`);
+    return newBooking;
   }
 
   @Get("available-slots")
@@ -58,7 +59,7 @@ export class BookingController {
 
   @Get("user")
   @UseGuards(JwtAuthGuard)
-  async getUserBookings(@Request() req) {
+  async getUserBookings(@Request() req: AuthenticatedRequest) {
     this.logger.log(`Getting bookings for user: ${JSON.stringify(req.user)}`);
     const bookings = await this.bookingService.getAllBookingByEmail(req.user.email);
     this.logger.log(`Found ${bookings.length} bookings for user`);
@@ -76,22 +77,17 @@ export class BookingController {
 
   @UseGuards(JwtAuthGuard)
   @Get("find-by-booking-id/:bookingId")
-  async getBookingByBookingId(@Param("bookingId") bookingId: string, @Request() req) {
+  async getBookingByBookingId(@Param("bookingId") bookingId: string, @Request() req: AuthenticatedRequest) {
     this.logger.log(`Finding booking with ID: ${bookingId}`);
 
-    try {
-      const booking = await this.bookingService.getBookingByBookingId(bookingId);
+    const booking = await this.bookingService.getBookingByBookingId(bookingId);
 
-      // Optional: Verify the booking belongs to the authenticated user
-      if (booking.email !== req.user.email) {
-        throw new ForbiddenException("You do not have access to this booking");
-      }
-
-      return booking;
-    } catch (error) {
-      this.logger.error(`Failed to find booking by ID ${bookingId}: ${error.message}`);
-      throw error;
+    // Optional: Verify the booking belongs to the authenticated user
+    if (booking.email !== req.user.email) {
+      throw new ForbiddenException("You do not have access to this booking");
     }
+
+    return booking;
   }
 
   // Backend controller
@@ -104,27 +100,20 @@ export class BookingController {
       status: BookingLifecycleStatus;
       transactionId: string;
     },
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
-    try {
-      // 1. Verify booking belongs to user
-      const booking = await this.bookingService.getBookingByBookingId(bookingId);
-      if (!booking) {
-        throw new NotFoundException(`Booking with ID ${bookingId} not found`);
-      }
-      if (booking.email !== req.user.email) {
-        throw new ForbiddenException("You do not have permission to update this booking");
-      }
-      // 2. Update both tables in a transaction
-      return await this.bookingService.updatePaymentAndBookingStatus(bookingId, updateData.status, {
-        transactionId: updateData.transactionId,
-        amount: booking.deposit,
-        method: "paynow",
-        userId: req.user.id,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to update payment status: ${error.message}`);
-      throw error;
+    // 1. Verify booking belongs to user
+    const booking = await this.bookingService.getBookingByBookingId(bookingId);
+
+    if (booking.email !== req.user.email) {
+      throw new ForbiddenException("You do not have permission to update this booking");
     }
+    // 2. Update both tables in a transaction
+    return await this.bookingService.updatePaymentAndBookingStatus(bookingId, updateData.status, {
+      transactionId: updateData.transactionId,
+      amount: booking.deposit,
+      method: "paynow",
+      userId: parseInt(req.user.id, 10),
+    });
   }
 }

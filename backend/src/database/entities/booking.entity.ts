@@ -13,47 +13,47 @@ import { BookingLifecycleStatus } from "./enums";
 )
 export class Booking {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ unique: true })
-  bookingId: string;
+  bookingId!: string;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column()
-  email: string;
+  email!: string;
 
   @Column({ type: "date" })
-  date: Date; // The date of the booking itself
+  date!: Date; // The date of the booking itself
 
   @Column()
-  groupSize: number;
+  groupSize!: number;
 
   @Column({ default: 50 })
-  deposit: number;
+  deposit!: number;
 
   @Column()
-  timeSlot: string;
+  timeSlot!: string;
 
   @Column({ default: false })
-  hasFeedback: boolean;
+  hasFeedback!: boolean;
 
   @Column({
     type: "enum",
     enum: BookingLifecycleStatus,
     default: BookingLifecycleStatus.PENDING_PAYMENT,
   })
-  status: BookingLifecycleStatus;
+  status!: BookingLifecycleStatus;
 
   @CreateDateColumn()
-  createdAt: Date; // When the booking record was created
+  createdAt!: Date; // When the booking record was created
 
   @OneToOne(() => Checkin, (checkin) => checkin.booking, { nullable: true })
-  checkin: Checkin;
+  checkin!: Checkin | null;
 
   @OneToOne(() => Payment, (payment) => payment.booking, { nullable: true })
-  payment: Payment;
+  payment!: Payment | null;
 
   @BeforeInsert()
   generateBookingId() {

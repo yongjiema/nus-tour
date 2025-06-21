@@ -2,16 +2,16 @@ import { IsNotEmpty, IsNumber, IsString, Min, Max, IsOptional, IsBoolean } from 
 
 export class CreateFeedbackDto {
   @IsNotEmpty()
-  bookingId: number;
+  bookingId!: number;
 
   @IsNumber()
   @Min(1)
   @Max(5)
-  rating: number;
+  rating!: number;
 
   @IsString()
   @IsNotEmpty()
-  comments: string;
+  comments!: string;
 
   @IsBoolean()
   @IsOptional()

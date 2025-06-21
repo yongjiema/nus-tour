@@ -73,12 +73,14 @@ export const authProvider = {
         localStorage.setItem("role", normalizedRole);
         localStorage.setItem("username", response.data.user.username);
         localStorage.setItem("userId", response.data.user.id);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
 
         console.log("Stored auth data:", {
           token: response.data.access_token,
           role: normalizedRole,
           username: response.data.user.username,
           userId: response.data.user.id,
+          user: response.data.user,
         });
 
         if (normalizedRole === UserRole.ADMIN) {
@@ -118,6 +120,7 @@ export const authProvider = {
     localStorage.removeItem("role");
     localStorage.removeItem("username");
     localStorage.removeItem("userId");
+    localStorage.removeItem("user");
 
     return {
       success: true,

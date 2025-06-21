@@ -2,36 +2,53 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { UsersService } from "./users.service";
 import { User } from "../database/entities/user.entity";
-import { ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
+import { NotFoundException } from "@nestjs/common";
+import { ObjectLiteral } from "typeorm";
 import * as bcrypt from "bcrypt";
 
 // Mock bcrypt for tests
 jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashed_password"),
-  compare: jest.fn().mockImplementation((plaintext, hash) => Promise.resolve(plaintext === "correctPassword")),
+  compare: jest.fn().mockImplementation((plaintext, _hash) => Promise.resolve(plaintext === "correctPassword")),
 }));
+
+interface SimpleMockRepository<T> {
+  findOne: jest.Mock<Promise<T | null>, [Partial<Record<keyof T, unknown>>?]>;
+  create: jest.Mock<T, [Partial<T>]>;
+  save: jest.Mock<Promise<T>, [T]>;
+}
+
+function createMockRepository<T extends ObjectLiteral>(): SimpleMockRepository<T> {
+  return {
+    findOne: jest.fn<Promise<T | null>, [Partial<Record<keyof T, unknown>>?]>(),
+    create: jest.fn<T, [Partial<T>]>(),
+    save: jest.fn<Promise<T>, [T]>(),
+  };
+}
+
+// Factory helper for User entity
+const createMockUser = (overrides: Partial<User> = {}): User => ({
+  id: "1",
+  email: "test@example.com",
+  username: "Test User",
+  password: "hashed_password",
+  unhashedPassword: "",
+  role: "user",
+  hashPassword: async () => Promise.resolve(),
+  comparePassword: async (_plaintext: string) => Promise.resolve(true),
+  ...overrides,
+});
 
 describe("UsersService", () => {
   let service: UsersService;
-  let mockUserRepository;
+  let mockUserRepository: SimpleMockRepository<User>;
 
   // Sample user data
-  const mockUser = {
-    id: "1",
-    email: "test@example.com",
-    username: "Test User",
-    password: "hashed_password",
-    role: "user",
-    comparePassword: jest.fn().mockResolvedValue(true),
-  };
+  const mockUser: User = createMockUser();
 
   // Create mock repository
   beforeEach(async () => {
-    mockUserRepository = {
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-    };
+    mockUserRepository = createMockRepository<User>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -102,26 +119,29 @@ describe("UsersService", () => {
       };
 
       jest.clearAllMocks();
-      const hashMock = jest.requireMock("bcrypt").hash;
-      hashMock.mockImplementation(() => Promise.resolve("hashed_password"));
+      const hashMock = jest.spyOn(bcrypt, "hash") as unknown as jest.Mock;
+      hashMock.mockResolvedValue("hashed_password");
       // Mock findOne to return null (user doesn't exist)
       mockUserRepository.findOne.mockResolvedValue(null);
 
       // Mock create to return a new user
-      mockUserRepository.create.mockReturnValue({
-        ...registerDto,
-        id: "2",
-        password: "hashed_password",
-        role: "user",
-      });
+      mockUserRepository.create.mockReturnValue(
+        createMockUser({
+          id: "2",
+          email: registerDto.email,
+          username: registerDto.username,
+        }),
+      );
 
       // Mock save to return the created user
-      mockUserRepository.save.mockResolvedValue({
-        id: "2",
-        email: registerDto.email,
-        username: registerDto.username,
-        role: "user",
-      });
+      mockUserRepository.save.mockResolvedValue(
+        createMockUser({
+          id: "2",
+          email: registerDto.email,
+          username: registerDto.username,
+          role: "user",
+        }),
+      );
 
       const result = await service.register(registerDto);
 
@@ -131,7 +151,7 @@ describe("UsersService", () => {
       expect(mockUserRepository.create).toHaveBeenCalled();
       expect(mockUserRepository.save).toHaveBeenCalled();
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: "2",
         email: registerDto.email,
         username: registerDto.username,
@@ -148,15 +168,17 @@ describe("UsersService", () => {
       };
 
       // Mock findOne to return null (user doesn't exist)
-      mockUserRepository.findOne.mockResolvedValue(null);
+      mockUserRepository.findOne.mockReset();
+      mockUserRepository.findOne.mockResolvedValueOnce(null);
 
       // Mock create to return a new user
-      mockUserRepository.create.mockReturnValue({
-        ...registerDto,
-        id: "2",
-        password: "hashed_password",
-        role: "user",
-      });
+      mockUserRepository.create.mockReturnValue(
+        createMockUser({
+          id: "2",
+          email: registerDto.email,
+          username: registerDto.username,
+        }),
+      );
 
       // Mock save to throw an error
       mockUserRepository.save.mockRejectedValue(new Error("Database error"));
@@ -180,10 +202,12 @@ describe("UsersService", () => {
         password: "correctPassword",
       };
 
-      mockUserRepository.findOne.mockResolvedValue({
-        ...mockUser,
-        comparePassword: jest.fn().mockResolvedValue(true),
-      });
+      mockUserRepository.findOne.mockReset();
+      mockUserRepository.findOne.mockResolvedValueOnce(
+        createMockUser({
+          comparePassword: jest.fn().mockResolvedValue(true),
+        }),
+      );
 
       const result = await service.validateUser(loginDto);
 
@@ -204,7 +228,8 @@ describe("UsersService", () => {
         password: "any-password",
       };
 
-      mockUserRepository.findOne.mockResolvedValue(null);
+      mockUserRepository.findOne.mockReset();
+      mockUserRepository.findOne.mockResolvedValueOnce(null);
 
       await expect(service.validateUser(loginDto)).rejects.toThrow(NotFoundException);
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
@@ -218,10 +243,12 @@ describe("UsersService", () => {
         password: "wrongPassword",
       };
 
-      mockUserRepository.findOne.mockResolvedValue({
-        ...mockUser,
-        comparePassword: jest.fn().mockResolvedValue(false),
-      });
+      mockUserRepository.findOne.mockReset();
+      mockUserRepository.findOne.mockResolvedValueOnce(
+        createMockUser({
+          comparePassword: jest.fn().mockResolvedValue(false),
+        }),
+      );
 
       await expect(service.validateUser(loginDto)).rejects.toThrow(NotFoundException);
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({

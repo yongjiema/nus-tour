@@ -19,36 +19,36 @@ import { BookingLifecycleStatus } from "./enums";
 @Check("CHK_amount_positive", '"amount" > 0')
 export class Payment {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  bookingId: number;
+  bookingId!: number;
 
   @Column({ type: "decimal", precision: 10, scale: 2 })
-  amount: number;
+  amount!: number;
 
   @Column({
     type: "enum",
     enum: BookingLifecycleStatus,
     default: BookingLifecycleStatus.PENDING_PAYMENT,
   })
-  status: BookingLifecycleStatus;
+  status!: BookingLifecycleStatus;
 
   @Column({ nullable: true })
-  transactionId: string;
+  transactionId!: string;
 
   @Column({ nullable: true })
-  paymentMethod: string;
+  paymentMethod!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @OneToOne(() => Booking, (booking) => booking.payment)
   @JoinColumn({ name: "bookingId" })
-  booking: Booking;
+  booking!: Booking;
 }
 
 export { BookingLifecycleStatus };

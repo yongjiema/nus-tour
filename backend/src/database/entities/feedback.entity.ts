@@ -5,23 +5,23 @@ import { Booking } from "./booking.entity";
 @Entity()
 export class Feedback {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => User)
-  user: User;
+  user!: User;
 
   @ManyToOne(() => Booking)
-  booking: Booking;
+  booking!: Booking;
 
   @Column({ type: "int", default: 5 })
-  rating: number;
+  rating!: number;
 
   @Column({ type: "text" })
-  comments: string;
+  comments!: string;
 
   @Column({ default: false })
-  isPublic: boolean;
+  isPublic!: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }
