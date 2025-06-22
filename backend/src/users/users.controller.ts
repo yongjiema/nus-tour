@@ -3,6 +3,7 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { UsersService } from "./users.service";
 import { UpdateUserDto } from "../auth/dto/update-user.dto";
 import { UserResponseDto } from "../auth/dto/user-response.dto";
+import { AuthenticatedRequest } from "../common/types/request.types";
 
 @Controller("users")
 export class UsersController {
@@ -10,21 +11,24 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get("profile")
-  async getProfile(@Req() req: any) {
+  async getProfile(@Req() req: AuthenticatedRequest) {
     const user = await this.usersService.findById(req.user.id);
     return user;
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch("profile")
-  async updateProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+  async updateProfile(
+    @Req() req: AuthenticatedRequest,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
     const updatedUser = await this.usersService.update(req.user.id, updateUserDto);
     return updatedUser;
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete("profile")
-  async deleteAccount(@Req() req: any): Promise<{ message: string }> {
+  async deleteAccount(@Req() req: AuthenticatedRequest): Promise<{ message: string }> {
     await this.usersService.delete(req.user.id);
     return { message: "Account deleted successfully." };
   }

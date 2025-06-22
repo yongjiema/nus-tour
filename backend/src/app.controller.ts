@@ -24,15 +24,14 @@ export class DashboardController {
 
   @Get("stats")
   async getDashboardStats() {
-    const totalBookings = await this.bookingService.count();
+    const bookingStats = await this.bookingService.getBookingStatistics();
     const pendingCheckIns = await this.checkinService.countPending();
-    const completedTours = await this.bookingService.countCompleted();
     const feedbacks = await this.feedbackService.count();
 
     return {
-      totalBookings,
+      totalBookings: bookingStats.totalBookings,
       pendingCheckIns,
-      completedTours,
+      completedTours: bookingStats.completedBookings,
       feedbacks,
     };
   }

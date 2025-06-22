@@ -1,3 +1,2 @@
-/* eslint-disable react-refresh/only-export-components */
-export * from "./Form";
-export * from "./Confirmation";
+export { BookingForm } from "./Form";
+export { default as BookingConfirmation } from "./Confirmation";

@@ -21,12 +21,16 @@ DB_PORT=<port>
 DB_NAME=<database>
 DB_USER=<user>
 DB_PASSWORD=<password>
+DB_SSL=<true/false>
 
 # CORS Configuration
 CORS_ORIGIN=http://localhost:5173
 CORS_CREDENTIALS=true
 CORS_METHODS=GET,POST,PUT,DELETE
 CORS_HEADERS=Content-Type,Authorization
+
+# JWT
+JWT_SECRET=your_secret_key
 ```
 
 ### Frontend `.env`

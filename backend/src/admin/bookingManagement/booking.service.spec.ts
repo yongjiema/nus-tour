@@ -2,11 +2,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { BookingService } from "./booking.service";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Booking } from "../../database/entities/booking.entity";
-import { Repository } from "typeorm";
+import { Repository, ObjectLiteral } from "typeorm";
 import { BookingLifecycleStatus } from "../../database/entities/enums";
 import { NotFoundException } from "@nestjs/common";
 
-type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+type MockRepository<T extends ObjectLiteral = ObjectLiteral> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
 describe("BookingService", () => {
   let service: BookingService;

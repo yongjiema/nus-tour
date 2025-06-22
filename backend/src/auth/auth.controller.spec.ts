@@ -1,65 +1,51 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
-import { UsersService } from "../users/users.service";
-import { JwtService } from "@nestjs/jwt";
-import { ConflictException, BadRequestException, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, UnauthorizedException } from "@nestjs/common";
 import { TokenBlacklistService } from "./token-blacklist.service";
+import { JwtService } from "@nestjs/jwt";
+import { RegisterDto } from "./dto/register.dto";
+import { LoginDto } from "./dto/login.dto";
+import { Request } from "express";
+import { User } from "../database/entities/user.entity";
+import { AuthenticatedRequest } from "../common/types/request.types";
+import { UserResponseDto } from "./dto/user-response.dto";
 
 describe("AuthController", () => {
   let controller: AuthController;
   let authService: AuthService;
+  let _tokenBlacklistService: TokenBlacklistService; // Prefixed with _ to indicate intentionally unused
 
-  // Create a successful mock user response
-  const mockUser = {
+  const mockUser: Partial<User> = {
     id: "1",
     email: "test@example.com",
-    username: "Test User",
+    username: "testuser",
     role: "user",
   };
 
-  // Mock the auth service
+  const mockUserResponse: UserResponseDto = {
+    id: "1",
+    email: "test@example.com",
+    username: "testuser",
+    role: "user",
+  };
+
   const mockAuthService = {
-    register: jest.fn().mockImplementation((dto) => {
-      // Simulate conflict for existing email
-      if (dto.email === "existing@example.com") {
-        throw new ConflictException("Email already in use");
-      }
-
-      // Return successful registration for other emails
-      return Promise.resolve({
-        access_token: "test-token",
-        user: mockUser,
-      });
-    }),
-    login: jest.fn().mockImplementation((dto) => {
-      // Successful login
-      return Promise.resolve({
-        access_token: "test-token",
-        user: mockUser,
-      });
-    }),
-    refreshToken: jest.fn().mockResolvedValue({
-      access_token: "new-token",
-    }),
-    logout: jest.fn().mockResolvedValue({ success: true }),
+    validateUser: jest.fn(),
+    login: jest.fn(),
+    register: jest.fn(),
+    logout: jest.fn(),
+    refreshToken: jest.fn(),
   };
 
-  // Mock users service
-  const mockUsersService = {
-    findByEmail: jest.fn(),
-  };
-
-  // Mock JWT service
-  const mockJwtService = {
-    sign: jest.fn(),
-    verify: jest.fn(),
-  };
-
-  // Mock token blacklist service
   const mockTokenBlacklistService = {
     addToBlacklist: jest.fn(),
     isBlacklisted: jest.fn(),
+  };
+
+  const mockJwtService = {
+    sign: jest.fn(),
+    verify: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -71,22 +57,19 @@ describe("AuthController", () => {
           useValue: mockAuthService,
         },
         {
-          provide: UsersService,
-          useValue: mockUsersService,
+          provide: TokenBlacklistService,
+          useValue: mockTokenBlacklistService,
         },
         {
           provide: JwtService,
           useValue: mockJwtService,
-        },
-        {
-          provide: TokenBlacklistService,
-          useValue: mockTokenBlacklistService,
         },
       ],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
     authService = module.get<AuthService>(AuthService);
+    _tokenBlacklistService = module.get<TokenBlacklistService>(TokenBlacklistService);
 
     // Clear all mocks before each test
     jest.clearAllMocks();
@@ -98,95 +81,129 @@ describe("AuthController", () => {
 
   describe("register", () => {
     it("should register a new user", async () => {
-      const registerDto = {
+      const registerDto: RegisterDto = {
         email: "test@example.com",
-        username: "Test User",
-        password: "Password123!",
+        username: "testuser",
+        password: "password123",
       };
+
+      const expectedResult = {
+        access_token: "mock-token",
+        user: mockUserResponse,
+      };
+      const registerSpy = jest.spyOn(authService, "register").mockResolvedValue(expectedResult);
 
       const result = await controller.register(registerDto);
 
-      expect(authService.register).toHaveBeenCalledWith(registerDto);
-      expect(result).toEqual({
-        access_token: "test-token",
-        user: mockUser,
-      });
+      expect(registerSpy).toHaveBeenCalledWith(registerDto);
+      expect(result).toEqual(expectedResult);
     });
 
-    it("should handle existing email conflict", async () => {
-      const registerDto = {
-        email: "existing@example.com",
-        username: "Test User",
-        password: "Password123!",
+    it("should throw ConflictException when user already exists", async () => {
+      const registerDto: RegisterDto = {
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
       };
 
+      const registerSpy = jest
+        .spyOn(authService, "register")
+        .mockRejectedValue(new ConflictException("User already exists"));
+
       await expect(controller.register(registerDto)).rejects.toThrow(ConflictException);
-      expect(authService.register).toHaveBeenCalledWith(registerDto);
+      expect(registerSpy).toHaveBeenCalledWith(registerDto);
     });
   });
 
   describe("login", () => {
-    it("should login a user", async () => {
-      const loginDto = {
+    it("should login user and return access token", async () => {
+      const loginDto: LoginDto = {
         email: "test@example.com",
-        password: "Password123!",
+        password: "password123",
       };
+
+      const expectedResult = {
+        access_token: "mock-token",
+        user: mockUserResponse,
+      };
+      const loginSpy = jest.spyOn(authService, "login").mockResolvedValue(expectedResult);
 
       const result = await controller.login(loginDto);
 
-      expect(authService.login).toHaveBeenCalledWith(loginDto);
-      expect(result).toEqual({
-        access_token: "test-token",
-        user: mockUser,
-      });
+      expect(loginSpy).toHaveBeenCalledWith(loginDto);
+      expect(result).toEqual(expectedResult);
+    });
+
+    it("should throw UnauthorizedException for invalid credentials", async () => {
+      const loginDto: LoginDto = {
+        email: "test@example.com",
+        password: "wrongpassword",
+      };
+
+      const loginSpy = jest
+        .spyOn(authService, "login")
+        .mockRejectedValue(new UnauthorizedException("Invalid credentials"));
+
+      await expect(controller.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      expect(loginSpy).toHaveBeenCalledWith(loginDto);
     });
   });
 
-  describe("refreshToken", () => {
-    it("should refresh token", async () => {
-      const request = {
-        headers: {
-          authorization: "Bearer old-token",
-        },
-      };
+  describe("getProfile", () => {
+    it("should return user profile", () => {
+      const mockAuthRequest = {
+        user: mockUser,
+      } as unknown as AuthenticatedRequest;
 
-      const result = await controller.refreshToken(request);
+      const result = controller.getProfile(mockAuthRequest);
 
-      expect(authService.refreshToken).toHaveBeenCalledWith("old-token");
-      expect(result).toEqual({
-        access_token: "new-token",
-      });
-    });
-
-    it("should handle missing token", async () => {
-      const request = {
-        headers: {},
-      };
-
-      await expect(controller.refreshToken(request)).rejects.toThrow(UnauthorizedException);
+      expect(result).toEqual(mockUser);
     });
   });
 
   describe("logout", () => {
-    it("should logout a user", async () => {
-      const request = {
+    it("should logout user successfully", () => {
+      const mockRequest = {
         headers: {
-          authorization: "Bearer test-token",
+          authorization: "Bearer mock-token",
         },
-      };
+      } as Request;
 
-      const result = await controller.logout(request);
+      const logoutSpy = jest.spyOn(authService, "logout").mockReturnValue(undefined);
 
-      expect(authService.logout).toHaveBeenCalledWith("test-token");
+      const result = controller.logout(mockRequest);
+
+      expect(logoutSpy).toHaveBeenCalledWith("mock-token");
       expect(result).toEqual({ message: "Logged out successfully" });
     });
 
-    it("should handle missing token", async () => {
-      const request = {
+    it("should throw UnauthorizedException when no authorization header", () => {
+      const mockRequest = {
         headers: {},
-      };
+      } as Request;
 
-      await expect(controller.logout(request)).rejects.toThrow(UnauthorizedException);
+      expect(() => controller.logout(mockRequest)).toThrow(UnauthorizedException);
+    });
+  });
+
+  describe("refreshToken", () => {
+    it("should refresh token successfully", async () => {
+      const mockRequest = {
+        headers: {
+          authorization: "Bearer old-token",
+        },
+      } as Request;
+
+      const expectedResult = {
+        access_token: "new-token",
+        user: mockUserResponse,
+      };
+      const refreshSpy = jest.spyOn(authService, "refreshToken").mockResolvedValue(expectedResult);
+
+      const result = await controller.refreshToken(mockRequest);
+
+      expect(refreshSpy).toHaveBeenCalledWith("old-token");
+      expect(result).toEqual(expectedResult);
     });
   });
 });

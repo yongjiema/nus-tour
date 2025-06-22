@@ -4,18 +4,18 @@ import { Booking } from "./booking.entity";
 @Entity()
 export class Checkin {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ default: "pending" })
-  status: string;
+  status!: string;
 
   @OneToOne(() => Booking, (booking) => booking.checkin)
   @JoinColumn()
-  booking: Booking;
+  booking!: Booking;
 
   @Column({ nullable: true })
-  checkInTime: Date;
+  checkInTime!: Date;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }

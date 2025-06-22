@@ -15,7 +15,7 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async findByEmail(email: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { email } });
   }
 
@@ -30,14 +30,9 @@ export class UsersService {
     }
 
     const user = this.usersRepository.create({ email, username, password });
-    try {
-      const createdUser = await this.usersRepository.save(user);
-      this.logger.debug(`User created successfully with id: ${createdUser.id}`);
-      return createdUser;
-    } catch (error) {
-      this.logger.error(`Error saving new user: ${error.message}`, error.stack);
-      throw error;
-    }
+    const createdUser = await this.usersRepository.save(user);
+    this.logger.debug(`User created successfully with id: ${createdUser.id}`);
+    return createdUser;
   }
 
   async validateUser(loginDto: LoginDto): Promise<User> {
@@ -66,10 +61,7 @@ export class UsersService {
   }
 
   async delete(id: string): Promise<void> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
+    await this.findById(id);
     await this.usersRepository.softDelete(id);
   }
 

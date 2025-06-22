@@ -5,6 +5,8 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { NotFoundException, Logger } from "@nestjs/common";
 import { UpdateUserDto } from "../auth/dto/update-user.dto";
 import { User } from "../database/entities/user.entity";
+import { createMockAuthenticatedRequest } from "../common/testing/mock-request";
+import { AuthenticatedRequest } from "../common/types/request.types";
 
 describe("UsersController", () => {
   let usersController: UsersController;
@@ -65,7 +67,7 @@ describe("UsersController", () => {
       } as User;
 
       jest.spyOn(usersService, "findById").mockResolvedValue(mockUser);
-      const req = { user: { id: "user-uuid-1" } };
+      const req = createMockAuthenticatedRequest({ id: "user-uuid-1" });
       const result = await usersController.getProfile(req);
       expect(result).toEqual(mockUser);
       expect(usersService.findById).toHaveBeenCalledWith("user-uuid-1");
@@ -73,7 +75,7 @@ describe("UsersController", () => {
 
     it("should throw NotFoundException if user is not found", async () => {
       jest.spyOn(usersService, "findById").mockRejectedValue(new NotFoundException("User not found"));
-      const req = { user: { id: "nonexistent-id" } };
+      const req = { user: { id: "nonexistent-id" } } as AuthenticatedRequest;
       await expect(usersController.getProfile(req)).rejects.toThrow(NotFoundException);
       expect(usersService.findById).toHaveBeenCalledWith("nonexistent-id");
     });
@@ -93,7 +95,7 @@ describe("UsersController", () => {
       } as User;
       const updateUserDto: UpdateUserDto = { username: "UpdatedUser", email: "updated@example.com" };
       jest.spyOn(usersService, "update").mockResolvedValue(mockUpdatedUser);
-      const req = { user: { id: "user-uuid-1" } };
+      const req = { user: { id: "user-uuid-1" } } as AuthenticatedRequest;
       const result = await usersController.updateProfile(req, updateUserDto);
       expect(result).toEqual(mockUpdatedUser);
       expect(usersService.update).toHaveBeenCalledWith("user-uuid-1", updateUserDto);
@@ -102,7 +104,7 @@ describe("UsersController", () => {
     it("should throw NotFoundException if user to update is not found", async () => {
       const updateUserDto: UpdateUserDto = { username: "NonExistentUser" };
       jest.spyOn(usersService, "update").mockRejectedValue(new NotFoundException("User not found"));
-      const req = { user: { id: "nonexistent-id" } };
+      const req = { user: { id: "nonexistent-id" } } as AuthenticatedRequest;
       await expect(usersController.updateProfile(req, updateUserDto)).rejects.toThrow(NotFoundException);
       expect(usersService.update).toHaveBeenCalledWith("nonexistent-id", updateUserDto);
     });
@@ -117,7 +119,7 @@ describe("UsersController", () => {
 
       const updateUserDto: UpdateUserDto = { username: "UpdatedUsername" };
       jest.spyOn(usersService, "update").mockResolvedValue(mockUpdatedUser);
-      const req = { user: { id: "user-uuid-1" } };
+      const req = { user: { id: "user-uuid-1" } } as AuthenticatedRequest;
       const result = await usersController.updateProfile(req, updateUserDto);
       expect(result).toEqual(mockUpdatedUser);
       expect(usersService.update).toHaveBeenCalledWith("user-uuid-1", updateUserDto);
@@ -133,7 +135,7 @@ describe("UsersController", () => {
 
       const updateUserDto: UpdateUserDto = { email: "updated@example.com" };
       jest.spyOn(usersService, "update").mockResolvedValue(mockUpdatedUser);
-      const req = { user: { id: "user-uuid-1" } };
+      const req = { user: { id: "user-uuid-1" } } as AuthenticatedRequest;
       const result = await usersController.updateProfile(req, updateUserDto);
       expect(result).toEqual(mockUpdatedUser);
       expect(usersService.update).toHaveBeenCalledWith("user-uuid-1", updateUserDto);
@@ -143,7 +145,7 @@ describe("UsersController", () => {
   describe("deleteAccount", () => {
     it("should delete the user account and return a success message", async () => {
       jest.spyOn(usersService, "delete").mockResolvedValue(undefined);
-      const req = { user: { id: "user-uuid-1" } };
+      const req = { user: { id: "user-uuid-1" } } as AuthenticatedRequest;
       const result = await usersController.deleteAccount(req);
       expect(result).toEqual({ message: "Account deleted successfully." });
       expect(usersService.delete).toHaveBeenCalledWith("user-uuid-1");
@@ -151,7 +153,7 @@ describe("UsersController", () => {
 
     it("should throw NotFoundException if user to delete is not found", async () => {
       jest.spyOn(usersService, "delete").mockRejectedValue(new NotFoundException("User not found"));
-      const req = { user: { id: "nonexistent-id" } };
+      const req = { user: { id: "nonexistent-id" } } as AuthenticatedRequest;
       await expect(usersController.deleteAccount(req)).rejects.toThrow(NotFoundException);
       expect(usersService.delete).toHaveBeenCalledWith("nonexistent-id");
     });

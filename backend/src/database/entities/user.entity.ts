@@ -7,24 +7,24 @@ import { IsEmail, IsNotEmpty } from "class-validator";
 @Check("CHK_username_not_empty", "username <> ''")
 export class User {
   @PrimaryGeneratedColumn("uuid")
-  id: string;
+  id!: string;
 
   @Column()
   @IsNotEmpty({ message: "Username should not be empty" })
-  username: string;
+  username!: string;
 
   @Column({ unique: true })
   @IsEmail({}, { message: "Invalid email format" })
-  email: string;
+  email!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column({ default: "" })
-  unhashedPassword: string;
+  unhashedPassword!: string;
 
   @Column({ default: "User" })
-  role: string;
+  role!: string;
 
   @BeforeInsert()
   async hashPassword() {

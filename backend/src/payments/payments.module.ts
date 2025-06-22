@@ -13,4 +13,8 @@ import { BookingModule } from "../booking/booking.module";
   controllers: [PaymentsController],
   providers: [PaymentsService],
 })
-export class PaymentsModule {}
+export class PaymentsModule {
+  configure() {
+    // Module configuration
+  }
+}

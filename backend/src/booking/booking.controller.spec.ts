@@ -4,6 +4,7 @@ import { BookingService } from "./booking.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { Booking } from "../database/entities/booking.entity";
 import { BadRequestException, NotFoundException, Logger, ForbiddenException } from "@nestjs/common";
+import { AuthenticatedRequest } from "../common/types/request.types";
 import { BookingLifecycleStatus } from "../database/entities/enums";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { JwtService } from "@nestjs/jwt";
@@ -18,8 +19,7 @@ class MockJwtAuthGuard {
 
 describe("BookingController", () => {
   let controller: BookingController;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let bookingService: BookingService;
+  let _bookingService: BookingService;
 
   const mockBookingService = {
     createBooking: jest.fn(),
@@ -80,7 +80,7 @@ describe("BookingController", () => {
       .compile();
 
     controller = module.get<BookingController>(BookingController);
-    bookingService = module.get<BookingService>(BookingService);
+    _bookingService = module.get<BookingService>(BookingService);
     jest.clearAllMocks();
   });
 
@@ -115,20 +115,23 @@ describe("BookingController", () => {
         timeSlot: createBookingDto.timeSlot,
         status: BookingLifecycleStatus.PENDING_PAYMENT,
         hasFeedback: false,
-        generateBookingId: () => {},
+        generateBookingId: jest.fn(),
       };
 
       mockBookingService.createBooking.mockResolvedValue(booking);
 
       // Pass the mock request object as the second argument
-      const result = await controller.createBooking(createBookingDto, mockRequest);
+      const result = await controller.createBooking(createBookingDto, mockRequest as AuthenticatedRequest);
       expect(result).toEqual(booking);
 
       // The controller should pass a modified version of the DTO to the service
       expect(mockBookingService.createBooking).toHaveBeenCalledWith({
-        ...createBookingDto,
-        email: mockRequest.user.email,
         name: mockRequest.user.username,
+        email: mockRequest.user.email,
+        date: createBookingDto.date,
+        groupSize: createBookingDto.groupSize,
+        timeSlot: createBookingDto.timeSlot,
+        deposit: createBookingDto.deposit,
       });
     });
 
@@ -144,11 +147,16 @@ describe("BookingController", () => {
 
       mockBookingService.createBooking.mockRejectedValue(new BadRequestException("Group size must be at least 1"));
 
-      await expect(controller.createBooking(invalidBookingDto, mockRequest)).rejects.toThrow(BadRequestException);
+      await expect(controller.createBooking(invalidBookingDto, mockRequest as AuthenticatedRequest)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockBookingService.createBooking).toHaveBeenCalledWith({
-        ...invalidBookingDto,
-        email: mockRequest.user.email,
         name: mockRequest.user.username,
+        email: mockRequest.user.email,
+        date: invalidBookingDto.date,
+        groupSize: invalidBookingDto.groupSize,
+        timeSlot: invalidBookingDto.timeSlot,
+        deposit: invalidBookingDto.deposit,
       });
     });
   });
@@ -183,7 +191,7 @@ describe("BookingController", () => {
           timeSlot: "09:00 AM - 10:00 AM",
           status: BookingLifecycleStatus.PENDING_PAYMENT,
           hasFeedback: false,
-          generateBookingId: () => {},
+          generateBookingId: jest.fn(),
         },
         {
           id: 2,
@@ -196,7 +204,7 @@ describe("BookingController", () => {
           timeSlot: "10:00 AM - 11:00 AM",
           status: BookingLifecycleStatus.PENDING_PAYMENT,
           hasFeedback: false,
-          generateBookingId: () => {},
+          generateBookingId: jest.fn(),
         },
       ];
 
@@ -222,7 +230,7 @@ describe("BookingController", () => {
 
       mockBookingService.getAllBookingByEmail.mockResolvedValue(userBookings);
 
-      const result = await controller.getUserBookings(mockRequest);
+      const result = await controller.getUserBookings(mockRequest as AuthenticatedRequest);
       expect(result).toEqual({
         data: userBookings,
         total: 1,
@@ -244,7 +252,7 @@ describe("BookingController", () => {
         timeSlot: "09:00 AM - 10:00 AM",
         status: BookingLifecycleStatus.PENDING_PAYMENT,
         hasFeedback: false,
-        generateBookingId: () => {},
+        generateBookingId: jest.fn(),
       };
 
       mockBookingService.getBookingById.mockResolvedValue(booking);
@@ -274,7 +282,7 @@ describe("BookingController", () => {
 
       mockBookingService.getBookingByBookingId.mockResolvedValue(booking);
 
-      const result = await controller.getBookingByBookingId(bookingId, mockRequest);
+      const result = await controller.getBookingByBookingId(bookingId, mockRequest as AuthenticatedRequest);
       expect(result).toEqual(booking);
       expect(mockBookingService.getBookingByBookingId).toHaveBeenCalledWith(bookingId);
     });
@@ -292,7 +300,9 @@ describe("BookingController", () => {
 
       mockBookingService.getBookingByBookingId.mockResolvedValue(booking);
 
-      await expect(controller.getBookingByBookingId(bookingId, mockRequest)).rejects.toThrow(ForbiddenException);
+      await expect(controller.getBookingByBookingId(bookingId, mockRequest as AuthenticatedRequest)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(mockBookingService.getBookingByBookingId).toHaveBeenCalledWith(bookingId);
     });
 
@@ -300,7 +310,9 @@ describe("BookingController", () => {
       const bookingId = "non-existent";
       mockBookingService.getBookingByBookingId.mockRejectedValue(new NotFoundException("Booking not found"));
 
-      await expect(controller.getBookingByBookingId(bookingId, mockRequest)).rejects.toThrow(NotFoundException);
+      await expect(controller.getBookingByBookingId(bookingId, mockRequest as AuthenticatedRequest)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(mockBookingService.getBookingByBookingId).toHaveBeenCalledWith(bookingId);
     });
   });

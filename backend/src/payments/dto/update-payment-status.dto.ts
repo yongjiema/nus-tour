@@ -3,11 +3,11 @@ import { BookingLifecycleStatus } from "../../database/entities/enums";
 
 export class UpdatePaymentStatusDto {
   @IsNotEmpty()
-  bookingId: string | number;
+  bookingId!: string | number;
 
   @IsNotEmpty()
   @IsEnum(BookingLifecycleStatus)
-  status: BookingLifecycleStatus;
+  status!: BookingLifecycleStatus;
 
   @IsOptional()
   @IsString()

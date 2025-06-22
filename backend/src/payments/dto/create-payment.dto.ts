@@ -3,7 +3,7 @@ import { BookingLifecycleStatus } from "../../database/entities/enums";
 
 export class CreatePaymentDto {
   @IsNotEmpty()
-  bookingId: string | number;
+  bookingId!: string | number;
 
   @IsOptional()
   @IsNumber()
