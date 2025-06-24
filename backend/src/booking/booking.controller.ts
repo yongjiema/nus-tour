@@ -15,7 +15,7 @@ import { CreateBookingDto } from "./dto/create-booking.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Booking } from "../database/entities/booking.entity";
 import { Public } from "../auth/decorators/public.decorator";
-import { BookingLifecycleStatus } from "src/database/entities/enums";
+import { BookingStatus } from "src/database/entities/enums";
 import { AuthenticatedRequest } from "../common/types/request.types";
 
 @Controller("bookings")
@@ -32,18 +32,8 @@ export class BookingController {
   ): Promise<Booking> {
     this.logger.log(`Creating booking for user: ${req.user.email}`);
 
-    // Add user information from token
-    const bookingData = {
-      name: req.user.username,
-      email: req.user.email,
-      date: createBookingDto.date,
-      timeSlot: createBookingDto.timeSlot,
-      groupSize: createBookingDto.groupSize,
-      deposit: createBookingDto.deposit,
-    };
-
-    const newBooking = await this.bookingService.createBooking(bookingData);
-    this.logger.log(`Booking created with ID: ${newBooking.bookingId}`);
+    const newBooking = await this.bookingService.createBooking(createBookingDto, req.user);
+    this.logger.log(`Booking created with ID: ${newBooking.id}`);
     return newBooking;
   }
 
@@ -54,14 +44,14 @@ export class BookingController {
 
   @Get()
   async getAllBookings() {
-    return this.bookingService.getAllBookings();
+    return this.bookingService.findAll();
   }
 
   @Get("user")
   @UseGuards(JwtAuthGuard)
   async getUserBookings(@Request() req: AuthenticatedRequest) {
     this.logger.log(`Getting bookings for user: ${JSON.stringify(req.user)}`);
-    const bookings = await this.bookingService.getAllBookingByEmail(req.user.email);
+    const bookings = await this.bookingService.getAllBookingByUserId(req.user.id);
     this.logger.log(`Found ${bookings.length} bookings for user`);
     return {
       data: bookings,
@@ -70,9 +60,9 @@ export class BookingController {
   }
 
   @Public()
-  @Get(":id")
-  async getBookingById(@Param("id") id: number) {
-    return this.bookingService.getBookingById(id);
+  @Get(":bookingId")
+  async getBookingById(@Param("bookingId") bookingId: string) {
+    return this.bookingService.getBookingById(bookingId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -80,10 +70,9 @@ export class BookingController {
   async getBookingByBookingId(@Param("bookingId") bookingId: string, @Request() req: AuthenticatedRequest) {
     this.logger.log(`Finding booking with ID: ${bookingId}`);
 
-    const booking = await this.bookingService.getBookingByBookingId(bookingId);
+    const booking = await this.bookingService.getBookingById(bookingId);
 
-    // Optional: Verify the booking belongs to the authenticated user
-    if (booking.email !== req.user.email) {
+    if (booking.user.id !== req.user.id) {
       throw new ForbiddenException("You do not have access to this booking");
     }
 
@@ -97,15 +86,15 @@ export class BookingController {
     @Param("bookingId") bookingId: string,
     @Body()
     updateData: {
-      status: BookingLifecycleStatus;
+      status: BookingStatus;
       transactionId: string;
     },
     @Request() req: AuthenticatedRequest,
   ) {
     // 1. Verify booking belongs to user
-    const booking = await this.bookingService.getBookingByBookingId(bookingId);
+    const booking = await this.bookingService.getBookingById(bookingId);
 
-    if (booking.email !== req.user.email) {
+    if (booking.user.id !== req.user.id) {
       throw new ForbiddenException("You do not have permission to update this booking");
     }
     // 2. Update both tables in a transaction

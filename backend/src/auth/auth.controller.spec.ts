@@ -4,12 +4,14 @@ import { AuthService } from "./auth.service";
 import { ConflictException, UnauthorizedException } from "@nestjs/common";
 import { TokenBlacklistService } from "./token-blacklist.service";
 import { JwtService } from "@nestjs/jwt";
+import { TEST_USER_ID_1, TEST_USER_ROLE_ID } from "../common/testing";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { Request } from "express";
 import { User } from "../database/entities/user.entity";
 import { AuthenticatedRequest } from "../common/types/request.types";
 import { UserResponseDto } from "./dto/user-response.dto";
+import { Role } from "../database/entities/role.entity";
 
 describe("AuthController", () => {
   let controller: AuthController;
@@ -17,17 +19,23 @@ describe("AuthController", () => {
   let _tokenBlacklistService: TokenBlacklistService; // Prefixed with _ to indicate intentionally unused
 
   const mockUser: Partial<User> = {
-    id: "1",
+    id: TEST_USER_ID_1,
     email: "test@example.com",
-    username: "testuser",
-    role: "user",
+    firstName: "Test",
+    lastName: "User",
+    emailVerified: false,
+    isActive: true,
+    createdAt: new Date(),
+    modifiedAt: new Date(),
+    roles: [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role],
   };
 
   const mockUserResponse: UserResponseDto = {
-    id: "1",
+    id: TEST_USER_ID_1,
     email: "test@example.com",
-    username: "testuser",
-    role: "user",
+    firstName: "Test",
+    lastName: "User",
+    roles: ["USER"],
   };
 
   const mockAuthService = {
@@ -83,7 +91,8 @@ describe("AuthController", () => {
     it("should register a new user", async () => {
       const registerDto: RegisterDto = {
         email: "test@example.com",
-        username: "testuser",
+        firstName: "Test",
+        lastName: "User",
         password: "password123",
       };
 
@@ -102,7 +111,8 @@ describe("AuthController", () => {
     it("should throw ConflictException when user already exists", async () => {
       const registerDto: RegisterDto = {
         email: "test@example.com",
-        username: "testuser",
+        firstName: "Test",
+        lastName: "User",
         password: "password123",
       };
 

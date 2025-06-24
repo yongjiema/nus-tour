@@ -7,7 +7,7 @@ export interface AuthUser {
   id: string;
   email: string;
   username: string;
-  role: UserRole;
+  roles: UserRole[];
 }
 
 export interface LoginResponse {

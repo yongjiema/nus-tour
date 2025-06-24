@@ -43,21 +43,21 @@ export class FeedbackController {
 
   @Get(":id")
   findOne(@Param("id") id: string) {
-    return this.feedbackService.findOne(+id);
+    return this.feedbackService.findOne(id);
   }
 
   @Patch(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
   update(@Param("id") id: string, @Body() updateFeedbackDto: Record<string, unknown>) {
-    return this.feedbackService.update(+id, updateFeedbackDto);
+    return this.feedbackService.update(id, updateFeedbackDto);
   }
 
   @Delete(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
   remove(@Param("id") id: string) {
-    return this.feedbackService.remove(+id);
+    return this.feedbackService.remove(id);
   }
 
   @Get("average")

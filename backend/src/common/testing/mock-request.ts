@@ -1,12 +1,14 @@
 import { Request } from "express";
 import { AuthenticatedRequest, User } from "../types/request.types";
+import { TEST_MOCK_USER_ID } from "./test-uuids";
 
 export function createMockAuthenticatedRequest(user: Partial<User> = {}): AuthenticatedRequest {
   const defaultUser: User = {
-    id: "test-user-id",
+    id: TEST_MOCK_USER_ID,
     email: "test@example.com",
-    username: "testuser",
-    role: "user",
+    firstName: "Test",
+    lastName: "User",
+    roles: ["USER"],
     ...user,
   };
 

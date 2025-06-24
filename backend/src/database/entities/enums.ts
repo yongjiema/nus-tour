@@ -1,20 +1,26 @@
-export enum BookingLifecycleStatus {
-  // Initial status when booking is created
-  PENDING_PAYMENT = "pending_payment",
+export enum BookingStatus {
+  /* Slot reservation (pre-payment) */
+  SLOT_RESERVED = "slot_reserved", // Slot is temporarily held; countdown active
+  SLOT_EXPIRED = "slot_expired", // Hold expired; slot released
 
-  // Payment related statuses
-  PAYMENT_COMPLETED = "payment_completed",
-  PAYMENT_FAILED = "payment_failed",
-  PAYMENT_REFUNDED = "payment_refunded",
+  /* Payment flow */
+  AWAITING_PAYMENT = "awaiting_payment", // Awaiting successful charge
+  PAYMENT_FAILED = "payment_failed", // Payment attempt declined/errored
+  PAID = "paid", // Charge succeeded, awaiting confirmation (or instantly confirmed)
 
-  // Booking confirmation statuses
-  CONFIRMED = "confirmed", // After payment is completed and booking is confirmed
+  /* Booking confirmation */
+  CONFIRMED = "confirmed", // Slot officially reserved after payment approval
 
-  // Tour execution statuses
-  CHECKED_IN = "checked_in", // Customer has checked in for the tour
-  COMPLETED = "completed", // Tour is completed
+  /* Cancellation */
+  CANCELLED = "cancelled", // Cancelled before tour date
 
-  // Cancellation statuses
-  CANCELLED = "cancelled", // Booking was cancelled
-  NO_SHOW = "no_show", // Customer didn't show up
+  /*refunds */
+  REFUND_PENDING = "refund_pending", // Refund requested, awaiting settlement
+  REFUNDED = "refunded", // Refund settled successfully
+  REFUND_FAILED = "refund_failed", // Refund could not be processed automatically
+
+  /* Tour execution */
+  CHECKED_IN = "checked_in", // Customer has arrived and been verified
+  NO_SHOW = "no_show", // Customer did not arrive
+  COMPLETED = "completed", // Tour completed successfully
 }

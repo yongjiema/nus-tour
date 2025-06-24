@@ -7,7 +7,6 @@ import { Booking } from "../database/entities/booking.entity";
 import { BookingService } from "../booking/booking.service";
 import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
-import { BookingLifecycleStatus } from "../database/entities/enums";
 
 @Injectable()
 export class PaymentsService {
@@ -27,10 +26,10 @@ export class PaymentsService {
     this.logger.log(`Creating payment for booking: ${createPaymentDto.bookingId}`);
 
     // Validate if booking exists using BookingService helper (better abstraction for unit tests)
-    const booking = await this.bookingService.getBookingByBookingId(String(createPaymentDto.bookingId));
+    const booking = await this.bookingService.getBookingById(String(createPaymentDto.bookingId));
 
-    // If user provided, validate booking ownership
-    if (user.email && booking.email !== user.email) {
+    // Validate booking ownership
+    if (booking.user.id !== user.id) {
       throw new ForbiddenException("You can only create payments for your own bookings");
     }
 
@@ -47,9 +46,6 @@ export class PaymentsService {
       if (createPaymentDto.amount !== undefined) {
         payment.amount = createPaymentDto.amount;
       }
-      if (createPaymentDto.status !== undefined) {
-        payment.status = createPaymentDto.status;
-      }
       if (createPaymentDto.transactionId) {
         payment.transactionId = createPaymentDto.transactionId;
       }
@@ -61,7 +57,6 @@ export class PaymentsService {
       payment = this.paymentsRepository.create({
         bookingId: booking.id,
         amount: createPaymentDto.amount ?? booking.deposit,
-        status: createPaymentDto.status ?? BookingLifecycleStatus.PENDING_PAYMENT,
         transactionId: createPaymentDto.transactionId ?? `TXN-${Date.now()}`,
         paymentMethod: createPaymentDto.paymentMethod ?? "pending",
       });
@@ -73,19 +68,10 @@ export class PaymentsService {
   }
 
   async updatePaymentStatus(updateDto: UpdatePaymentStatusDto): Promise<Payment> {
-    this.logger.log(`Updating payment status for booking: ${updateDto.bookingId}`);
+    this.logger.log(`Updating payment for booking: ${updateDto.bookingId}`);
 
-    // 1. Retrieve booking based on ID type
-    let booking: Booking | null;
-    if (typeof updateDto.bookingId === "number") {
-      booking = await this.bookingRepository.findOne({ where: { id: Number(updateDto.bookingId) } });
-    } else {
-      booking = await this.bookingService.getBookingByBookingId(String(updateDto.bookingId));
-    }
-
-    if (!booking) {
-      throw new NotFoundException(`Booking with ID ${updateDto.bookingId} not found`);
-    }
+    // 1. Retrieve the booking (bookingService throws if not found)
+    const booking = await this.bookingService.getBookingById(String(updateDto.bookingId));
 
     // 2. Retrieve or create payment linked to booking
     let payment = await this.paymentsRepository.findOne({ where: { bookingId: booking.id } });
@@ -93,29 +79,21 @@ export class PaymentsService {
     payment ??= this.paymentsRepository.create({
       bookingId: booking.id,
       amount: booking.deposit,
-      status: BookingLifecycleStatus.PENDING_PAYMENT,
     });
 
-    // 3. Apply updates
-    payment.status = updateDto.status;
+    // 3. Apply updates to payment fields only
     if (updateDto.transactionId) {
       payment.transactionId = updateDto.transactionId;
     }
     if (updateDto.paymentMethod) {
       payment.paymentMethod = updateDto.paymentMethod;
     }
-    payment.updatedAt = new Date();
+    payment.modifiedAt = new Date();
 
     // 4. Persist changes
     const savedPayment = await this.paymentsRepository.save(payment);
 
-    // 5. Update booking status if payment completed
-    if (updateDto.status === BookingLifecycleStatus.PAYMENT_COMPLETED) {
-      booking.status = BookingLifecycleStatus.PAYMENT_COMPLETED;
-      await this.bookingRepository.save(booking);
-    }
-
-    this.logger.log(`Payment status updated successfully for booking: ${updateDto.bookingId}`);
+    this.logger.log(`Payment updated successfully for booking: ${updateDto.bookingId}`);
     return savedPayment;
   }
 
@@ -131,9 +109,9 @@ export class PaymentsService {
       return [];
     }
 
-    // Find bookings by email
+    // Find bookings linked to user
     const bookings = await this.bookingRepository.find({
-      where: { email: user.email },
+      where: { user: { id: user.id } as User },
       select: ["id"],
     });
 
@@ -157,12 +135,8 @@ export class PaymentsService {
     return payments;
   }
 
-  async getPaymentByBookingId(bookingId: number | string): Promise<Payment> {
-    // Determine lookup strategy based on ID type
-    const booking =
-      typeof bookingId === "number"
-        ? await this.bookingService.getBookingById(Number(bookingId))
-        : await this.bookingService.getBookingByBookingId(String(bookingId));
+  async getPaymentByBookingId(bookingId: string): Promise<Payment> {
+    const booking = await this.bookingService.getBookingById(bookingId);
 
     const payment = await this.paymentsRepository.findOne({
       where: { bookingId: booking.id },

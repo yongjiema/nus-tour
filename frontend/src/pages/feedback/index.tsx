@@ -4,12 +4,12 @@ import { Box, Button, TextField, Typography, Rating, FormControlLabel, Checkbox,
 import { useCreate } from "@refinedev/core";
 
 interface FeedbackFormProps {
-  bookingId: number;
+  bookingId: string;
   onSuccess?: () => void;
 }
 
 interface FeedbackFormData {
-  bookingId: number;
+  bookingId: string;
   rating: number;
   comments: string;
   isPublic: boolean;

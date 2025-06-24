@@ -18,7 +18,7 @@ export interface UserProfile {
 
 // Booking related types
 export interface Booking {
-  id: number;
+  id: string; // UUID primary identifier
   date: string;
   timeSlot: string;
   groupSize: number;
@@ -43,7 +43,7 @@ export interface Payment {
   amount: number;
   status: "pending" | "completed" | "failed";
   method: "credit_card" | "paypal" | "bank_transfer";
-  bookingId: number;
+  bookingId: string;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -60,7 +60,7 @@ export interface Feedback {
   rating: number;
   comments: string;
   isPublic: boolean;
-  bookingId: number;
+  bookingId: string;
   userId: string;
   createdAt: string;
   updatedAt: string;

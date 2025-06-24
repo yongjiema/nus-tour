@@ -3,6 +3,7 @@ import { ExecutionContext, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
+import { TEST_USER_ID_1 } from "../common/testing";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { TokenBlacklistService } from "./token-blacklist.service";
 
@@ -90,7 +91,13 @@ describe("JwtAuthGuard", () => {
 
     it("should return true for valid token", () => {
       const mockContext = createMockContext();
-      const mockPayload = { sub: "1", email: "test@example.com", username: "testuser", role: "USER" };
+      const mockPayload = {
+        sub: TEST_USER_ID_1,
+        email: "test@example.com",
+        firstName: "Test",
+        lastName: "User",
+        roles: ["USER"],
+      };
       mockJwtService.verify.mockReturnValue(mockPayload);
       mockTokenBlacklistService.isBlacklisted.mockReturnValue(false);
       mockReflector.getAllAndOverride.mockReturnValue(false);
@@ -102,7 +109,13 @@ describe("JwtAuthGuard", () => {
 
     it("should throw UnauthorizedException for blacklisted token", () => {
       const mockContext = createMockContext();
-      const mockPayload = { sub: "1", email: "test@example.com", username: "testuser", role: "USER" };
+      const mockPayload = {
+        sub: TEST_USER_ID_1,
+        email: "test@example.com",
+        firstName: "Test",
+        lastName: "User",
+        roles: ["USER"],
+      };
       mockJwtService.verify.mockReturnValue(mockPayload);
       mockTokenBlacklistService.isBlacklisted.mockReturnValue(true);
       mockReflector.getAllAndOverride.mockReturnValue(false);

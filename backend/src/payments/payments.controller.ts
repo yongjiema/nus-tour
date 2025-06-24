@@ -4,7 +4,6 @@ import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Payment } from "../database/entities/payments.entity";
-import { BookingLifecycleStatus } from "../database/entities/enums";
 import { AuthenticatedRequest } from "../common/types/request.types";
 
 @Controller("payments")
@@ -39,15 +38,15 @@ export class PaymentsController {
 
   @Post("status")
   async updatePaymentStatus(@Body() updateDto: UpdatePaymentStatusDto): Promise<Payment> {
-    this.logger.log(`Payment status update request received for booking: ${updateDto.bookingId}`);
+    this.logger.log(`Payment update request received for booking: ${updateDto.bookingId}`);
     return this.paymentsService.updatePaymentStatus(updateDto);
   }
 
   @Get("booking/:bookingId")
   async getPaymentByBookingId(@Param("bookingId") bookingId: string): Promise<Payment> {
     this.logger.log(`Payment lookup request for booking: ${bookingId}`);
-    // Pass the ID as is - the service will handle both string UUIDs and numeric IDs
-    return this.paymentsService.getPaymentByBookingId(Number(bookingId));
+    // Pass the booking ID directly as a string – the service layer will resolve it
+    return this.paymentsService.getPaymentByBookingId(bookingId);
   }
 
   @Post("complete/:bookingId")
@@ -56,7 +55,6 @@ export class PaymentsController {
     this.logger.log(`Payment completion request for booking: ${bookingId}`);
     return this.paymentsService.updatePaymentStatus({
       bookingId: bookingId,
-      status: BookingLifecycleStatus.COMPLETED,
       transactionId: `TXN-${Date.now()}`,
     });
   }
@@ -64,11 +62,10 @@ export class PaymentsController {
   // Admin endpoints
   @UseGuards(JwtAuthGuard)
   @Post("admin/complete/:bookingId")
-  async completePaymentAdmin(@Param("bookingId") bookingId: number): Promise<Payment> {
+  async completePaymentAdmin(@Param("bookingId") bookingId: string): Promise<Payment> {
     this.logger.log(`Admin payment completion request for booking: ${bookingId}`);
     return this.paymentsService.updatePaymentStatus({
-      bookingId: +bookingId,
-      status: BookingLifecycleStatus.COMPLETED,
+      bookingId,
     });
   }
 

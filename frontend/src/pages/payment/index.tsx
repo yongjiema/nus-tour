@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { usePayment } from "../../hooks/usePayment";
 import { useCustom, useCustomMutation } from "@refinedev/core";
 import { PublicHeader } from "../../components/header/public";
-import { BookingLifecycleStatus } from "../../types/enums";
+import { BookingStatus } from "../../types/enums";
 import * as dataProviders from "../../dataProvider";
 
 const PaymentPaper = styled(Paper)(({ theme }) => ({
@@ -61,10 +61,10 @@ const PaymentPage = () => {
 
   // Single state for booking details
   const [bookingDetails, setBookingDetails] = useState<{
-    bookingId: string | null;
+    id: string | null;
     amount: number;
   }>({
-    bookingId: id || null,
+    id: id || null,
     amount: 50,
   });
 
@@ -77,7 +77,7 @@ const PaymentPage = () => {
         console.log("Found booking data in localStorage:", parsedData);
 
         setBookingDetails({
-          bookingId: parsedData.bookingId || parsedData.id || id,
+          id: parsedData.id || parsedData.bookingId || id,
           amount: parsedData.deposit || 50,
         });
 
@@ -91,10 +91,10 @@ const PaymentPage = () => {
 
   // Only fetch from API if we have an ID and no localStorage data
   const { data: apiData, isLoading } = useCustom({
-    url: `/bookings/find-by-booking-id/${bookingDetails.bookingId || ""}`,
+    url: `/bookings/${bookingDetails.id || ""}`,
     method: "get",
     queryOptions: {
-      enabled: !!bookingDetails.bookingId,
+      enabled: !!bookingDetails.id,
     },
   });
 
@@ -106,10 +106,10 @@ const PaymentPage = () => {
       const updateBookingStatus = async () => {
         try {
           await dataProviders.default.custom({
-            url: `bookings/${bookingDetails.bookingId}/payment-status`,
+            url: `bookings/${bookingDetails.id}/payment-status`,
             method: "post",
             payload: {
-              status: BookingLifecycleStatus.PAYMENT_FAILED,
+              status: BookingStatus.PAYMENT_FAILED,
               transactionId: `EXPIRED-${Date.now()}`,
             },
           });
@@ -129,7 +129,7 @@ const PaymentPage = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, bookingDetails.bookingId]);
+  }, [timeLeft, bookingDetails.id]);
 
   // Update from API data if available
   useEffect(() => {
@@ -149,7 +149,7 @@ const PaymentPage = () => {
   };
 
   const handleCompletePayment = async () => {
-    if (!bookingDetails.bookingId) {
+    if (!bookingDetails.id) {
       console.error("Missing booking ID");
       return;
     }
@@ -159,17 +159,17 @@ const PaymentPage = () => {
 
       // 1. Process payment
       await processPayment({
-        bookingId: bookingDetails.bookingId,
+        bookingId: bookingDetails.id,
         amount: bookingDetails.amount,
         paymentMethod: "paynow",
       });
 
       // 2. Update booking status AND create payment record
       await dataProviders.default.custom({
-        url: `bookings/${bookingDetails.bookingId}/payment-status`,
+        url: `bookings/${bookingDetails.id}/payment-status`,
         method: "post",
         payload: {
-          status: BookingLifecycleStatus.PAYMENT_COMPLETED,
+          status: BookingStatus.PAYMENT_COMPLETED,
           transactionId: transactionId,
         },
       });
@@ -178,14 +178,14 @@ const PaymentPage = () => {
       localStorage.setItem(
         "payment_confirmation",
         JSON.stringify({
-          bookingId: typeof bookingDetails.bookingId === "string" ? bookingDetails.bookingId : "",
+          bookingId: typeof bookingDetails.id === "string" ? bookingDetails.id : "",
           amount: bookingDetails.amount,
           date: new Date().toISOString(),
           transactionId: transactionId,
         }),
       );
       console.log("Navigating to success page");
-      navigate(`/payment/success/${bookingDetails.bookingId}`);
+      navigate(`/payment/success/${bookingDetails.id}`);
     } catch (error) {
       console.error("Payment processing error:", error);
 
@@ -201,7 +201,7 @@ const PaymentPage = () => {
     );
   }
 
-  if (!bookingDetails.bookingId || !bookingDetails.amount) {
+  if (!bookingDetails.id || !bookingDetails.amount) {
     return (
       <Container maxWidth="sm" sx={{ mt: 6 }}>
         <PaymentPaper>
@@ -242,7 +242,7 @@ const PaymentPage = () => {
               {/* Booking Details */}
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="body2" sx={{ color: "#002147", mb: 1.25 }}>
-                  <strong>Booking ID:</strong> {bookingDetails.bookingId}
+                  <strong>Booking ID:</strong> {bookingDetails.id}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#002147", mb: 1.25 }}>
                   <strong>Amount to Pay:</strong> SGD {bookingDetails.amount}

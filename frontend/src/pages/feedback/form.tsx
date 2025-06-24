@@ -26,7 +26,7 @@ const RatingContainer = styled(Box)({
 });
 
 interface FeedbackFormProps {
-  bookingId: number;
+  bookingId: string;
   onSuccess?: () => void;
 }
 

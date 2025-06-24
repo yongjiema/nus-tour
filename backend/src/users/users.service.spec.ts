@@ -3,8 +3,10 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { UsersService } from "./users.service";
 import { User } from "../database/entities/user.entity";
 import { NotFoundException } from "@nestjs/common";
+import { TEST_NON_EXISTENT_BOOKING_ID, TEST_USER_ID_1, TEST_USER_ID_2, TEST_USER_ROLE_ID } from "../common/testing";
 import { ObjectLiteral } from "typeorm";
 import * as bcrypt from "bcrypt";
+import { Role } from "../database/entities/role.entity";
 
 // Mock bcrypt for tests
 jest.mock("bcrypt", () => ({
@@ -28,12 +30,17 @@ function createMockRepository<T extends ObjectLiteral>(): SimpleMockRepository<T
 
 // Factory helper for User entity
 const createMockUser = (overrides: Partial<User> = {}): User => ({
-  id: "1",
+  id: TEST_USER_ID_1,
   email: "test@example.com",
-  username: "Test User",
+  firstName: "Test",
+  lastName: "User",
   password: "hashed_password",
-  unhashedPassword: "",
-  role: "user",
+  emailVerified: false,
+  isActive: true,
+  createdAt: new Date(),
+  modifiedAt: new Date(),
+  roles: [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role],
+  bookings: [],
   hashPassword: async () => Promise.resolve(),
   comparePassword: async (_plaintext: string) => Promise.resolve(true),
   ...overrides,
@@ -93,19 +100,19 @@ describe("UsersService", () => {
     it("should return a user if found", async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
 
-      const result = await service.findById("1");
+      const result = await service.findById(TEST_USER_ID_1);
       expect(result).toEqual(mockUser);
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: { id: "1" },
+        where: { id: TEST_USER_ID_1 },
       });
     });
 
     it("should throw NotFoundException if user not found", async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findById("999")).rejects.toThrow(NotFoundException);
+      await expect(service.findById(TEST_NON_EXISTENT_BOOKING_ID)).rejects.toThrow(NotFoundException);
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: { id: "999" },
+        where: { id: TEST_NON_EXISTENT_BOOKING_ID },
       });
     });
   });
@@ -114,7 +121,8 @@ describe("UsersService", () => {
     it("should create a new user", async () => {
       const registerDto = {
         email: "new@example.com",
-        username: "New User",
+        firstName: "New",
+        lastName: "User",
         password: "password123",
       };
 
@@ -127,19 +135,21 @@ describe("UsersService", () => {
       // Mock create to return a new user
       mockUserRepository.create.mockReturnValue(
         createMockUser({
-          id: "2",
+          id: TEST_USER_ID_2,
           email: registerDto.email,
-          username: registerDto.username,
+          firstName: registerDto.firstName,
+          lastName: registerDto.lastName,
         }),
       );
 
       // Mock save to return the created user
       mockUserRepository.save.mockResolvedValue(
         createMockUser({
-          id: "2",
+          id: TEST_USER_ID_2,
           email: registerDto.email,
-          username: registerDto.username,
-          role: "user",
+          firstName: registerDto.firstName,
+          lastName: registerDto.lastName,
+          roles: [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role],
         }),
       );
 
@@ -152,10 +162,11 @@ describe("UsersService", () => {
       expect(mockUserRepository.save).toHaveBeenCalled();
 
       expect(result).toMatchObject({
-        id: "2",
+        id: TEST_USER_ID_2,
         email: registerDto.email,
-        username: registerDto.username,
-        role: "user",
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        roles: [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role],
       });
     });
 
@@ -163,7 +174,8 @@ describe("UsersService", () => {
     it("should throw Error for database errors", async () => {
       const registerDto = {
         email: "new@example.com",
-        username: "New User",
+        firstName: "New",
+        lastName: "User",
         password: "password123",
       };
 
@@ -174,9 +186,10 @@ describe("UsersService", () => {
       // Mock create to return a new user
       mockUserRepository.create.mockReturnValue(
         createMockUser({
-          id: "2",
+          id: TEST_USER_ID_2,
           email: registerDto.email,
-          username: registerDto.username,
+          firstName: registerDto.firstName,
+          lastName: registerDto.lastName,
         }),
       );
 

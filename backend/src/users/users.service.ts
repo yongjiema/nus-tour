@@ -22,14 +22,14 @@ export class UsersService {
   async register(registerDto: RegisterDto): Promise<User> {
     this.logger.debug(`Register method called with DTO: ${JSON.stringify(registerDto)}`);
 
-    const { email, username, password } = registerDto;
+    const { email, firstName, lastName, password } = registerDto;
     const existingUser = await this.usersRepository.findOne({ where: { email } });
     if (existingUser) {
       this.logger.warn(`Registration failed: Email already in use for email ${email}`);
       throw new ConflictException("Email is already in use");
     }
 
-    const user = this.usersRepository.create({ email, username, password });
+    const user = this.usersRepository.create({ email, firstName, lastName, password });
     const createdUser = await this.usersRepository.save(user);
     this.logger.debug(`User created successfully with id: ${createdUser.id}`);
     return createdUser;
@@ -40,7 +40,7 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { email } });
 
     if (!user || !(await user.comparePassword(password))) {
-      throw new NotFoundException("Invalid username or password");
+      throw new NotFoundException("Invalid email or password");
     }
 
     return user;

@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Booking } from "../database/entities/booking.entity";
 import { Checkin } from "../database/entities/checkin.entity";
+import { BookingStatus } from "../database/entities/enums";
 import { CheckinDto } from "./dto/checkin.dto";
 
 @Injectable()
@@ -21,7 +22,7 @@ export class CheckinService {
     this.logger.log(`Attempting check-in for bookingId: ${bookingId}`);
 
     const booking = await this.bookingRepository.findOne({
-      where: { bookingId },
+      where: { id: bookingId },
       relations: ["checkin"],
     });
 
@@ -30,8 +31,8 @@ export class CheckinService {
       throw new BadRequestException("Invalid booking details.");
     }
 
-    if (booking.email !== email) {
-      this.logger.warn(`Email mismatch for bookingId ${bookingId}: Expected ${booking.email}, got ${email}`);
+    if (booking.user.email !== email) {
+      this.logger.warn(`Email mismatch for bookingId ${bookingId}: Expected ${booking.user.email}, got ${email}`);
       throw new BadRequestException("Invalid booking details.");
     }
 
@@ -40,22 +41,25 @@ export class CheckinService {
       throw new BadRequestException("Booking has already been checked in.");
     }
 
-    // Create a new Checkin entity
+    // Create a new Checkin entity (audit trail only)
     const checkin = new Checkin();
     checkin.booking = booking;
-    checkin.status = "completed";
     checkin.checkInTime = new Date();
 
     // Save the checkin entity
     await this.checkinRepository.save(checkin);
+
+    // Update booking status
+    booking.status = BookingStatus.CHECKED_IN;
+    await this.bookingRepository.save(booking);
 
     this.logger.log(`Booking ${bookingId} successfully checked in.`);
     return { message: "Check-in successful" };
   }
 
   async countPending(): Promise<number> {
-    return this.checkinRepository.count({
-      where: { status: "pending" },
+    return this.bookingRepository.count({
+      where: { status: BookingStatus.CONFIRMED },
     });
   }
 

@@ -183,15 +183,15 @@ const BookingForm: React.FC = () => {
       console.log("Saving booking data to localStorage:", newBooking);
       localStorage.setItem("booking-data", JSON.stringify(newBooking));
 
-      // Log before navigation
-      console.log(`Redirecting to payment page with booking ID: ${newBooking.bookingId || newBooking.id}`);
-      navigate(`/payment/${newBooking.bookingId || newBooking.id}`);
+      // Redirect using UUID bookingId
+      console.log(`Redirecting to payment page with booking ID: ${newBooking.id}`);
+      navigate(`/payment/${newBooking.id}`);
 
       // After successful booking creation and response parsing
       console.log("Booking created successfully:", newBooking);
 
       // Ensure bookingId exists before redirecting
-      if (!newBooking || !newBooking.bookingId) {
+      if (!newBooking || !newBooking.id) {
         setError("Booking created but no ID was returned");
         console.error("Missing booking ID in response:", newBooking);
         return;
@@ -201,8 +201,7 @@ const BookingForm: React.FC = () => {
       localStorage.setItem(
         "booking-data",
         JSON.stringify({
-          bookingId: newBooking.bookingId,
-          id: newBooking.id,
+          bookingId: newBooking.id,
           deposit: newBooking.deposit || 50,
           date: newBooking.date,
           timeSlot: newBooking.timeSlot,
@@ -210,13 +209,13 @@ const BookingForm: React.FC = () => {
         }),
       );
 
-      console.log(`Redirecting to payment with bookingId: ${newBooking.bookingId}`);
-      navigate(`/payment/${newBooking.bookingId}`);
+      console.log(`Redirecting to payment with bookingId: ${newBooking.id}`);
+      navigate(`/payment/${newBooking.id}`);
 
       // And it's accessible here too
       setSuccess(true);
       setTimeout(() => {
-        navigate(`/payment/${newBooking.bookingId}`);
+        navigate(`/payment/${newBooking.id}`);
       }, 1000);
     } catch (err) {
       console.error("Error creating booking:", err);

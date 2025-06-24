@@ -13,7 +13,13 @@ export class UsersController {
   @Get("profile")
   async getProfile(@Req() req: AuthenticatedRequest) {
     const user = await this.usersService.findById(req.user.id);
-    return user;
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: user.roles.map((r) => (typeof r === "string" ? r : r.name)),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -23,7 +29,13 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const updatedUser = await this.usersService.update(req.user.id, updateUserDto);
-    return updatedUser;
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      roles: updatedUser.roles.map((r) => (typeof r === "string" ? r : r.name)),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -37,6 +49,12 @@ export class UsersController {
   @Get()
   async getAllUsers(): Promise<UserResponseDto[]> {
     const users = await this.usersService.findAll();
-    return users;
+    return users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      roles: u.roles.map((r) => (typeof r === "string" ? r : r.name)),
+    }));
   }
 }

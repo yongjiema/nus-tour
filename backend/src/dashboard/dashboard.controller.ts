@@ -6,7 +6,7 @@ import { DashboardService } from "./dashboard.service";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Booking } from "../database/entities/booking.entity";
-import { BookingLifecycleStatus } from "../database/entities/enums";
+import { BookingStatus } from "../database/entities/enums";
 import { MoreThanOrEqual } from "typeorm";
 
 @Controller("admin/dashboard")
@@ -29,7 +29,7 @@ export class DashboardController {
       // Find confirmed bookings that haven't been checked in yet
       this.bookingRepository.count({
         where: {
-          status: BookingLifecycleStatus.CONFIRMED,
+          status: BookingStatus.CONFIRMED,
           date: MoreThanOrEqual(new Date()),
         },
       }),
@@ -37,7 +37,7 @@ export class DashboardController {
       // Count completed tours
       this.bookingRepository.count({
         where: {
-          status: BookingLifecycleStatus.COMPLETED,
+          status: BookingStatus.COMPLETED,
         },
       }),
 

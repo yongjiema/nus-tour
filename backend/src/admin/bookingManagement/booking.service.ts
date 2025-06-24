@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Booking } from "../../database/entities/booking.entity";
-import { BookingLifecycleStatus } from "../../database/entities/enums";
+import { BookingStatus } from "../../database/entities/enums";
 import { BookingFilterDto } from "./dto/booking-filter.dto";
 
 @Injectable()
@@ -15,15 +15,17 @@ export class BookingService {
   ) {}
 
   async getFilteredBookings(filterDto: BookingFilterDto): Promise<Booking[]> {
-    const queryBuilder = this.bookingRepository.createQueryBuilder("booking");
+    const queryBuilder = this.bookingRepository.createQueryBuilder("booking").leftJoinAndSelect("booking.user", "user");
 
     this.logger.debug(`Received filterDto: ${JSON.stringify(filterDto)}`);
 
     // Apply search filter
     if (filterDto.search) {
       queryBuilder.andWhere(
-        "(booking.bookingId LIKE :search OR booking.name LIKE :search OR booking.email LIKE :search)",
-        { search: `%${filterDto.search}%` },
+        "(booking.id LIKE :search OR user.firstName LIKE :search OR user.lastName LIKE :search OR user.email LIKE :search)",
+        {
+          search: `%${filterDto.search}%`,
+        },
       );
     }
 
@@ -49,8 +51,8 @@ export class BookingService {
     return this.bookingRepository.find();
   }
 
-  async updatePaymentStatus(id: string, status: BookingLifecycleStatus) {
-    const booking = await this.bookingRepository.findOne({ where: { bookingId: id } });
+  async updatePaymentStatus(id: string, status: BookingStatus) {
+    const booking = await this.bookingRepository.findOne({ where: { id } });
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
@@ -58,8 +60,8 @@ export class BookingService {
     return this.bookingRepository.save(booking);
   }
 
-  async updateBookingStatus(id: string, status: BookingLifecycleStatus) {
-    const booking = await this.bookingRepository.findOne({ where: { bookingId: id } });
+  async updateBookingStatus(id: string, status: BookingStatus) {
+    const booking = await this.bookingRepository.findOne({ where: { id } });
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
@@ -67,9 +69,9 @@ export class BookingService {
     return this.bookingRepository.save(booking);
   }
 
-  async updateStatus(bookingId: string, status: BookingLifecycleStatus): Promise<Booking> {
+  async updateStatus(bookingId: string, status: BookingStatus): Promise<Booking> {
     const booking = await this.bookingRepository.findOne({
-      where: { bookingId },
+      where: { id: bookingId },
     });
 
     if (!booking) {

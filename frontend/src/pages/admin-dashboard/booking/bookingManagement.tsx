@@ -26,7 +26,7 @@ import {
 import { styled } from "@mui/material/styles";
 import * as dataProviders from "../../../dataProvider";
 import { CrudFilters } from "@refinedev/core";
-import { BookingLifecycleStatus } from "../../../../../backend/src/database/entities/enums";
+import { BookingStatus } from "../../../../../backend/src/database/entities/enums";
 
 // Styled components for buttons
 const RemoveButton = styled(Button)({
@@ -54,7 +54,7 @@ const TourCompletedButton = styled(Button)({
 });
 // Interface for booking data
 interface Booking {
-  bookingId: string;
+  id: string;
   name: string;
   email: string;
   date: string;
@@ -63,7 +63,7 @@ interface Booking {
   timeSlot: string;
   hasFeedback: boolean;
   createdAt: Date;
-  status: BookingLifecycleStatus;
+  status: BookingStatus;
 }
 
 const BookingManagement = () => {
@@ -77,12 +77,12 @@ const BookingManagement = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{
     id: string;
-    status: BookingLifecycleStatus;
+    status: BookingStatus;
     actionName: string;
   } | null>(null);
 
   // Open confirmation dialog
-  const openConfirmDialog = (id: string, status: BookingLifecycleStatus, actionName: string) => {
+  const openConfirmDialog = (id: string, status: BookingStatus, actionName: string) => {
     setConfirmAction({ id, status, actionName });
     setConfirmDialogOpen(true);
   };
@@ -201,7 +201,7 @@ const BookingManagement = () => {
       await dataProviders.default.custom({
         url: `admin/bookings/${id}`,
         method: "post",
-        payload: { status: BookingLifecycleStatus.CONFIRMED },
+        payload: { status: BookingStatus.CONFIRMED },
       });
       fetchBookings();
     } catch (error) {
@@ -209,7 +209,7 @@ const BookingManagement = () => {
       setError("Failed to confirm booking.");
     }
   };
-  const changeStatus = async (id: string, status: BookingLifecycleStatus) => {
+  const changeStatus = async (id: string, status: BookingStatus) => {
     try {
       await dataProviders.default.custom({
         url: `admin/bookings/${id}/status`,
@@ -245,7 +245,7 @@ const BookingManagement = () => {
             <InputLabel>Booking Status</InputLabel>
             <Select value={bookingStatusFilter} onChange={(e) => setBookingStatusFilter(e.target.value)}>
               <MenuItem value="">All</MenuItem>
-              {Object.values(BookingLifecycleStatus).map((status) => (
+              {Object.values(BookingStatus).map((status) => (
                 <MenuItem key={status} value={status}>
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </MenuItem>
@@ -326,8 +326,8 @@ const BookingManagement = () => {
             </TableHead>
             <TableBody>
               {bookings.map((booking) => (
-                <TableRow key={booking.bookingId}>
-                  <TableCell>{booking.bookingId}</TableCell>
+                <TableRow key={booking.id}>
+                  <TableCell>{booking.id}</TableCell>
                   <TableCell>{booking.name}</TableCell>
                   <TableCell>{booking.email}</TableCell>
                   <TableCell>{booking.date}</TableCell>
@@ -336,110 +336,78 @@ const BookingManagement = () => {
                   <TableCell>{booking.status}</TableCell>
                   <TableCell>{booking.hasFeedback ? "Yes" : "NA"}</TableCell>
                   <TableCell>
-                    {booking.status === BookingLifecycleStatus.PENDING_PAYMENT && (
+                    {booking.status === BookingStatus.AWAITING_PAYMENT && (
                       <Grid container spacing={2} direction="row">
                         <Grid item>
                           <ConfirmPaymentButton
-                            onClick={() =>
-                              openConfirmDialog(
-                                booking.bookingId,
-                                BookingLifecycleStatus.PAYMENT_COMPLETED,
-                                "Confirm Payment",
-                              )
-                            }
+                            onClick={() => openConfirmDialog(booking.id, BookingStatus.PAID, "Confirm Payment")}
                           >
                             Confirm Payment
                           </ConfirmPaymentButton>
                         </Grid>
                         <Grid item>
                           <RemoveButton
-                            onClick={() =>
-                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.CANCELLED, "Cancel Booking")
-                            }
+                            onClick={() => openConfirmDialog(booking.id, BookingStatus.CANCELLED, "Cancel Booking")}
                           >
                             Cancel Booking
                           </RemoveButton>
                         </Grid>
                       </Grid>
                     )}
-                    {booking.status === BookingLifecycleStatus.PAYMENT_COMPLETED && (
+                    {booking.status === BookingStatus.PAID && (
                       <Grid container spacing={2} direction="row">
                         <Grid item>
                           <Button
                             variant="contained"
                             color="primary"
-                            onClick={() =>
-                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.CONFIRMED, "Confirm Payment")
-                            }
+                            onClick={() => openConfirmDialog(booking.id, BookingStatus.CONFIRMED, "Confirm Payment")}
                           >
                             Confirm Booking
                           </Button>
                         </Grid>
                         <Grid item>
                           <RemoveButton
-                            onClick={() =>
-                              openConfirmDialog(
-                                booking.bookingId,
-                                BookingLifecycleStatus.PAYMENT_REFUNDED,
-                                "Payment Refunded",
-                              )
-                            }
+                            onClick={() => openConfirmDialog(booking.id, BookingStatus.REFUNDED, "Payment Refunded")}
                           >
                             Payment Refunded
                           </RemoveButton>
                         </Grid>
                         <Grid item>
                           <RemoveButton
-                            onClick={() =>
-                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.CANCELLED, "Cancel Booking")
-                            }
+                            onClick={() => openConfirmDialog(booking.id, BookingStatus.CANCELLED, "Cancel Booking")}
                           >
                             Cancel Booking
                           </RemoveButton>
                         </Grid>
                       </Grid>
                     )}
-                    {booking.status === BookingLifecycleStatus.CONFIRMED && (
+                    {booking.status === BookingStatus.CONFIRMED && (
                       <Grid container spacing={2} direction="row">
                         <Grid item>
                           <CheckInButton
-                            onClick={() =>
-                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.CHECKED_IN, "Check In")
-                            }
+                            onClick={() => openConfirmDialog(booking.id, BookingStatus.CHECKED_IN, "Check In")}
                           >
                             Check In
                           </CheckInButton>
                         </Grid>
                         <Grid item>
-                          <RemoveButton
-                            onClick={() =>
-                              openConfirmDialog(booking.bookingId, BookingLifecycleStatus.NO_SHOW, "No Show")
-                            }
-                          >
+                          <RemoveButton onClick={() => openConfirmDialog(booking.id, BookingStatus.NO_SHOW, "No Show")}>
                             No Show
                           </RemoveButton>
                         </Grid>
                       </Grid>
                     )}
-                    {booking.status === BookingLifecycleStatus.CHECKED_IN && (
+                    {booking.status === BookingStatus.CHECKED_IN && (
                       <TourCompletedButton
-                        onClick={() =>
-                          openConfirmDialog(booking.bookingId, BookingLifecycleStatus.COMPLETED, "Tour Completed")
-                        }
+                        onClick={() => openConfirmDialog(booking.id, BookingStatus.COMPLETED, "Tour Completed")}
                       >
                         Tour Completed
                       </TourCompletedButton>
                     )}
 
-                    {booking.status === BookingLifecycleStatus.COMPLETED && (
+                    {booking.status === BookingStatus.COMPLETED && (
                       <RemoveButton
-                        onClick={() =>
-                          openConfirmDialog(
-                            booking.bookingId,
-                            BookingLifecycleStatus.PAYMENT_REFUNDED,
-                            "Payment Refunded",
-                          )
-                        }
+                        onClick={() => openConfirmDialog(booking.id, BookingStatus.REFUNDED, "Payment Refunded")}
                       >
                         Payment Refunded
                       </RemoveButton>
@@ -456,9 +424,7 @@ const BookingManagement = () => {
         <DialogContent>
           <DialogContentText>
             Are you sure you want to {confirmAction?.actionName.toLowerCase()} this booking?
-            {confirmAction?.status === BookingLifecycleStatus.CANCELLED && (
-              <strong> This action cannot be undone.</strong>
-            )}
+            {confirmAction?.status === BookingStatus.CANCELLED && <strong> This action cannot be undone.</strong>}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
