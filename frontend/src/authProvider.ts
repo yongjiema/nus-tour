@@ -84,7 +84,7 @@ export const authProvider = {
           userId: response.data.user.id,
         });
 
-        if (normalizedRoles[0] === UserRole.ADMIN) {
+        if (normalizedRoles.includes(UserRole.ADMIN)) {
           return {
             success: true,
             redirectTo: "/admin",
