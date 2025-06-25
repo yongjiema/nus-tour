@@ -30,7 +30,7 @@ export class FeedbackService {
       comments: createFeedbackDto.comments,
       isPublic: createFeedbackDto.isPublic ?? false,
       user: { id: userId } as unknown as User,
-      booking: { bookingId: createFeedbackDto.bookingId } as unknown as Booking,
+      booking: { id: createFeedbackDto.bookingId } as unknown as Booking,
     });
 
     // Mark the booking as having feedback
