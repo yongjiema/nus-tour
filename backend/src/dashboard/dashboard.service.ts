@@ -63,7 +63,7 @@ export class DashboardService {
       ...recentBookings.map((booking) => ({
         id: `booking-${booking.id}`,
         type: "booking",
-        description: `New booking from ${booking.name || "Guest"} for ${new Date(booking.date).toLocaleDateString()}`,
+        description: `New booking from ${booking.user.firstName ?? ""} ${booking.user.lastName ?? ""} for ${new Date(booking.date).toLocaleDateString()}`,
         timestamp: booking.createdAt,
       })),
       ...recentFeedback.map((feedback) => ({

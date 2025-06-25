@@ -1,5 +1,7 @@
 import { User } from "../../database/entities/user.entity";
+import { Role } from "../../database/entities/role.entity";
 import { AuthenticatedRequest } from "../types/request.types";
+import { TEST_MOCK_USER_ID, TEST_USER_ROLE_ID, TEST_ADMIN_ROLE_ID } from "./test-uuids";
 
 /**
  * Test Builders - Industry best practice for creating test data
@@ -8,12 +10,17 @@ import { AuthenticatedRequest } from "../types/request.types";
 
 export class UserBuilder {
   private user: Partial<User> = {
-    id: "test-user-id",
+    id: TEST_MOCK_USER_ID,
     email: "test@example.com",
-    username: "testuser",
-    role: "user",
+    firstName: "Test",
+    lastName: "User",
+    roles: [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role],
+    bookings: [],
     password: "hashedPassword",
-    unhashedPassword: "",
+    emailVerified: false,
+    isActive: true,
+    createdAt: new Date(),
+    modifiedAt: new Date(),
   };
 
   static create(): UserBuilder {
@@ -31,12 +38,12 @@ export class UserBuilder {
   }
 
   withRole(role: string): this {
-    this.user.role = role;
+    this.user.roles = [{ id: TEST_USER_ROLE_ID, name: role.toUpperCase() } as Role];
     return this;
   }
 
   asAdmin(): this {
-    this.user.role = "admin";
+    this.user.roles = [{ id: TEST_ADMIN_ROLE_ID, name: "ADMIN" } as Role];
     return this;
   }
 

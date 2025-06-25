@@ -1,11 +1,12 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import { Logger } from "@nestjs/common";
+import { TEST_BOOKING_ID_5, TEST_USER_ID_1 } from "../../common/testing";
 import { BookingController } from "./booking.controller";
 import { BookingService } from "./booking.service";
 import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
 import { Booking } from "../../database/entities/booking.entity";
-import { BookingLifecycleStatus } from "../../database/entities/enums";
+import { BookingStatus } from "../../database/entities/enums";
 
 class _MockGuard {
   canActivate() {
@@ -18,14 +19,21 @@ describe("BookingController", () => {
   let service: BookingService;
 
   const mockBooking: Partial<Booking> = {
-    bookingId: "test-booking-id",
-    name: "Test User",
-    email: "test@example.com",
+    id: TEST_BOOKING_ID_5,
     date: new Date("2024-01-15"),
     groupSize: 5,
-    status: BookingLifecycleStatus.CONFIRMED,
+    status: BookingStatus.CONFIRMED,
     timeSlot: "10:00 AM - 11:00 AM",
     deposit: 50,
+    user: {
+      id: TEST_USER_ID_1,
+      email: "test@example.com",
+      username: "TestUser",
+      password: "hash",
+      unhashedPassword: "password",
+      roles: [],
+      comparePassword: jest.fn(),
+    } as unknown as import("../../database/entities/user.entity").User,
   };
 
   const mockService = {
@@ -113,13 +121,13 @@ describe("BookingController", () => {
 
   describe("updateStatus", () => {
     it("should update booking status", async () => {
-      const updatedBooking = { ...mockBooking, status: BookingLifecycleStatus.CONFIRMED };
+      const updatedBooking = { ...mockBooking, status: BookingStatus.CONFIRMED };
       const updateStatusSpy = jest.spyOn(service, "updateStatus").mockResolvedValue(updatedBooking as Booking);
 
-      const result = await controller.updateStatus("test-booking-id", { status: "confirmed" });
+      const result = await controller.updateStatus(TEST_BOOKING_ID_5, { status: "confirmed" });
 
       expect(result).toEqual(updatedBooking);
-      expect(updateStatusSpy).toHaveBeenCalledWith("test-booking-id", "confirmed");
+      expect(updateStatusSpy).toHaveBeenCalledWith(TEST_BOOKING_ID_5, "confirmed");
     });
   });
 });

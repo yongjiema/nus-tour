@@ -1,4 +1,4 @@
-export enum BookingLifecycleStatus {
+export enum BookingStatus {
   // Initial status when booking is created
   PENDING_PAYMENT = "pending_payment",
 

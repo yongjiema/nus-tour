@@ -47,8 +47,9 @@ export class JwtAuthGuard implements CanActivate {
       request.user = {
         id: payload.sub,
         email: payload.email,
-        username: payload.username,
-        role: payload.role,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        roles: payload.roles,
       };
 
       return true;
@@ -66,8 +67,10 @@ export class JwtAuthGuard implements CanActivate {
       payload !== null &&
       "sub" in payload &&
       "email" in payload &&
-      "role" in payload &&
-      "username" in payload
+      "firstName" in payload &&
+      "lastName" in payload &&
+      "roles" in payload &&
+      Array.isArray((payload as JwtPayload).roles)
     );
   }
 }

@@ -4,8 +4,10 @@ import { UsersService } from "../users/users.service";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { UnauthorizedException } from "@nestjs/common";
+import { TEST_USER_ID_1, TEST_USER_ROLE_ID } from "../common/testing";
 import { TokenBlacklistService } from "./token-blacklist.service";
 import { User } from "../database/entities/user.entity";
+import { Role } from "../database/entities/role.entity";
 import * as bcrypt from "bcrypt";
 
 jest.mock("bcrypt", () => ({
@@ -20,17 +22,20 @@ describe("AuthService", () => {
   let tokenBlacklistService: TokenBlacklistService;
 
   const mockUser: Partial<User> = {
-    id: "1",
+    id: TEST_USER_ID_1,
     email: "test@example.com",
-    username: "testuser",
+    firstName: "Test",
+    lastName: "User",
     password: "hashedpassword",
-    role: "user",
-    unhashedPassword: "plainpassword",
+    roles: [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role],
+    emailVerified: false,
+    isActive: true,
+    createdAt: new Date(),
+    modifiedAt: new Date(),
   };
 
   const mockUsersService = {
     findByEmail: jest.fn(),
-    findByUsername: jest.fn(),
     findById: jest.fn(),
     register: jest.fn(),
   };
@@ -133,8 +138,9 @@ describe("AuthService", () => {
   describe("register", () => {
     it("should register user successfully", async () => {
       const registerDto = {
-        email: "test@example.com",
-        username: "testuser",
+        email: "new@example.com",
+        firstName: "New",
+        lastName: "User",
         password: "password",
       };
 
@@ -150,7 +156,8 @@ describe("AuthService", () => {
 
       expect(registerSpy).toHaveBeenCalledWith({
         email: registerDto.email,
-        username: registerDto.username,
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
         password: "hashed-password",
       });
       expect(result).toHaveProperty("access_token");
@@ -172,7 +179,7 @@ describe("AuthService", () => {
   describe("refreshToken", () => {
     it("should return new token when current token is valid", async () => {
       const token = "valid-token";
-      const decodedPayload = { sub: "1", email: "test@example.com" };
+      const decodedPayload = { sub: TEST_USER_ID_1, email: "test@example.com" };
 
       const jwtVerifySpy = jest.spyOn(jwtService, "verify").mockReturnValue(decodedPayload);
       const findByIdSpy = jest.spyOn(usersService, "findById").mockResolvedValue(mockUser as User);

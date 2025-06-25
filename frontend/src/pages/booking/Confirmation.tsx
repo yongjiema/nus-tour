@@ -94,7 +94,7 @@ const BookingConfirmation: React.FC = () => {
             <Typography variant="body2" color="textSecondary">
               Booking ID
             </Typography>
-            <Typography variant="body2">{booking.bookingId}</Typography>
+            <Typography variant="body2">{booking.id}</Typography>
           </DetailsRow>
 
           <DetailsRow>

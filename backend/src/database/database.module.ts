@@ -1,38 +1,23 @@
-import { Module } from "@nestjs/common";
+import { Module, Logger } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { User } from "./entities/user.entity";
-import { Booking } from "./entities/booking.entity";
-import { Checkin } from "./entities/checkin.entity";
-import { Feedback } from "./entities/feedback.entity";
-import { Payment } from "./entities/payments.entity";
+import { ConfigModule } from "@nestjs/config";
+import { buildTypeOrmOptions } from "./typeorm.config";
+import { TimeSlot } from "./entities/timeSlot.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const isSslEnabled = (configService.get<string>("DB_SSL") ?? "false").toLowerCase() === "true";
-
-        return {
-          type: "postgres",
-          host: configService.get("DB_HOST"),
-          port: configService.get<number>("DB_PORT") ?? 5432,
-          username: configService.get("DB_USER"),
-          password: configService.get("DB_PASSWORD"),
-          database: configService.get("DB_NAME"),
-          entities: [User, Booking, Feedback, Payment, Checkin],
-          synchronize: configService.get("NODE_ENV") !== "production",
-          ssl: isSslEnabled ? { rejectUnauthorized: false } : undefined,
-          extra: isSslEnabled ? { sslmode: "require" } : undefined,
-        };
-      },
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRoot(buildTypeOrmOptions()),
+    TypeOrmModule.forFeature([TimeSlot]),
   ],
+  providers: [],
 })
 export class DatabaseModule {
-  onModuleInit(): void {
-    // Database module initialization logic if needed
-  }
+  // Seeding is handled centrally by DatabaseSeedModule in non-production environments
+
+  /**
+   * Non-static member so the class is not considered "empty" by the
+   * @typescript-eslint/no-extraneous-class rule. It has no runtime cost.
+   */
+  private readonly _logger = new Logger(DatabaseModule.name);
 }

@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, Query, UseGuards, BadRequestExcepti
 import { BookingService } from "./booking.service";
 import { BookingFilterDto } from "./dto/booking-filter.dto";
 import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
-import { BookingLifecycleStatus } from "../../database/entities/enums";
+import { BookingStatus } from "../../database/entities/enums";
 
 // Define interfaces for type safety
 interface FilterCondition {
@@ -61,7 +61,7 @@ export class BookingController {
         }
 
         if (filter.field === "status" && filter.value) {
-          filterDto.status = String(filter.value) as BookingLifecycleStatus;
+          filterDto.status = String(filter.value) as BookingStatus;
         }
 
         if (filter.field === "date" && filter.value) {
@@ -70,47 +70,34 @@ export class BookingController {
       });
     }
 
-    // Legacy support for NestJS CRUD filters
+    // Support for old NestJS CRUD-style filters
     if (query.s) {
       try {
         const parsed = JSON.parse(query.s) as ParsedQuery;
         this.logger.debug(`Parsed 's' parameter: ${JSON.stringify(parsed)}`);
 
-        // Process $and conditions
         if (parsed.$and && Array.isArray(parsed.$and)) {
           parsed.$and.forEach((condition: ParsedCondition) => {
-            // Handle 'status' condition
             if (condition.status?.$eq) {
-              filterDto.status = String(condition.status.$eq) as BookingLifecycleStatus;
-              this.logger.debug(`Found status filter: ${filterDto.status}`);
+              filterDto.status = String(condition.status.$eq) as BookingStatus;
             }
-
-            // Handle bookingStatus condition (alternative field name)
             if (condition.bookingStatus?.$eq) {
-              filterDto.status = String(condition.bookingStatus.$eq) as BookingLifecycleStatus;
-              this.logger.debug(`Found bookingStatus filter: ${filterDto.status}`);
+              filterDto.status = String(condition.bookingStatus.$eq) as BookingStatus;
             }
-
-            // Handle date condition
             if (condition.date?.$eq) {
               filterDto.date = String(condition.date.$eq);
-              this.logger.debug(`Found date filter: ${filterDto.date}`);
             }
-
-            // Handle search condition
             if (condition.search?.$contL) {
               filterDto.search = String(condition.search.$contL);
-              this.logger.debug(`Found search filter: ${filterDto.search}`);
             }
           });
         }
 
-        // Handle single conditions without $and
         if (parsed.status?.$eq) {
-          filterDto.status = String(parsed.status.$eq) as BookingLifecycleStatus;
+          filterDto.status = String(parsed.status.$eq) as BookingStatus;
         }
         if (parsed.bookingStatus?.$eq) {
-          filterDto.status = String(parsed.bookingStatus.$eq) as BookingLifecycleStatus;
+          filterDto.status = String(parsed.bookingStatus.$eq) as BookingStatus;
         }
         if (parsed.date?.$eq) {
           filterDto.date = String(parsed.date.$eq);
@@ -133,7 +120,7 @@ export class BookingController {
 
   @Post(":id/status")
   async updateStatus(@Param("id") id: string, @Body() statusUpdate: { status: string }) {
-    // Make sure we're using the correct lifecycle status
-    return this.bookingService.updateStatus(id, statusUpdate.status as BookingLifecycleStatus);
+    // Make sure we're using the correct status
+    return this.bookingService.updateStatus(id, statusUpdate.status as BookingStatus);
   }
 }

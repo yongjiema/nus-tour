@@ -3,8 +3,10 @@ import { Request } from "express";
 export interface User {
   id: string;
   email: string;
-  username: string;
-  role?: string;
+  firstName?: string;
+  lastName?: string;
+  /** Roles assigned to the user. */
+  roles?: string[];
 }
 
 export interface AuthenticatedRequest extends Request {

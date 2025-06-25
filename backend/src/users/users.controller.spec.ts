@@ -3,9 +3,18 @@ import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { NotFoundException, Logger } from "@nestjs/common";
+import {
+  TEST_USER_ID_50,
+  TEST_USER_ID_51,
+  UserBuilder,
+  createMockAuthenticatedRequest,
+  TEST_USER_ROLE_ID,
+  TEST_ADMIN_ROLE_ID,
+  TEST_NON_EXISTENT_USER_ID,
+} from "../common/testing";
 import { UpdateUserDto } from "../auth/dto/update-user.dto";
 import { User } from "../database/entities/user.entity";
-import { createMockAuthenticatedRequest } from "../common/testing/mock-request";
+import { Role } from "../database/entities/role.entity";
 import { AuthenticatedRequest } from "../common/types/request.types";
 
 describe("UsersController", () => {
@@ -18,6 +27,19 @@ describe("UsersController", () => {
     delete: jest.fn(),
     findAll: jest.fn(),
   };
+
+  const defaultRoles: Role[] = [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role];
+
+  // Helper to quickly create fully-typed User mocks with overrides
+  function buildUser(overrides: Partial<User> = {}): User {
+    const baseUser = UserBuilder.create().buildPartial();
+    return {
+      ...baseUser,
+      ...overrides,
+      hashPassword: jest.fn(),
+      comparePassword: jest.fn(),
+    } as User;
+  }
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -55,137 +77,193 @@ describe("UsersController", () => {
 
   describe("getProfile", () => {
     it("should return the user profile if found", async () => {
-      const mockUser = {
-        id: "user-uuid-1",
-        username: "TestUser",
+      const mockUser: User = buildUser({
+        id: TEST_USER_ID_50,
+        firstName: "TestUser",
+        lastName: "TestUser",
         email: "test@example.com",
-        role: "user" as const,
-        password: "hashedPassword",
-        unhashedPassword: "",
-        hashPassword: jest.fn(),
-        comparePassword: jest.fn(),
-      } as User;
+        roles: defaultRoles,
+        bookings: [],
+      });
 
       jest.spyOn(usersService, "findById").mockResolvedValue(mockUser);
-      const req = createMockAuthenticatedRequest({ id: "user-uuid-1" });
+      const req = createMockAuthenticatedRequest({ id: TEST_USER_ID_50 });
       const result = await usersController.getProfile(req);
-      expect(result).toEqual(mockUser);
-      expect(usersService.findById).toHaveBeenCalledWith("user-uuid-1");
+      expect(result).toEqual({
+        id: mockUser.id,
+        firstName: mockUser.firstName,
+        lastName: mockUser.lastName,
+        email: mockUser.email,
+        roles: mockUser.roles.map((r) => r.name),
+      });
+      expect(usersService.findById).toHaveBeenCalledWith(TEST_USER_ID_50);
     });
 
     it("should throw NotFoundException if user is not found", async () => {
       jest.spyOn(usersService, "findById").mockRejectedValue(new NotFoundException("User not found"));
-      const req = { user: { id: "nonexistent-id" } } as AuthenticatedRequest;
+      const req = { user: { id: TEST_NON_EXISTENT_USER_ID } } as AuthenticatedRequest;
       await expect(usersController.getProfile(req)).rejects.toThrow(NotFoundException);
-      expect(usersService.findById).toHaveBeenCalledWith("nonexistent-id");
+      expect(usersService.findById).toHaveBeenCalledWith(TEST_NON_EXISTENT_USER_ID);
     });
   });
 
   describe("updateProfile", () => {
     it("should update the user profile and return the updated user", async () => {
-      const mockUpdatedUser = {
-        id: "user-uuid-1",
-        username: "UpdatedUser",
+      const mockUpdatedUser: User = buildUser({
+        id: TEST_USER_ID_50,
+        firstName: "UpdatedUser",
+        lastName: "UpdatedUser",
         email: "updated@example.com",
-        role: "user" as const,
-        password: "hashedPassword",
-        unhashedPassword: "",
-        hashPassword: jest.fn(),
-        comparePassword: jest.fn(),
-      } as User;
-      const updateUserDto: UpdateUserDto = { username: "UpdatedUser", email: "updated@example.com" };
+        roles: defaultRoles,
+        bookings: [],
+      });
+      const updateUserDto: UpdateUserDto = {
+        firstName: "UpdatedUser",
+        lastName: "UpdatedUser",
+        email: "updated@example.com",
+      };
       jest.spyOn(usersService, "update").mockResolvedValue(mockUpdatedUser);
-      const req = { user: { id: "user-uuid-1" } } as AuthenticatedRequest;
+      const req = { user: { id: TEST_USER_ID_50 } } as AuthenticatedRequest;
       const result = await usersController.updateProfile(req, updateUserDto);
-      expect(result).toEqual(mockUpdatedUser);
-      expect(usersService.update).toHaveBeenCalledWith("user-uuid-1", updateUserDto);
+      expect(result).toEqual({
+        id: mockUpdatedUser.id,
+        firstName: mockUpdatedUser.firstName,
+        lastName: mockUpdatedUser.lastName,
+        email: mockUpdatedUser.email,
+        roles: mockUpdatedUser.roles.map((r) => r.name),
+      });
+      expect(usersService.update).toHaveBeenCalledWith(TEST_USER_ID_50, updateUserDto);
     });
 
     it("should throw NotFoundException if user to update is not found", async () => {
-      const updateUserDto: UpdateUserDto = { username: "NonExistentUser" };
+      const updateUserDto: UpdateUserDto = { firstName: "NonExistentUser" };
       jest.spyOn(usersService, "update").mockRejectedValue(new NotFoundException("User not found"));
-      const req = { user: { id: "nonexistent-id" } } as AuthenticatedRequest;
+      const req = { user: { id: TEST_NON_EXISTENT_USER_ID } } as AuthenticatedRequest;
       await expect(usersController.updateProfile(req, updateUserDto)).rejects.toThrow(NotFoundException);
-      expect(usersService.update).toHaveBeenCalledWith("nonexistent-id", updateUserDto);
+      expect(usersService.update).toHaveBeenCalledWith(TEST_NON_EXISTENT_USER_ID, updateUserDto);
     });
 
-    it("should accept partial updates with only username", async () => {
-      const mockUpdatedUser = {
-        id: "user-uuid-1",
-        username: "UpdatedUsername",
+    it("should accept partial updates with only firstName", async () => {
+      const mockUpdatedUser: User = buildUser({
+        id: TEST_USER_ID_50,
+        firstName: "UpdatedFirstName",
+        lastName: "ExistingLastName",
         email: "existing@example.com",
-        role: "user" as const,
-      } as User;
+        roles: defaultRoles,
+        bookings: [],
+      });
 
-      const updateUserDto: UpdateUserDto = { username: "UpdatedUsername" };
+      const updateUserDto: UpdateUserDto = { firstName: "UpdatedFirstName" };
       jest.spyOn(usersService, "update").mockResolvedValue(mockUpdatedUser);
-      const req = { user: { id: "user-uuid-1" } } as AuthenticatedRequest;
+      const req = { user: { id: TEST_USER_ID_50 } } as AuthenticatedRequest;
       const result = await usersController.updateProfile(req, updateUserDto);
-      expect(result).toEqual(mockUpdatedUser);
-      expect(usersService.update).toHaveBeenCalledWith("user-uuid-1", updateUserDto);
+      expect(result).toEqual({
+        id: mockUpdatedUser.id,
+        firstName: mockUpdatedUser.firstName,
+        lastName: mockUpdatedUser.lastName,
+        email: mockUpdatedUser.email,
+        roles: mockUpdatedUser.roles.map((r) => r.name),
+      });
+      expect(usersService.update).toHaveBeenCalledWith(TEST_USER_ID_50, updateUserDto);
+    });
+
+    it("should accept partial updates with only lastName", async () => {
+      const mockUpdatedUser: User = buildUser({
+        id: TEST_USER_ID_50,
+        firstName: "ExistingFirstName",
+        lastName: "UpdatedLastName",
+        email: "existing@example.com",
+        roles: defaultRoles,
+        bookings: [],
+      });
+
+      const updateUserDto: UpdateUserDto = { lastName: "UpdatedLastName" };
+      jest.spyOn(usersService, "update").mockResolvedValue(mockUpdatedUser);
+      const req = { user: { id: TEST_USER_ID_50 } } as AuthenticatedRequest;
+      const result = await usersController.updateProfile(req, updateUserDto);
+      expect(result).toEqual({
+        id: mockUpdatedUser.id,
+        firstName: mockUpdatedUser.firstName,
+        lastName: mockUpdatedUser.lastName,
+        email: mockUpdatedUser.email,
+        roles: mockUpdatedUser.roles.map((r) => r.name),
+      });
+      expect(usersService.update).toHaveBeenCalledWith(TEST_USER_ID_50, updateUserDto);
     });
 
     it("should accept partial updates with only email", async () => {
-      const mockUpdatedUser = {
-        id: "user-uuid-1",
-        username: "ExistingUsername",
+      const mockUpdatedUser: User = buildUser({
+        id: TEST_USER_ID_50,
+        firstName: "ExistingFirstName",
+        lastName: "ExistingLastName",
         email: "updated@example.com",
-        role: "user" as const,
-      } as User;
+        roles: defaultRoles,
+        bookings: [],
+      });
 
       const updateUserDto: UpdateUserDto = { email: "updated@example.com" };
       jest.spyOn(usersService, "update").mockResolvedValue(mockUpdatedUser);
-      const req = { user: { id: "user-uuid-1" } } as AuthenticatedRequest;
+      const req = { user: { id: TEST_USER_ID_50 } } as AuthenticatedRequest;
       const result = await usersController.updateProfile(req, updateUserDto);
-      expect(result).toEqual(mockUpdatedUser);
-      expect(usersService.update).toHaveBeenCalledWith("user-uuid-1", updateUserDto);
+      expect(result).toEqual({
+        id: mockUpdatedUser.id,
+        firstName: mockUpdatedUser.firstName,
+        lastName: mockUpdatedUser.lastName,
+        email: mockUpdatedUser.email,
+        roles: mockUpdatedUser.roles.map((r) => r.name),
+      });
+      expect(usersService.update).toHaveBeenCalledWith(TEST_USER_ID_50, updateUserDto);
     });
   });
 
   describe("deleteAccount", () => {
     it("should delete the user account and return a success message", async () => {
       jest.spyOn(usersService, "delete").mockResolvedValue(undefined);
-      const req = { user: { id: "user-uuid-1" } } as AuthenticatedRequest;
+      const req = { user: { id: TEST_USER_ID_50 } } as AuthenticatedRequest;
       const result = await usersController.deleteAccount(req);
       expect(result).toEqual({ message: "Account deleted successfully." });
-      expect(usersService.delete).toHaveBeenCalledWith("user-uuid-1");
+      expect(usersService.delete).toHaveBeenCalledWith(TEST_USER_ID_50);
     });
 
     it("should throw NotFoundException if user to delete is not found", async () => {
       jest.spyOn(usersService, "delete").mockRejectedValue(new NotFoundException("User not found"));
-      const req = { user: { id: "nonexistent-id" } } as AuthenticatedRequest;
+      const req = { user: { id: TEST_NON_EXISTENT_USER_ID } } as AuthenticatedRequest;
       await expect(usersController.deleteAccount(req)).rejects.toThrow(NotFoundException);
-      expect(usersService.delete).toHaveBeenCalledWith("nonexistent-id");
+      expect(usersService.delete).toHaveBeenCalledWith(TEST_NON_EXISTENT_USER_ID);
     });
   });
 
   describe("getAllUsers", () => {
     it("should return a list of all users", async () => {
-      const mockUsers = [
-        {
-          id: "user-uuid-1",
-          username: "User1",
+      const mockUsers: User[] = [
+        buildUser({
+          id: TEST_USER_ID_50,
+          firstName: "User1",
+          lastName: "User1",
           email: "user1@example.com",
-          role: "user" as const,
-          password: "hashedPassword",
-          unhashedPassword: "",
-          hashPassword: jest.fn(),
-          comparePassword: jest.fn(),
-        } as User,
-        {
-          id: "user-uuid-2",
-          username: "User2",
+          roles: defaultRoles,
+          bookings: [],
+        }),
+        buildUser({
+          id: TEST_USER_ID_51,
+          firstName: "User2",
+          lastName: "User2",
           email: "user2@example.com",
-          role: "admin" as const,
-          password: "hashedPassword",
-          unhashedPassword: "",
-          hashPassword: jest.fn(),
-          comparePassword: jest.fn(),
-        } as User,
+          roles: [{ id: TEST_ADMIN_ROLE_ID, name: "ADMIN" } as Role],
+          bookings: [],
+        }),
       ];
       jest.spyOn(usersService, "findAll").mockResolvedValue(mockUsers);
       const result = await usersController.getAllUsers();
-      expect(result).toEqual(mockUsers);
+      expect(result).toEqual(
+        mockUsers.map((u) => ({
+          id: u.id,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          email: u.email,
+          roles: u.roles.map((r) => r.name),
+        })),
+      );
       expect(usersService.findAll).toHaveBeenCalled();
     });
 
@@ -197,33 +275,30 @@ describe("UsersController", () => {
     });
 
     it("should filter out sensitive information", async () => {
-      const mockUsers = [
-        {
-          id: "user-uuid-1",
-          username: "User1",
+      const mockUsers: User[] = [
+        buildUser({
+          id: TEST_USER_ID_50,
+          firstName: "User1",
+          lastName: "User1",
           email: "user1@example.com",
-          role: "user" as const,
-          password: "hashedPassword", // sensitive
-          unhashedPassword: "plainPassword", // sensitive
-          hashPassword: jest.fn(),
-          comparePassword: jest.fn(),
-        } as User,
+          roles: defaultRoles,
+        }),
       ];
 
       // The service itself should filter sensitive information
       const filteredUsers = mockUsers.map((user) => ({
         id: user.id,
-        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        role: user.role,
+        roles: user.roles.map((r) => r.name),
       }));
 
-      jest.spyOn(usersService, "findAll").mockResolvedValue(filteredUsers as User[]);
+      jest.spyOn(usersService, "findAll").mockResolvedValue(filteredUsers as unknown as User[]);
       const result = await usersController.getAllUsers();
 
       // Ensure password is not in the response
       expect(result[0]).not.toHaveProperty("password");
-      expect(result[0]).not.toHaveProperty("unhashedPassword");
       expect(result).toEqual(filteredUsers);
     });
   });

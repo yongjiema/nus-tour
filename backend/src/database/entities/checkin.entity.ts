@@ -1,13 +1,18 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn, CreateDateColumn } from "typeorm";
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from "typeorm";
 import { Booking } from "./booking.entity";
 
 @Entity()
 export class Checkin {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  @Column({ default: "pending" })
-  status!: string;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @OneToOne(() => Booking, (booking) => booking.checkin)
   @JoinColumn()
@@ -18,4 +23,7 @@ export class Checkin {
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  modifiedAt!: Date;
 }

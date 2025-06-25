@@ -32,14 +32,16 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const payload = { email: user.email, sub: user.id, role: user.role.toUpperCase(), username: user.username };
+    const roles = user.roles.map((r) => r.name.toUpperCase());
+    const payload = { email: user.email, sub: user.id, roles, firstName: user.firstName, lastName: user.lastName };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         email: user.email,
-        username: user.username,
-        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles,
       },
     };
   }
@@ -48,18 +50,21 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     const user = await this.usersService.register({
       email: registerDto.email,
-      username: registerDto.username,
+      firstName: registerDto.firstName,
+      lastName: registerDto.lastName,
       password: hashedPassword,
     });
 
-    const payload = { email: user.email, sub: user.id, role: user.role.toUpperCase(), username: user.username };
+    const roles = user.roles.map((r) => r.name.toUpperCase());
+    const payload = { email: user.email, sub: user.id, roles, firstName: user.firstName, lastName: user.lastName };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         email: user.email,
-        username: user.username,
-        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles,
       },
     };
   }
@@ -97,11 +102,13 @@ export class AuthService {
   }
 
   createToken(user: User): { access_token: string; user: UserResponseDto } {
+    const roles = user.roles.map((r) => r.name.toUpperCase());
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role.toUpperCase(),
-      username: user.username,
+      roles,
+      firstName: user.firstName,
+      lastName: user.lastName,
     };
 
     return {
@@ -109,8 +116,9 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        username: user.username,
-        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles,
       },
     };
   }

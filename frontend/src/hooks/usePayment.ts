@@ -5,7 +5,7 @@ import { useErrorHandler } from "../utils/errorHandler";
 import { useNotification } from "@refinedev/core";
 
 export interface PaymentData {
-  bookingId: string | number;
+  bookingId: string; // UUID
   amount: number;
   paymentMethod?: string;
 }
@@ -21,7 +21,7 @@ export const usePayment = () => {
     setIsProcessing(true);
 
     try {
-      if (!paymentData.bookingId && paymentData.bookingId !== 0) {
+      if (!paymentData.bookingId) {
         throw new Error("Missing booking ID. Please try again or contact support.");
       }
 
@@ -30,35 +30,7 @@ export const usePayment = () => {
         throw new Error("Authentication required");
       }
 
-      // Check localStorage for booking data to get numeric ID
-      let numericId: number | null = null;
-      let uuidBookingId: string | null = null;
-      try {
-        const storedData = localStorage.getItem("booking-data");
-        if (storedData) {
-          const bookingData = JSON.parse(storedData);
-          console.log("Found booking data for payment:", bookingData);
-
-          // First check for UUID bookingId
-          if (bookingData.bookingId && typeof bookingData.bookingId === "string") {
-            uuidBookingId = bookingData.bookingId;
-            console.log("Using UUID bookingId for payment:", uuidBookingId);
-          }
-          // Fallback to numeric ID only if UUID is not available
-          else if (bookingData.id && typeof bookingData.id === "number") {
-            numericId = bookingData.id;
-            console.log("Using numeric ID for payment:", numericId);
-          }
-        }
-      } catch (e) {
-        console.error("Error retrieving booking data:", e);
-      }
-
-      // Always prioritize the UUID over numeric ID
-      // If the original paymentData.bookingId is a string (UUID), use that
-      // Otherwise use the UUID from localStorage, then fallback to the original bookingId
-      const finalBookingId =
-        (typeof paymentData.bookingId === "string" && paymentData.bookingId) || uuidBookingId || paymentData.bookingId;
+      const finalBookingId = paymentData.bookingId;
 
       console.log("Processing payment for bookingId:", finalBookingId);
 
@@ -82,8 +54,7 @@ export const usePayment = () => {
 
       // Store payment confirmation for success page
       // Use the original booking UUID for UI consistency
-      const uuidForDisplay =
-        typeof paymentData.bookingId === "string" ? paymentData.bookingId : String(paymentData.bookingId);
+      const uuidForDisplay = finalBookingId;
 
       localStorage.setItem(
         "payment_confirmation",

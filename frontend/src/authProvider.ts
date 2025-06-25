@@ -66,34 +66,34 @@ export const authProvider = {
       });
 
       if (response.data.access_token) {
-        // Normalize the role to uppercase to match enum
-        const normalizedRole = response.data.user.role.toUpperCase() as UserRole;
+        // Normalize the roles to uppercase to match enum values
+        const normalizedRoles = (response.data.user.roles || []).map((r) => r.toUpperCase()) as UserRole[];
 
+        // Persist auth info
         localStorage.setItem("access_token", response.data.access_token);
-        localStorage.setItem("role", normalizedRole);
+        localStorage.setItem("roles", JSON.stringify(normalizedRoles));
+
         localStorage.setItem("username", response.data.user.username);
         localStorage.setItem("userId", response.data.user.id);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("user", JSON.stringify({ ...response.data.user, roles: normalizedRoles }));
 
         console.log("Stored auth data:", {
           token: response.data.access_token,
-          role: normalizedRole,
+          roles: normalizedRoles,
           username: response.data.user.username,
           userId: response.data.user.id,
-          user: response.data.user,
         });
 
-        if (normalizedRole === UserRole.ADMIN) {
+        if (normalizedRoles.includes(UserRole.ADMIN)) {
           return {
             success: true,
             redirectTo: "/admin",
           };
-        } else {
-          return {
-            success: true,
-            redirectTo: "/user-dashboard",
-          };
         }
+        return {
+          success: true,
+          redirectTo: "/user-dashboard",
+        };
       }
 
       return {
@@ -236,7 +236,7 @@ export const authProvider = {
   getPermissions: async () => {
     try {
       const response = await axiosInstance.get("/auth/profile");
-      return response.data.role;
+      return (response.data.roles ?? [null])[0];
     } catch {
       return null;
     }

@@ -12,25 +12,25 @@ export { UserBuilder, MockRequestBuilder, createMockRepository } from "./test-bu
 // Type exports for test files
 export type { AuthenticatedRequest, User } from "../types/request.types";
 
-// Legacy exports for compatibility
+// Mock logger
 export * from "./mock-logger";
+
+// Test UUIDs for consistent testing
+export * from "./test-uuids";
 
 /**
  * Usage Examples:
  *
  * // Simple mock request
- * const req = createMockAuthenticatedRequest({ id: 'user-123' });
+ * const req = createMockAuthenticatedRequest({ id: '123e4567-e89b-12d3-a456-426614174000' });
  *
  * // Using builders (recommended)
- * const user = UserBuilder.create().withId('user-123').asAdmin().build();
- * const req = MockRequestBuilder.authenticated({ id: 'user-123' });
+ * const user = UserBuilder.create()
+ *   .withId('123e4567-e89b-12d3-a456-426614174000')
+ *   .asAdmin()
+ *   .build();
+ * const req = MockRequestBuilder.authenticated({ id: '123e4567-e89b-12d3-a456-426614174000' });
  *
  * // Mock repository for service tests
- * const mockRepo = MockRepositoryBuilder.forEntity<User>();
- *
- * // Complex test data
- * const booking = BookingBuilder.create()
- *   .withId(123)
- *   .withStatus(BookingLifecycleStatus.COMPLETED)
- *   .build();
+ * const mockRepo = createMockRepository<User>();
  */

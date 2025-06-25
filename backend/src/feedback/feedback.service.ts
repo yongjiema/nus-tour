@@ -34,7 +34,7 @@ export class FeedbackService {
     });
 
     // Mark the booking as having feedback
-    await this.bookingRepository.update(createFeedbackDto.bookingId, { hasFeedback: true });
+    await this.bookingRepository.update({ id: createFeedbackDto.bookingId }, { hasFeedback: true });
 
     return this.feedbackRepository.save(feedback);
   }
@@ -47,15 +47,15 @@ export class FeedbackService {
     });
   }
 
-  async findOne(id: number): Promise<Feedback | null> {
+  async findOne(id: string): Promise<Feedback | null> {
     return this.feedbackRepository.findOne({
       where: { id },
       relations: ["user", "booking"],
     });
   }
 
-  async update(id: number, updateData: Partial<Feedback>): Promise<Feedback> {
-    await this.feedbackRepository.update(id, updateData);
+  async update(id: string, updateData: Partial<Feedback>): Promise<Feedback> {
+    await this.feedbackRepository.update({ id }, updateData);
     const feedback = await this.findOne(id);
     if (feedback == null) {
       throw new NotFoundException(`Feedback with ID ${id} not found`);
@@ -63,8 +63,8 @@ export class FeedbackService {
     return feedback;
   }
 
-  async remove(id: number): Promise<void> {
-    await this.feedbackRepository.delete(id);
+  async remove(id: string): Promise<void> {
+    await this.feedbackRepository.delete({ id });
   }
 
   async count(): Promise<number> {
