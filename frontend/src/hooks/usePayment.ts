@@ -1,8 +1,7 @@
-import { useState } from "react";
-import { useCustomMutation } from "@refinedev/core";
+import { useCustomMutation, useNotification } from "@refinedev/core";
 import { useNavigate } from "react-router-dom";
-import { useErrorHandler } from "../utils/errorHandler";
-import { useNotification } from "@refinedev/core";
+import { logger } from "../utils/logger";
+import { handleRefineError } from "../utils/errorHandler";
 
 export interface PaymentData {
   bookingId: string; // UUID
@@ -10,81 +9,71 @@ export interface PaymentData {
   paymentMethod?: string;
 }
 
+interface PaymentResponse {
+  id: string;
+  transactionId: string;
+}
+
 export const usePayment = () => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { mutate } = useCustomMutation();
   const navigate = useNavigate();
-  const { handleError } = useErrorHandler();
   const { open } = useNotification();
 
-  const processPayment = async (paymentData: PaymentData) => {
-    setIsProcessing(true);
+  // Use Refine's custom mutation with built-in error handling
+  const { mutate, isPending } = useCustomMutation<PaymentResponse>();
 
-    try {
-      if (!paymentData.bookingId) {
-        throw new Error("Missing booking ID. Please try again or contact support.");
-      }
+  const processPayment = (paymentData: PaymentData): void => {
+    // Validation
+    if (!paymentData.bookingId) {
+      open?.({
+        message: "Missing booking ID. Please try again or contact support.",
+        type: "error",
+      });
+      return;
+    }
 
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        throw new Error("Authentication required");
-      }
+    logger.debug("Processing payment for bookingId:", { bookingId: paymentData.bookingId });
 
-      const finalBookingId = paymentData.bookingId;
-
-      console.log("Processing payment for bookingId:", finalBookingId);
-
-      const response = await mutate({
+    mutate(
+      {
         url: "payments",
         method: "post",
         values: {
-          bookingId: finalBookingId,
+          bookingId: paymentData.bookingId,
           amount: paymentData.amount,
-          paymentMethod: paymentData.paymentMethod || "paynow",
+          paymentMethod: paymentData.paymentMethod ?? "paynow",
         },
-        meta: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      },
+      {
+        onSuccess: (response) => {
+          // Store payment confirmation for success page
+          localStorage.setItem(
+            "payment_confirmation",
+            JSON.stringify({
+              bookingId: paymentData.bookingId,
+              amount: paymentData.amount,
+              date: new Date().toISOString(),
+              transactionId: response.data.transactionId,
+            }),
+          );
+
+          open?.({
+            message: "Payment successful",
+            type: "success",
+          });
+
+          // Navigate to success page
+          void navigate(`/payment/success/${paymentData.bookingId}`);
         },
-      });
-
-      // Return just the successful status - we don't need the data
-      const result = response !== undefined;
-
-      // Store payment confirmation for success page
-      // Use the original booking UUID for UI consistency
-      const uuidForDisplay = finalBookingId;
-
-      localStorage.setItem(
-        "payment_confirmation",
-        JSON.stringify({
-          bookingId: uuidForDisplay,
-          amount: paymentData.amount,
-          date: new Date().toISOString(),
-          transactionId: `TXN-${Date.now()}`,
-        }),
-      );
-
-      open?.({
-        message: "Payment successful",
-        type: "success",
-      });
-
-      // Navigate to success page with UUID for display
-      navigate(`/payment/success/${uuidForDisplay}`);
-
-      return result;
-    } catch (error) {
-      handleError(error);
-      return false;
-    } finally {
-      setIsProcessing(false);
-    }
+        onError: (error) => {
+          // Use the enhanced error handler
+          handleRefineError(error, open);
+        },
+      },
+    );
   };
 
   return {
     processPayment,
-    isProcessing,
+    isProcessing: isPending,
   };
 };

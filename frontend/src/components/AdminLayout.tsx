@@ -1,7 +1,10 @@
-import React, { ReactNode } from "react";
+import React from "react";
+import type { ReactNode } from "react";
 import { Box, Container, AppBar, Toolbar, Typography, Button } from "@mui/material";
 import LogoutButton from "./LogoutButton";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
+import { getThemeColor } from "../theme/constants";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -10,20 +13,23 @@ interface AdminLayoutProps {
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const theme = useTheme();
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       {/* Admin Header with Public Header styling */}
-      <AppBar position="static" style={{ backgroundColor: "#002147" }}>
+      <AppBar position="static" style={{ backgroundColor: getThemeColor(theme, "NUS_BLUE") }}>
         <Container maxWidth="lg">
           <Toolbar>
             <Typography
               variant="h6"
               component="div"
               sx={{ flexGrow: 1 }}
-              onClick={() => navigate("/admin")}
+              onClick={() => {
+                void navigate("/admin");
+              }}
               style={{
-                color: "#FF6600",
+                color: getThemeColor(theme, "NUS_ORANGE"),
                 cursor: "pointer",
                 fontWeight: "bold",
               }}

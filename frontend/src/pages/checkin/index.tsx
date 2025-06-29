@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { Container, Typography, TextField, Box, Alert } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useCustomMutation, useNotification } from "@refinedev/core";
-import { useErrorHandler } from "../../utils/errorHandler";
 import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
+import { useParams, useNavigate } from "react-router-dom";
+import { useOne } from "@refinedev/core";
+import { handleRefineError } from "../../utils/errorHandler";
 
 // Styled components for consistent UI
-const FormContainer = styled(Box)(({ theme }) => ({
+const _FormContainer = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(2),
 }));
 
@@ -19,44 +21,66 @@ interface CheckinFormData {
   email: string;
 }
 
-const Checkin: React.FC = () => {
-  const [formData, setFormData] = useState<CheckinFormData>({ bookingId: "", email: "" });
-  const { open } = useNotification();
-  const { handleError } = useErrorHandler();
+const CheckInPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const _navigate = useNavigate();
+  const [checkInData, setCheckInData] = useState<CheckinFormData>({ bookingId: "", email: "" });
+  const [error, setError] = useState<string | null>(null);
 
-  // Use Refine's custom mutation hook instead of direct axios
-  const { mutate, isLoading } = useCustomMutation();
+  const {
+    data: _bookingData,
+    isLoading: _bookingLoading,
+    error: _fetchError,
+  } = useOne({
+    resource: "bookings",
+    id: id ?? "",
+    queryOptions: {
+      enabled: !!id,
+    },
+  });
+
+  const { open } = useNotification();
+
+  // Use Refine's custom mutation hook with built-in error handling
+  const { mutate, isPending } = useCustomMutation();
   const [checkinSuccess, setCheckinSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
+    setCheckInData({
+      ...checkInData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleCheckin = async (e: React.FormEvent) => {
+  const handleCheckin = (e: React.FormEvent) => {
     e.preventDefault();
     setCheckinSuccess(false);
+    setError(null);
 
-    try {
-      await mutate({
+    mutate(
+      {
         url: "checkins",
         method: "post",
-        values: formData,
-      });
+        values: checkInData,
+      },
+      {
+        onSuccess: () => {
+          setCheckinSuccess(true);
+          setCheckInData({ bookingId: "", email: "" });
 
-      setCheckinSuccess(true);
-      setFormData({ bookingId: "", email: "" });
-
-      open?.({
-        message: "Check-in successful!",
-        type: "success",
-        description: "Your attendance has been recorded.",
-      });
-    } catch (error) {
-      handleError(error);
-    }
+          open?.({
+            message: "Check-in successful!",
+            type: "success",
+            description: "Your attendance has been recorded.",
+          });
+        },
+        onError: (error) => {
+          // Use the enhanced error handler
+          const message = handleRefineError(error, open);
+          setError(message);
+        },
+      },
+    );
   };
 
   return (
@@ -74,12 +98,18 @@ const Checkin: React.FC = () => {
           <SuccessAlert severity="success">Check-in successful! Thank you for joining our tour.</SuccessAlert>
         )}
 
-        <FormContainer component="form" onSubmit={handleCheckin}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleCheckin}>
           <Box mb={2}>
             <TextField
               label="Booking ID"
               name="bookingId"
-              value={formData.bookingId}
+              value={checkInData.bookingId}
               onChange={handleChange}
               fullWidth
               required
@@ -92,7 +122,7 @@ const Checkin: React.FC = () => {
               label="Email Address"
               name="email"
               type="email"
-              value={formData.email}
+              value={checkInData.email}
               onChange={handleChange}
               fullWidth
               required
@@ -100,13 +130,13 @@ const Checkin: React.FC = () => {
             />
           </Box>
 
-          <SubmitButton type="submit" variant="contained" color="primary" fullWidth disabled={isLoading}>
-            {isLoading ? "Processing..." : "Check-In"}
+          <SubmitButton type="submit" variant="contained" color="primary" fullWidth disabled={isPending}>
+            {isPending ? "Processing..." : "Check-In"}
           </SubmitButton>
-        </FormContainer>
+        </Box>
       </AuthPaper>
     </Container>
   );
 };
 
-export default Checkin;
+export default CheckInPage;

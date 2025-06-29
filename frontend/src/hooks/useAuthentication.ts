@@ -25,23 +25,23 @@ export const useAuthentication = () => {
         // Try getting from authProvider first
         const result = await authProvider.check();
 
-        if (result.authenticated && result.id) {
+        if (result.authenticated && "id" in result && result.id) {
           setUserId(result.id);
         } else if (storedUserId && storedRole === "user") {
           setUserId(storedUserId);
         } else {
           setAuthError("Authentication failed. Please log in again.");
-          setTimeout(() => navigate("/login"), 2000);
+          void setTimeout(() => void navigate("/login"), 2000);
         }
-      } catch (error) {
+      } catch {
         setAuthError("Authentication error. Please try again.");
-        setTimeout(() => navigate("/login"), 2000);
+        void setTimeout(() => void navigate("/login"), 2000);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAuth();
+    void checkAuth();
   }, [navigate]);
 
   return { userId, isLoading, authError };

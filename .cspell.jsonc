@@ -1,0 +1,11 @@
+// https://github.com/streetsidesoftware/vscode-spell-checker/blob/main/packages/client/src/defaultConfigFilenames.mts#L7
+{
+  "words": [
+    "checkin",
+    "checkins",
+    "ormconfig",
+    "paynow",
+    "refinedev",
+    "timeslot"
+  ],
+}

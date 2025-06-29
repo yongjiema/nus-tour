@@ -26,7 +26,7 @@ describe("AuthService", () => {
     email: "test@example.com",
     firstName: "Test",
     lastName: "User",
-    password: "hashedpassword",
+    password: "hashed-password",
     roles: [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role],
     emailVerified: false,
     isActive: true,
@@ -126,7 +126,7 @@ describe("AuthService", () => {
     });
 
     it("should throw UnauthorizedException when credentials are invalid", async () => {
-      const loginDto = { email: "test@example.com", password: "wrongpassword" };
+      const loginDto = { email: "test@example.com", password: "wrong-password" };
 
       const validateUserSpy = jest.spyOn(service, "validateUser").mockResolvedValue(null);
 

@@ -1,5 +1,30 @@
 import axios, { AxiosError } from "axios";
 
+/**
+ * Error Handling for Refine Applications:
+ *
+ * 1. **Use Refine's Built-in Error Handling** for data operations (CRUD)
+ * 2. **Use Custom Error Handler** for business-specific errors
+ * 3. **Centralized Error Messages** for consistency
+ * 4. **Type-Safe Error Handling** with proper TypeScript support
+ *
+ * Usage Examples:
+ *
+ * // For Refine hooks (automatic error handling)
+ * const { data, error } = useList({ resource: "bookings" });
+ *
+ * // For custom mutations with error handling
+ * const { mutate } = useCustomMutation({
+ *   onError: (error) => handleRefineError(error, open),
+ * });
+ *
+ * // For manual operations
+ * const result = await withErrorHandling(
+ *   () => someAsyncOperation(),
+ *   (error) => setError(error)
+ * );
+ */
+
 interface ApiErrorResponse {
   message?: string | string[];
   error?: string;
@@ -10,103 +35,163 @@ interface ApiErrorResponse {
   status?: number;
 }
 
+// Business-specific error codes
+export const BUSINESS_ERROR_CODES = {
+  BOOKING_CONFLICT: "BOOKING_CONFLICT",
+  BOOKING_LIMIT_EXCEEDED: "BOOKING_LIMIT_EXCEEDED",
+  PAYMENT_FAILED: "PAYMENT_FAILED",
+  PAYMENT_EXPIRED: "PAYMENT_EXPIRED",
+  EMAIL_ALREADY_EXISTS: "EMAIL_ALREADY_EXISTS",
+} as const;
+
+// Enhanced error message mapping
+const ERROR_MESSAGES = {
+  // HTTP Status Codes
+  400: "Invalid request. Please check your input.",
+  401: "Your session has expired. Please log in again.",
+  403: "You don't have permission to perform this action.",
+  404: "The requested resource could not be found.",
+  409: "Email is already registered. Please use a different email.",
+  422: "Validation error. Please check your information.",
+  500: "Server error. Please try again later.",
+
+  // Business Error Codes
+  [BUSINESS_ERROR_CODES.BOOKING_CONFLICT]: "This time slot is no longer available. Please select another time.",
+  [BUSINESS_ERROR_CODES.BOOKING_LIMIT_EXCEEDED]: "You've reached the maximum number of active bookings allowed.",
+  [BUSINESS_ERROR_CODES.PAYMENT_FAILED]:
+    "Payment processing failed. Please try again or use a different payment method.",
+  [BUSINESS_ERROR_CODES.PAYMENT_EXPIRED]: "Your payment session has expired. Please start a new booking.",
+  [BUSINESS_ERROR_CODES.EMAIL_ALREADY_EXISTS]: "Email is already registered. Please use a different email.",
+
+  // Network Errors
+  ECONNABORTED: "Request timed out. Please check your connection.",
+  NETWORK_ERROR: "Network error. Please check your internet connection.",
+
+  // Default
+  UNKNOWN: "An unexpected error occurred.",
+} as const;
+
+/**
+ * Extracts a user-friendly error message from any error object
+ * @param error - The error object to process
+ * @returns A user-friendly error message
+ */
 export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiErrorResponse>;
+    const status = axiosError.response?.status;
+    const resData = axiosError.response?.data;
 
-    // Handle backend validation errors
-    if (axiosError.response?.status === 400) {
-      const errorData = axiosError.response.data;
-      if (Array.isArray(errorData.message)) {
-        return errorData.message.join(", ");
-      }
-      return errorData.message || "Validation error. Please check your input.";
+    // Business-specific error codes
+    if (resData?.error && resData.error in BUSINESS_ERROR_CODES) {
+      return ERROR_MESSAGES[resData.error as keyof typeof BUSINESS_ERROR_CODES];
     }
 
-    // Handle authorization errors
-    if (axiosError.response?.status === 401) {
-      return "Your session has expired. Please log in again.";
+    // HTTP status code mapping
+    if (status && status in ERROR_MESSAGES) {
+      return ERROR_MESSAGES[status as keyof typeof ERROR_MESSAGES];
     }
 
-    // Handle forbidden errors
-    if (axiosError.response?.status === 403) {
-      return "You don't have permission to perform this action.";
+    // Validation errors (array of messages)
+    if (status === 400 && resData?.message) {
+      return Array.isArray(resData.message) ? resData.message.join(", ") : resData.message;
     }
 
-    // Handle not found errors
-    if (axiosError.response?.status === 404) {
-      return "The requested resource could not be found.";
-    }
-
-    // Handle server errors
-    if (axiosError.response?.status && axiosError.response.status >= 500) {
-      return "Server error. Please try again later.";
-    }
-
-    // Network errors
+    // Network timeout
     if (axiosError.code === "ECONNABORTED") {
-      return "Request timed out. Please check your connection.";
+      return ERROR_MESSAGES.ECONNABORTED;
     }
 
-    if (error.message) {
-      return error.message;
+    // Fallback to Axios message
+    if (axiosError.message) {
+      return axiosError.message;
     }
   }
 
-  // Handle non-axios errors
+  if (error && typeof error === "object" && "message" in error && "status" in error) {
+    const httpError = error as { message?: string };
+    return httpError.message ?? ERROR_MESSAGES.UNKNOWN;
+  }
+
   if (error instanceof Error) {
     return error.message;
   }
 
-  return "An unexpected error occurred.";
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return ERROR_MESSAGES.UNKNOWN;
 };
 
-export const handleSubmissionError = (error: unknown, setError: (error: string) => void) => {
+/**
+ * Enhanced error handler for Refine components
+ * @returns Object with handleError function
+ */
+export const useRefineErrorHandler = () => {
+  const handleError = (error: unknown): string => {
+    console.error("API Error:", error);
+    return getErrorMessage(error);
+  };
+
+  return { handleError };
+};
+
+// Legacy hook for backward compatibility
+export const useErrorHandler = useRefineErrorHandler;
+
+/**
+ * Utility for handling Refine mutation errors with notifications
+ * @param error - The error object
+ * @param open - Refine's notification function
+ * @returns The error message
+ */
+export const handleRefineError = (
+  error: unknown,
+  open?: (params: { message: string; type: "error" | "success" | "progress" }) => void,
+): string => {
+  const message = getErrorMessage(error);
+
+  if (open) {
+    open({
+      message,
+      type: "error",
+    });
+  }
+
+  console.error("Refine Error:", error);
+  return message;
+};
+
+/**
+ * Utility for form submission errors
+ * @param error - The error object
+ * @param setError - Function to set form error state
+ */
+export const handleSubmissionError = (error: unknown, setError: (error: string) => void): void => {
   const message = getErrorMessage(error);
   setError(message);
   console.error("Form submission error:", error);
 };
 
-export const useErrorHandler = () => {
-  const handleError = (error: unknown) => {
-    console.error("API Error:", error);
-
-    if (typeof error === "object" && error !== null) {
-      const err = error as ApiErrorResponse;
-      const message = err.message || "An unexpected error occurred";
-
-      // Handle fetch errors
-      if (err.status === 409) {
-        return "Email is already registered. Please use a different email.";
-      }
-
-      if (err.status === 400) {
-        return "Invalid input. Please check your information.";
-      }
-
-      // Handle booking-specific errors
-      if (err.data?.error === "BOOKING_CONFLICT") {
-        return "This time slot is no longer available. Please select another time.";
-      }
-
-      if (err.data?.error === "BOOKING_LIMIT_EXCEEDED") {
-        return "You've reached the maximum number of active bookings allowed.";
-      }
-
-      // Handle payment-specific errors
-      if (err.data?.error === "PAYMENT_FAILED") {
-        return "Payment processing failed. Please try again or use a different payment method.";
-      }
-
-      if (err.data?.error === "PAYMENT_EXPIRED") {
-        return "Your payment session has expired. Please start a new booking.";
-      }
-
-      return Array.isArray(message) ? message.join(" ") : message;
+/**
+ * Utility for async operations with error handling
+ * @param operation - The async operation to execute
+ * @param onError - Optional callback for error handling
+ * @returns Promise that resolves to the operation result or null on error
+ */
+export const withErrorHandling = async <T>(
+  operation: () => Promise<T>,
+  onError?: (error: string) => void,
+): Promise<T | null> => {
+  try {
+    return await operation();
+  } catch (error) {
+    const message = getErrorMessage(error);
+    if (onError) {
+      onError(message);
     }
-
-    return "An unexpected error occurred";
-  };
-
-  return { handleError };
+    console.error("Operation failed:", error);
+    return null;
+  }
 };

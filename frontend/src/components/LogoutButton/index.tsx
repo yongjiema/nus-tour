@@ -1,17 +1,16 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
+import { useLogout } from "@refinedev/core";
 
-const LogoutButton = () => {
-  const navigate = useNavigate();
+const LogoutButton: React.FC = () => {
+  const { mutate: logout } = useLogout();
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    navigate("/login");
+    logout();
   };
 
   return (
-    <Button onClick={handleLogout} variant="contained" color="secondary">
+    <Button variant="outlined" onClick={handleLogout}>
       Logout
     </Button>
   );

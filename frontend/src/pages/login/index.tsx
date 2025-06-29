@@ -1,16 +1,22 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLogin, useNotification } from "@refinedev/core";
-import { TextField, Alert, Container, Grid } from "@mui/material";
+import { TextField, Container, Grid2 as Grid, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
-import { useErrorHandler } from "../../utils/errorHandler";
 
 interface LoginFormInputs {
   email: string;
   password: string;
+}
+
+interface User {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  roles?: string[];
 }
 
 // Validation schema for login form
@@ -20,11 +26,10 @@ const validationSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { handleError } = useErrorHandler();
   const { mutateAsync: login } = useLogin();
   const { open } = useNotification();
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -34,31 +39,55 @@ const Login: React.FC = () => {
     resolver: yupResolver(validationSchema),
   });
 
-  const onSubmit = async (data: LoginFormInputs) => {
+  const onSubmit = async (data: LoginFormInputs): Promise<void> => {
     setError(null);
 
     try {
       const response = await login(data);
 
       if (response.success) {
-        const role = localStorage.getItem("role");
-        if (role === "admin") {
-          navigate("/admin");
-        } else if (role === "user") {
-          navigate("/user-dashboard");
-        } else {
-          setError("Invalid user role");
-        }
+        // Get user data from localStorage after successful login
+        const storedUser = localStorage.getItem("user");
+        const user = storedUser ? (JSON.parse(storedUser) as User) : null;
 
-        const username = localStorage.getItem("username");
+        // Create display name from user data
+        const displayName = user
+          ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email?.split("@")[0]
+          : null;
+
+        // Show welcome message with fallback
         open?.({
-          message: `Welcome back, ${username}!`,
+          message: `Welcome back${displayName ? `, ${displayName}` : ""}!`,
           type: "success",
         });
+
+        // Navigate based on role
+        const roles = user?.roles;
+        if (roles?.includes("ADMIN")) {
+          await navigate("/admin");
+        } else if (roles?.includes("USER")) {
+          await navigate("/dashboard/user");
+        } else {
+          open?.({
+            message: "Invalid user role",
+            type: "error",
+          });
+        }
       }
-    } catch (err) {
-      setError(handleError(err));
+    } catch (err: unknown) {
+      // Handle error and display it in the UI
+      const errorMessage = err instanceof Error ? err.message : "Login failed. Please try again.";
+      setError(errorMessage);
+      // Only log errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("Login error:", err);
+      }
     }
+  };
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void handleSubmit(onSubmit)(event);
   };
 
   return (
@@ -68,13 +97,11 @@ const Login: React.FC = () => {
           Login
         </PageTitle>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form onSubmit={handleFormSubmit} noValidate>
           <Grid container spacing={3}>
-            <Grid item xs={12}>
-              {error && <Alert severity="error">{error}</Alert>}
-            </Grid>
+            <Grid size={12}>{error && <Alert severity="error">{error}</Alert>}</Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 label="Email"
                 type="email"
@@ -88,7 +115,7 @@ const Login: React.FC = () => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 label="Password"
                 type="password"
@@ -102,7 +129,7 @@ const Login: React.FC = () => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <SubmitButton type="submit" variant="contained" fullWidth disabled={isSubmitting}>
                 {isSubmitting ? "Logging in..." : "Login"}
               </SubmitButton>

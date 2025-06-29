@@ -45,8 +45,8 @@ To set up and run the web application locally, follow these steps:
 
 1. **Set Up Environment Variables**: Ensure `.env` files are correctly configured in both the backend and frontend directories.
 2. **Navigate to the project directory**: `cd nus-tour`
-3. **Install dependencies**: `npm run install:all`
-4. **Start the application**: `npm run start:dev:all`
+3. **Install dependencies**: `npm run install`
+4. **Start the application**: `npm run start:dev`
 
 The application will be running at:
 

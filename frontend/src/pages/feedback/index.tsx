@@ -1,88 +1,117 @@
-import React from "react";
-import { useForm } from "@refinedev/react-hook-form";
-import { Box, Button, TextField, Typography, Rating, FormControlLabel, Checkbox, Paper } from "@mui/material";
-import { useCreate } from "@refinedev/core";
-
-interface FeedbackFormProps {
-  bookingId: string;
-  onSuccess?: () => void;
-}
+import React, { useState } from "react";
+import { Container, Typography, TextField, Button, Paper, Box, Rating } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { useCustomMutation, useNotification } from "@refinedev/core";
+import { handleRefineError } from "../../utils/errorHandler";
 
 interface FeedbackFormData {
   bookingId: string;
   rating: number;
-  comments: string;
-  isPublic: boolean;
+  comment: string;
 }
 
-const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-  } = useForm<FeedbackFormData>({
-    defaultValues: {
-      bookingId,
-      rating: 5,
-      comments: "",
-      isPublic: true,
-    },
+const Feedback: React.FC = () => {
+  const navigate = useNavigate();
+  const { open } = useNotification();
+  const [formData, setFormData] = useState<FeedbackFormData>({
+    bookingId: "",
+    rating: 0,
+    comment: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { mutate, isLoading } = useCreate();
-  const rating = watch("rating");
+  const { mutate: submitFeedback } = useCustomMutation();
 
-  const onSubmit = (data: FeedbackFormData) => {
-    mutate(
-      {
-        resource: "bookings",
-        values: data,
-      },
-      {
-        onSuccess: () => {
-          if (onSuccess) onSuccess();
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      submitFeedback(
+        {
+          url: "feedback",
+          method: "post",
+          values: formData,
         },
-      },
-    );
+        {
+          onSuccess: () => {
+            open?.({
+              message: "Feedback submitted successfully!",
+              type: "success",
+            });
+            void navigate("/dashboard/user");
+          },
+          onError: (error) => {
+            handleRefineError(error, open);
+          },
+        },
+      );
+    } catch (error) {
+      handleRefineError(error, open);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof FeedbackFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: event.target.value,
+    }));
+  };
+
+  const handleRatingChange = (_event: React.SyntheticEvent, value: number | null) => {
+    setFormData((prev) => ({
+      ...prev,
+      rating: value ?? 0,
+    }));
   };
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
-      <Typography variant="h6" gutterBottom>
-        Share Your Tour Experience
-      </Typography>
-      <form onSubmit={handleSubmit((data) => onSubmit(data as FeedbackFormData))}>
-        <Box mb={2}>
-          <Typography component="legend">Rating</Typography>
-          <Rating name="rating" value={rating} onChange={(_, value) => setValue("rating", value || 0)} size="large" />
-        </Box>
+    <Container maxWidth="sm" sx={{ mt: 4 }}>
+      <Paper sx={{ p: 4 }}>
+        <Typography variant="h4" gutterBottom align="center">
+          Submit Feedback
+        </Typography>
+        <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
+          We value your feedback! Please share your experience with us.
+        </Typography>
 
-        <TextField
-          {...register("comments", { required: "Please share your thoughts" })}
-          label="Comments"
-          multiline
-          rows={4}
-          fullWidth
-          error={!!errors.comments}
-          helperText={errors.comments?.message?.toString()}
-          margin="normal"
-        />
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <TextField
+            fullWidth
+            label="Booking ID"
+            value={formData.bookingId}
+            onChange={handleInputChange("bookingId")}
+            margin="normal"
+            required
+            variant="outlined"
+          />
 
-        <FormControlLabel
-          control={<Checkbox defaultChecked {...register("isPublic")} />}
-          label="Make my review public"
-        />
+          <Box sx={{ mt: 2, mb: 2 }}>
+            <Typography component="legend">Rating</Typography>
+            <Rating name="rating" value={formData.rating} onChange={handleRatingChange} size="large" />
+          </Box>
 
-        <Box mt={2}>
-          <Button type="submit" variant="contained" color="primary" disabled={isLoading}>
-            Submit Feedback
+          <TextField
+            fullWidth
+            label="Comments"
+            multiline
+            rows={4}
+            value={formData.comment}
+            onChange={handleInputChange("comment")}
+            margin="normal"
+            variant="outlined"
+            placeholder="Tell us about your experience..."
+          />
+
+          <Button type="submit" fullWidth variant="contained" size="large" disabled={isSubmitting} sx={{ mt: 3 }}>
+            {isSubmitting ? "Submitting..." : "Submit Feedback"}
           </Button>
         </Box>
-      </form>
-    </Paper>
+      </Paper>
+    </Container>
   );
 };
 
-export default FeedbackForm;
+export default Feedback;

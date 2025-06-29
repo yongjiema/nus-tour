@@ -30,9 +30,9 @@ describe("BookingService", () => {
     ({
       id: TEST_BOOKING_ID_30,
       email: "mock@example.com",
-      username: "Mock User",
-      password: "hashed",
-      unhashedPassword: "password",
+      firstName: "Mock",
+      lastName: "User",
+      password: "hashed-password",
       roles: [],
       bookings: [],
       comparePassword: jest.fn(),
@@ -62,7 +62,8 @@ describe("BookingService", () => {
       user: {
         id: TEST_USER_ID_1,
         email: "test1@example.com",
-        username: "Test1",
+        firstName: "Test",
+        lastName: "1",
       } as unknown as User,
     }),
     createMockBooking({
@@ -73,7 +74,8 @@ describe("BookingService", () => {
       user: {
         id: TEST_USER_ID_2,
         email: "test2@example.com",
-        username: "Test2",
+        firstName: "Test",
+        lastName: "2",
       } as unknown as User,
     }),
     createMockBooking({
@@ -83,7 +85,8 @@ describe("BookingService", () => {
       user: {
         id: TEST_BOOKING_ID_3,
         email: "test1@example.com",
-        username: "Test3",
+        firstName: "Test",
+        lastName: "3",
       } as unknown as User,
     }),
   ];
@@ -106,7 +109,8 @@ describe("BookingService", () => {
           user: {
             id: TEST_BOOKING_ID_30,
             email: "creator@example.com",
-            username: "Creator",
+            firstName: "Creator",
+            lastName: "User",
           } as unknown as User,
           generateBookingId: jest.fn(),
         }) as unknown as Booking,
@@ -290,7 +294,8 @@ describe("BookingService", () => {
         user: {
           id: TEST_BOOKING_ID_30,
           email: "creator@example.com",
-          username: "Creator",
+          firstName: "Creator",
+          lastName: "User",
         } as unknown as User,
         generateBookingId: jest.fn(),
       } as unknown as Booking;

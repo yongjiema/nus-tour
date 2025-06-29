@@ -1,22 +1,29 @@
 import React from "react";
 import { AppBar, Toolbar, Typography, Box, Container } from "@mui/material";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import LoginButton from "../LoginButton";
+import { useTheme } from "@mui/material/styles";
+import { getThemeColor } from "../../theme/constants";
 
 export const PublicHeader: React.FC = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
+
   return (
     <Box>
       {/* Public Header */}
-      <AppBar position="static" style={{ backgroundColor: "#002147" }}>
+      <AppBar position="static" style={{ backgroundColor: getThemeColor(theme, "NUS_BLUE") }}>
         <Container maxWidth="lg">
           <Toolbar>
             <Typography
               variant="h6"
               component="div"
               sx={{ flexGrow: 1 }}
-              onClick={() => (window.location.href = "/")}
+              onClick={() => {
+                void navigate("/");
+              }}
               style={{
-                color: "#FF6600",
+                color: getThemeColor(theme, "NUS_ORANGE"),
                 cursor: "pointer",
                 fontWeight: "bold",
               }}

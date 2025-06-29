@@ -13,7 +13,6 @@ export function buildTypeOrmOptions(): DataSourceOptions {
     database: process.env.DB_NAME ?? "nus_tour",
     entities: ENTITIES,
     synchronize: process.env.NODE_ENV !== "production",
-    dropSchema: process.env.NODE_ENV !== "production",
     ssl: sslEnabled ? { rejectUnauthorized: false } : undefined,
     extra: sslEnabled ? { sslmode: "require" } : undefined,
   } as DataSourceOptions;

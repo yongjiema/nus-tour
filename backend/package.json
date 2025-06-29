@@ -8,12 +8,12 @@
   "scripts": {
     "prebuild": "shx rm -rf ./dist/",
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "check": "npm run lint && npm test",
+    "format": "npm run prettier:fix",
     "lint": "npm run tsc:check && npm run prettier:check && npm run eslint",
     "lint:fix": "npm run prettier:fix && npm run eslint:fix",
     "tsc:check": "tsc --noEmit",
