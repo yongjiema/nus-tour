@@ -1,74 +1,65 @@
-import DarkModeOutlined from "@mui/icons-material/DarkModeOutlined";
-import LightModeOutlined from "@mui/icons-material/LightModeOutlined";
-import AppBar from "@mui/material/AppBar";
-import Avatar from "@mui/material/Avatar";
-import IconButton from "@mui/material/IconButton";
-import Stack from "@mui/material/Stack";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import MenuItem from "@mui/material/MenuItem";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import { Link } from "react-router-dom";
+import { AppBar, Toolbar, Typography, Avatar, Box } from "@mui/material";
+import { useContext, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { useGetIdentity } from "@refinedev/core";
-import { HamburgerMenu, RefineThemedLayoutV2HeaderProps } from "@refinedev/mui";
-import React, { useContext } from "react";
 import { ColorModeContext } from "../../contexts/color-mode";
+import type { AuthUser } from "../../types/auth.types";
 
-type IUser = {
-  id: number;
-  name: string;
-  avatar: string;
-};
+interface RefineLayoutHeaderProps {
+  sticky?: boolean;
+}
 
-export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({ sticky = true }) => {
-  const { mode, setMode } = useContext(ColorModeContext);
+const RefineLayoutHeader: React.FC<RefineLayoutHeaderProps> = ({ sticky = true }) => {
+  const { mode: _mode, setMode: _setMode } = useContext(ColorModeContext);
 
-  const { data: user } = useGetIdentity<IUser>();
+  const { pathname } = useLocation();
+  const { data: user } = useGetIdentity<AuthUser>();
+
+  const shouldRenderHeader = useMemo(() => {
+    return !["/login", "/register"].includes(pathname);
+  }, [pathname]);
+
+  const showColorModeToggle = useMemo(() => {
+    return !["/login", "/register"].includes(pathname);
+  }, [pathname]);
+
+  // Create display name from firstName and lastName
+  const displayName = useMemo(() => {
+    if (!user) return "User";
+    const firstName = user.firstName ?? "";
+    const lastName = user.lastName ?? "";
+    const fullName = [firstName, lastName].filter(Boolean).join(" ");
+    return fullName || user.email.split("@")[0] || "User";
+  }, [user]);
+
+  if (!shouldRenderHeader) {
+    return null;
+  }
 
   return (
-    <AppBar position={sticky ? "sticky" : "relative"}>
+    <AppBar position={sticky ? "sticky" : "static"} elevation={0} sx={{ bgcolor: "background.paper" }}>
       <Toolbar>
-        <Stack direction="row" width="100%" justifyContent="flex-end" alignItems="center">
-          <HamburgerMenu />
-          <Stack direction="row" width="100%" justifyContent="flex-end" alignItems="center">
-            <IconButton
-              color="inherit"
-              onClick={() => {
-                setMode();
-              }}
-            >
-              {mode === "dark" ? <LightModeOutlined /> : <DarkModeOutlined />}
-            </IconButton>
+        <Typography variant="h6" color="text.primary" sx={{ flexGrow: 1 }}>
+          NUS Tour
+        </Typography>
 
-            {(user?.avatar || user?.name) && (
-              <Stack direction="row" gap="16px" alignItems="center" justifyContent="center">
-                {user?.name && (
-                  <Typography
-                    sx={{
-                      display: {
-                        xs: "none",
-                        sm: "inline-block",
-                      },
-                    }}
-                    variant="subtitle2"
-                  >
-                    {user?.name}
-                  </Typography>
-                )}
-                <Avatar src={user?.avatar} alt={user?.name} />
-              </Stack>
+        {showColorModeToggle && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {user && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {displayName}
+                </Typography>
+                <Avatar src={user.avatar} alt={displayName} sx={{ width: 32, height: 32 }}>
+                  {displayName.charAt(0).toUpperCase()}
+                </Avatar>
+              </Box>
             )}
-          </Stack>
-        </Stack>
+          </Box>
+        )}
       </Toolbar>
-      <MenuItem component={Link} to="/dashboard" onClick={close}>
-        <ListItemIcon>
-          <DashboardIcon fontSize="small" />
-        </ListItemIcon>
-        <ListItemText>My Dashboard</ListItemText>
-      </MenuItem>
     </AppBar>
   );
 };
+
+export default RefineLayoutHeader;

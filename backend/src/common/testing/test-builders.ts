@@ -16,7 +16,7 @@ export class UserBuilder {
     lastName: "User",
     roles: [{ id: TEST_USER_ROLE_ID, name: "USER" } as Role],
     bookings: [],
-    password: "hashedPassword",
+    password: "hashed-password",
     emailVerified: false,
     isActive: true,
     createdAt: new Date(),

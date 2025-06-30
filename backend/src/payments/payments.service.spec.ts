@@ -73,9 +73,7 @@ describe("PaymentsService", () => {
       user: {
         id: TEST_USER_ID_1,
         email: "test@example.com",
-        username: "TestUser",
-        password: "hash",
-        unhashedPassword: "password",
+        password: "hashed-password",
         roles: [],
         comparePassword: jest.fn(),
       } as unknown as EntityUser,

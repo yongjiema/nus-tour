@@ -1,5 +1,6 @@
 import { styled } from "@mui/material/styles";
 import { Paper, Button, Typography } from "@mui/material";
+import { getThemeColor } from "../theme/constants";
 
 export const AuthPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(5),
@@ -18,19 +19,19 @@ export const PrimaryButton = styled(Button)(({ theme }) => ({
 }));
 
 export const PageTitle = styled(Typography)(({ theme }) => ({
-  color: "#002147", // NUS blue
+  color: getThemeColor(theme, "NUS_BLUE"),
   fontWeight: "bold",
   textAlign: "center",
   marginBottom: theme.spacing(3),
 }));
 
 export const SubmitButton = styled(Button)(({ theme }) => ({
-  backgroundColor: "#FF6600", // NUS orange
-  color: "#FFFFFF",
+  backgroundColor: getThemeColor(theme, "NUS_ORANGE"),
+  color: theme.palette.common.white,
   padding: theme.spacing(1.25),
   fontSize: "16px",
   "&:hover": {
-    backgroundColor: "#E05A00", // Darker orange on hover
+    backgroundColor: getThemeColor(theme, "NUS_ORANGE_DARK"),
   },
 }));
 
@@ -48,7 +49,7 @@ export const DashboardCard = styled(Paper)(({ theme }) => ({
 
 export const ActionButton = styled(Button)(({ theme }) => ({
   backgroundColor: theme.palette.primary.main,
-  color: "#FFFFFF",
+  color: theme.palette.common.white,
   padding: theme.spacing(1.25),
   fontWeight: "bold",
   textTransform: "none",

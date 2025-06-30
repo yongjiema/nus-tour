@@ -1,12 +1,12 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
+import { useNavigate } from "react-router-dom";
 
 const LoginButton: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    navigate("/login");
+    void navigate("/login");
   };
 
   return (

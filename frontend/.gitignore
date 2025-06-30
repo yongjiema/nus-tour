@@ -29,3 +29,6 @@ _.sln
 # Dotenv
 .env*
 !.env*.sample
+
+# Artifacts
+coverage/

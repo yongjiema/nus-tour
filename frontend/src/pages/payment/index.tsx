@@ -1,17 +1,83 @@
-import { useState, useEffect } from "react";
-import { Container, Typography, Box, Paper, Button, CircularProgress, styled } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Button,
+  Divider,
+  styled,
+  CircularProgress,
+  Alert,
+  FormControl,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Card,
+  CardContent,
+  Grid2 as Grid,
+} from "@mui/material";
+import {
+  Payment as PaymentIcon,
+  CreditCard as CreditCardIcon,
+  AccountBalanceWallet as WalletIcon,
+} from "@mui/icons-material";
+import { getThemeColor } from "../../theme/constants";
 import { usePayment } from "../../hooks/usePayment";
-import { useCustom, useCustomMutation } from "@refinedev/core";
-import { PublicHeader } from "../../components/header/public";
+import { useCustomMutation } from "@refinedev/core";
 import { BookingStatus } from "../../types/enums";
-import * as dataProviders from "../../dataProvider";
+import { PublicHeader } from "../../components/header/public";
 
-const PaymentPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(4),
+// Constants
+const SESSION_DURATION = 300; // 5 minutes in seconds
+const DEFAULT_AMOUNT = 50;
+const STORAGE_KEYS = {
+  BOOKING_DATA: "booking-data",
+  PAYMENT_CONFIRMATION: "payment_confirmation",
+} as const;
+const TRANSACTION_PREFIXES = {
+  EXPIRED: "EXPIRED",
+  SUCCESS: "TXN",
+} as const;
+
+// Styled components
+const PaymentContainer = styled(Container)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  marginBottom: theme.spacing(4),
+}));
+
+const PaymentCard = styled(Card)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  borderRadius: "12px",
+  boxShadow: theme.shadows[4],
+}));
+
+const PaymentMethodCard = styled(Card)(({ theme }) => ({
+  cursor: "pointer",
+  transition: "all 0.3s ease",
+  border: `2px solid ${theme.palette.divider}`,
+  "&:hover": {
+    borderColor: theme.palette.primary.main,
+    transform: "translateY(-2px)",
+    boxShadow: theme.shadows[8],
+  },
+  "&.selected": {
+    borderColor: theme.palette.primary.main,
+    backgroundColor: theme.palette.primary.light + "10",
+  },
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
   marginTop: theme.spacing(3),
-  borderRadius: "8px",
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+  padding: theme.spacing(1.5, 4),
+  backgroundColor: getThemeColor(theme, "NUS_BLUE"),
+  "&:hover": {
+    backgroundColor: theme.palette.primary.dark,
+  },
+  "&:disabled": {
+    backgroundColor: theme.palette.action.disabled,
+  },
 }));
 
 const QRContainer = styled(Box)(({ theme }) => ({
@@ -21,106 +87,179 @@ const QRContainer = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(3),
   marginBottom: theme.spacing(3),
   padding: theme.spacing(3),
-  backgroundColor: "#f9f9f9",
+  backgroundColor: theme.palette.grey[50],
   borderRadius: "8px",
 }));
 
-const QRImage = styled("img")({
+const QRImage = styled("img")(({ theme }) => ({
   width: "200px",
   height: "200px",
   marginTop: "16px",
-  border: "1px solid #eaeaea",
-});
+  border: `1px solid ${theme.palette.divider}`,
+}));
 
-const ActionButton = styled(Button)(({ theme }) => ({
-  marginTop: theme.spacing(2),
-  padding: theme.spacing(1.5, 4),
-  backgroundColor: "#002147",
-  "&:hover": {
-    backgroundColor: "#001a38",
+// Types
+interface BookingData {
+  id: string;
+  amount: number;
+}
+
+interface PaymentMethod {
+  value: string;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+}
+
+interface StoredBookingData {
+  id?: string;
+  bookingId?: string;
+  deposit?: number;
+  amount?: number;
+}
+
+interface PaymentConfirmation {
+  bookingId: string;
+  amount: number;
+  date: string;
+  transactionId: string;
+}
+
+interface LocationState {
+  booking?: StoredBookingData;
+}
+
+// Payment methods configuration
+const paymentMethods: PaymentMethod[] = [
+  {
+    value: "paynow",
+    label: "PayNow",
+    icon: <WalletIcon />,
+    description: "Fast and secure QR code payment",
   },
-}));
+  {
+    value: "credit_card",
+    label: "Credit Card",
+    icon: <CreditCardIcon />,
+    description: "Visa, Mastercard, American Express",
+  },
+];
 
-const Subtitle = styled(Typography)(({ theme }) => ({
-  color: theme.palette.text.secondary,
-  marginBottom: theme.spacing(3),
-}));
+// Utility functions
+const parseBookingData = (data: unknown): BookingData | null => {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
 
-const SharedPageTitle = styled(Typography)({
-  fontWeight: "bold",
-  color: "#002147",
-});
+  const parsed = data as StoredBookingData;
+  const id = parsed.id ?? parsed.bookingId;
+  const amount = parsed.deposit ?? parsed.amount ?? DEFAULT_AMOUNT;
 
-const PaymentPage = () => {
-  const { id } = useParams<{ id: string }>();
+  if (!id || typeof id !== "string" || typeof amount !== "number" || amount <= 0) {
+    return null;
+  }
+
+  return { id, amount };
+};
+
+const loadBookingDataFromStorage = (): BookingData | null => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.BOOKING_DATA);
+    if (!stored) {
+      return null;
+    }
+
+    const parsed = JSON.parse(stored) as unknown;
+    return parseBookingData(parsed);
+  } catch (error) {
+    console.error("Failed to parse booking data from localStorage:", error);
+    return null;
+  }
+};
+
+const savePaymentConfirmation = (confirmation: PaymentConfirmation): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.PAYMENT_CONFIRMATION, JSON.stringify(confirmation));
+  } catch (error) {
+    console.error("Failed to save payment confirmation:", error);
+  }
+};
+
+const generateTransactionId = (prefix: string): string => {
+  return `${prefix}-${Date.now()}`;
+};
+
+const PaymentPage: React.FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { processPayment, isProcessing } = usePayment();
-  const [timeLeft, setTimeLeft] = useState(300);
+  const { mutate: updateBookingStatus } = useCustomMutation();
+
+  const [bookingData, setBookingData] = useState<BookingData | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<string>("paynow");
+  const [error, setError] = useState<string>("");
+  const [timeLeft, setTimeLeft] = useState<number>(SESSION_DURATION);
   const [sessionExpired, setSessionExpired] = useState(false);
-  const { mutate } = useCustomMutation();
+  const [loading, setLoading] = useState(true);
 
-  // Single state for booking details
-  const [bookingDetails, setBookingDetails] = useState<{
-    id: string | null;
-    amount: number;
-  }>({
-    id: id || null,
-    amount: 50,
-  });
-
-  // Initialize from localStorage first
+  // Load booking data from multiple sources
   useEffect(() => {
-    try {
-      const storedData = localStorage.getItem("booking-data");
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        console.log("Found booking data in localStorage:", parsedData);
-
-        setBookingDetails({
-          id: parsedData.id || parsedData.bookingId || id,
-          amount: parsedData.deposit || 50,
-        });
-
-        // Optional: Remove after use
-        // localStorage.removeItem("booking-data");
+    const loadBookingData = (): void => {
+      // 1. Try location.state first
+      const locationState = location.state as LocationState | null;
+      if (locationState?.booking) {
+        const parsed = parseBookingData(locationState.booking);
+        if (parsed) {
+          setBookingData(parsed);
+          setLoading(false);
+          return;
+        }
       }
-    } catch (e) {
-      console.error("Error parsing booking data:", e);
-    }
-  }, [id]);
 
-  // Only fetch from API if we have an ID and no localStorage data
-  const { data: apiData, isLoading } = useCustom({
-    url: `/bookings/${bookingDetails.id || ""}`,
-    method: "get",
-    queryOptions: {
-      enabled: !!bookingDetails.id,
-    },
-  });
+      // 2. Try localStorage as fallback
+      const storedData = loadBookingDataFromStorage();
+      if (storedData) {
+        setBookingData(storedData);
+      }
 
+      setLoading(false);
+    };
+
+    loadBookingData();
+  }, [location.state]);
+
+  // Session timer logic
   useEffect(() => {
+    if (sessionExpired || loading) {
+      return;
+    }
+
     if (timeLeft <= 0) {
       setSessionExpired(true);
 
-      // Update booking status to PAYMENT_FAILED
-      const updateBookingStatus = async () => {
-        try {
-          await dataProviders.default.custom({
-            url: `bookings/${bookingDetails.id}/payment-status`,
-            method: "post",
-            payload: {
-              status: BookingStatus.PAYMENT_FAILED,
-              transactionId: `EXPIRED-${Date.now()}`,
-            },
-          });
-          console.log("Payment session expired, booking status updated to PAYMENT_FAILED");
-        } catch (error) {
-          console.error("Failed to update booking status on expiration:", error);
-        }
-      };
+      // Mark booking as PAYMENT_FAILED
+      if (bookingData?.id) {
+        const transactionId = generateTransactionId(TRANSACTION_PREFIXES.EXPIRED);
 
-      // Call the function to update status
-      updateBookingStatus();
+        updateBookingStatus(
+          {
+            url: `bookings/${bookingData.id}/payment-status`,
+            method: "post",
+            values: {
+              status: BookingStatus.PAYMENT_FAILED,
+              transactionId,
+            },
+          },
+          {
+            onSuccess: () => {
+              console.log("Booking marked as payment failed due to session expiry");
+            },
+            onError: (error) => {
+              console.error("Failed to update booking status on session expiry:", error);
+            },
+          },
+        );
+      }
       return;
     }
 
@@ -128,162 +267,282 @@ const PaymentPage = () => {
       setTimeLeft((prev) => prev - 1);
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [timeLeft, bookingDetails.id]);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [timeLeft, sessionExpired, bookingData, loading, updateBookingStatus]);
 
-  // Update from API data if available
-  useEffect(() => {
-    if (apiData?.data) {
-      console.log("Received API booking data:", apiData.data);
-      setBookingDetails((prev) => ({
-        ...prev,
-        amount: apiData.data.deposit || prev.amount,
-      }));
-    }
-  }, [apiData]);
+  const handlePaymentMethodChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedMethod(event.target.value);
+  }, []);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
-
-  const handleCompletePayment = async () => {
-    if (!bookingDetails.id) {
-      console.error("Missing booking ID");
+  const handlePayment = useCallback(async () => {
+    if (!bookingData) {
+      setError("No booking data available");
       return;
     }
 
+    setError("");
+
     try {
-      const transactionId = `TXN-${Date.now()}`;
-
       // 1. Process payment
-      await processPayment({
-        bookingId: bookingDetails.id,
-        amount: bookingDetails.amount,
-        paymentMethod: "paynow",
+      processPayment({
+        bookingId: bookingData.id,
+        amount: bookingData.amount,
+        paymentMethod: selectedMethod,
       });
 
-      // 2. Update booking status AND create payment record
-      await dataProviders.default.custom({
-        url: `bookings/${bookingDetails.id}/payment-status`,
-        method: "post",
-        payload: {
-          status: BookingStatus.PAYMENT_COMPLETED,
-          transactionId: transactionId,
-        },
+      // 2. Update booking status to PAID
+      const transactionId = generateTransactionId(TRANSACTION_PREFIXES.SUCCESS);
+
+      // Use Promise wrapper for the mutation
+      await new Promise<void>((resolve, reject) => {
+        updateBookingStatus(
+          {
+            url: `bookings/${bookingData.id}/payment-status`,
+            method: "post",
+            values: {
+              status: BookingStatus.PAID,
+              transactionId,
+            },
+          },
+          {
+            onSuccess: () => {
+              resolve();
+            },
+            onError: (error) => {
+              reject(error instanceof Error ? error : new Error(JSON.stringify(error) || "Unknown error"));
+            },
+          },
+        );
       });
 
-      // 3. Store confirmation details and navigate
-      localStorage.setItem(
-        "payment_confirmation",
-        JSON.stringify({
-          bookingId: typeof bookingDetails.id === "string" ? bookingDetails.id : "",
-          amount: bookingDetails.amount,
-          date: new Date().toISOString(),
-          transactionId: transactionId,
-        }),
-      );
-      console.log("Navigating to success page");
-      navigate(`/payment/success/${bookingDetails.id}`);
-    } catch (error) {
-      console.error("Payment processing error:", error);
+      // 3. Store confirmation and navigate
+      const confirmation: PaymentConfirmation = {
+        bookingId: bookingData.id,
+        amount: bookingData.amount,
+        date: new Date().toISOString(),
+        transactionId,
+      };
 
-      alert("Payment processing failed. Please try again or contact support.");
+      savePaymentConfirmation(confirmation);
+      void navigate(`/payment/success/${bookingData.id}`);
+    } catch (err) {
+      console.error("Payment processing failed:", err);
+      setError("Payment processing failed. Please try again or contact support.");
     }
-  };
+  }, [bookingData, selectedMethod, processPayment, updateBookingStatus, navigate]);
 
-  if (isLoading) {
+  const handleBackToBooking = useCallback(() => {
+    void navigate("/booking");
+  }, [navigate]);
+
+  // Wrapper function to handle async payment properly
+  const handlePaymentClick = useCallback(() => {
+    void handlePayment().catch((error: unknown) => {
+      console.error("Payment failed:", error);
+    });
+  }, [handlePayment]);
+
+  const formatTime = useCallback((seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  }, []);
+
+  // Memoized values
+  const isTimerWarning = useMemo(() => timeLeft < 60, [timeLeft]);
+  const formattedAmount = useMemo(() => bookingData?.amount.toFixed(2) ?? "0.00", [bookingData?.amount]);
+
+  if (loading) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 6, display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
-      </Container>
+      <>
+        <PublicHeader />
+        <PaymentContainer maxWidth="md">
+          <Paper elevation={3} sx={{ p: 4, textAlign: "center" }}>
+            <CircularProgress size={40} sx={{ mb: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              Loading payment information...
+            </Typography>
+          </Paper>
+        </PaymentContainer>
+      </>
     );
   }
 
-  if (!bookingDetails.id || !bookingDetails.amount) {
+  if (!bookingData) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 6 }}>
-        <PaymentPaper>
-          <Typography variant="h6" color="error" align="center">
-            Missing or invalid booking details. Please try again.
-          </Typography>
-          <Box mt={3} textAlign="center">
-            <ActionButton variant="contained" onClick={() => navigate("/booking")}>
+      <>
+        <PublicHeader />
+        <PaymentContainer maxWidth="md">
+          <Paper elevation={3} sx={{ p: 4, textAlign: "center" }}>
+            <Typography variant="h6" color="error" gutterBottom>
+              Missing or invalid booking details. Please try again.
+            </Typography>
+            <Button variant="contained" onClick={handleBackToBooking} sx={{ mt: 2 }}>
               Return to Booking
-            </ActionButton>
-          </Box>
-        </PaymentPaper>
-      </Container>
+            </Button>
+          </Paper>
+        </PaymentContainer>
+      </>
+    );
+  }
+
+  if (sessionExpired) {
+    return (
+      <>
+        <PublicHeader />
+        <PaymentContainer maxWidth="md">
+          <Paper elevation={3} sx={{ p: 4, textAlign: "center" }}>
+            <Typography variant="h5" color="error" gutterBottom>
+              Your payment session has expired
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              Please restart the booking process to try again.
+            </Typography>
+            <Button variant="contained" onClick={handleBackToBooking}>
+              Return to Booking
+            </Button>
+          </Paper>
+        </PaymentContainer>
+      </>
     );
   }
 
   return (
     <>
       <PublicHeader />
-      <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
-        <PaymentPaper>
-          <SharedPageTitle variant="h4" gutterBottom>
-            Payment Details
-          </SharedPageTitle>
+      <PaymentContainer maxWidth="md">
+        <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4 }}>
+          Complete Your Payment
+        </Typography>
 
-          {/* Timer display */}
-          <Box sx={{ mb: 2, textAlign: "center", color: timeLeft < 60 ? "error.main" : "text.secondary" }}>
-            <Typography variant="subtitle1">Session expires in: {formatTime(timeLeft)}</Typography>
-          </Box>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
-          {!sessionExpired ? (
-            <>
-              {/* Existing payment content */}
-              <Subtitle variant="body1" gutterBottom>
-                Use any PayNow-compatible app to complete your payment.
-              </Subtitle>
+        {/* Timer display */}
+        <Box sx={{ mb: 2, textAlign: "center", color: isTimerWarning ? "error.main" : "text.secondary" }}>
+          <Typography variant="subtitle1">Session expires in: {formatTime(timeLeft)}</Typography>
+        </Box>
 
-              {/* Booking Details */}
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="body2" sx={{ color: "#002147", mb: 1.25 }}>
-                  <strong>Booking ID:</strong> {bookingDetails.id}
+        <Grid container spacing={3}>
+          {/* Payment Summary */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PaymentCard>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  <PaymentIcon sx={{ mr: 1, verticalAlign: "middle" }} />
+                  Payment Summary
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#002147", mb: 1.25 }}>
-                  <strong>Amount to Pay:</strong> SGD {bookingDetails.amount}
-                </Typography>
-              </Box>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Booking ID
+                  </Typography>
+                  <Typography variant="h6" fontWeight="bold">
+                    {bookingData.id}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Amount to Pay
+                  </Typography>
+                  <Typography variant="h4" fontWeight="bold" color="primary.main">
+                    SGD {formattedAmount}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    This is a deposit payment for your tour booking.
+                  </Typography>
+                </Box>
+              </CardContent>
+            </PaymentCard>
+          </Grid>
 
-              {/* QR Code */}
-              <QRContainer>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 2.5 }}>
-                  Scan the QR code to complete payment
+          {/* Payment Method Selection */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PaymentCard>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Select Payment Method
                 </Typography>
-                <QRImage src="https://placehold.co/200x200?text=PayNow+QR" alt="PayNow QR Code" />
-              </QRContainer>
+                <Divider sx={{ my: 2 }} />
+                <FormControl component="fieldset" fullWidth>
+                  <RadioGroup value={selectedMethod} onChange={handlePaymentMethodChange}>
+                    {paymentMethods.map((method) => (
+                      <PaymentMethodCard
+                        key={method.value}
+                        className={selectedMethod === method.value ? "selected" : ""}
+                        sx={{ mb: 2 }}
+                      >
+                        <CardContent>
+                          <FormControlLabel
+                            value={method.value}
+                            control={<Radio />}
+                            label={
+                              <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+                                <Box sx={{ display: "flex", alignItems: "center", flex: 1 }}>
+                                  <Box sx={{ mr: 2, color: "primary.main" }}>{method.icon}</Box>
+                                  <Box>
+                                    <Typography variant="h6" fontWeight="500">
+                                      {method.label}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {method.description}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            }
+                            sx={{ width: "100%", margin: 0 }}
+                          />
+                        </CardContent>
+                      </PaymentMethodCard>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              </CardContent>
+            </PaymentCard>
+          </Grid>
+        </Grid>
 
-              {/* Payment Button */}
-              <Box sx={{ textAlign: "center" }}>
-                <ActionButton
-                  variant="contained"
-                  disabled={isProcessing}
-                  onClick={handleCompletePayment}
-                  startIcon={isProcessing ? <CircularProgress size={20} color="inherit" /> : null}
-                >
-                  {isProcessing ? "Processing..." : "Confirm Payment"}
-                </ActionButton>
-              </Box>
-            </>
-          ) : (
-            <Box sx={{ textAlign: "center" }}>
-              <Typography variant="h6" color="error.main" gutterBottom>
-                Your payment session has expired
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 3 }}>
-                Please restart the booking process to try again.
-              </Typography>
-              <ActionButton variant="contained" onClick={() => navigate("/booking")}>
-                Return to Booking
-              </ActionButton>
-            </Box>
-          )}
-        </PaymentPaper>
-      </Container>
+        {/* PayNow QR code if selected */}
+        {selectedMethod === "paynow" && (
+          <QRContainer>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2.5 }}>
+              Scan the QR code to complete payment
+            </Typography>
+            <QRImage src="https://placehold.co/200x200?text=PayNow+QR" alt="PayNow QR Code" />
+          </QRContainer>
+        )}
+
+        {/* Action Buttons */}
+        <Box sx={{ mt: 4, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+          <Button variant="outlined" onClick={handleBackToBooking} disabled={isProcessing} sx={{ minWidth: 150 }}>
+            Back to Booking
+          </Button>
+          <ActionButton
+            variant="contained"
+            onClick={handlePaymentClick}
+            disabled={isProcessing || !selectedMethod}
+            startIcon={isProcessing ? <CircularProgress size={20} color="inherit" /> : <PaymentIcon />}
+            sx={{ minWidth: 200 }}
+          >
+            {isProcessing ? "Processing..." : `Pay SGD ${formattedAmount}`}
+          </ActionButton>
+        </Box>
+
+        {/* Security Notice */}
+        <Box sx={{ mt: 4, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            🔒 Your payment information is secure and encrypted
+          </Typography>
+        </Box>
+      </PaymentContainer>
     </>
   );
 };

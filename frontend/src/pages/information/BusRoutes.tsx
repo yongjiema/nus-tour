@@ -1,13 +1,21 @@
 import React from "react";
 import { Typography, Container, Box } from "@mui/material";
+import { getThemeColor } from "../../theme/constants";
+import { useTheme } from "@mui/material/styles";
 
 export const BusRoutes: React.FC = () => {
+  const theme = useTheme();
+
   return (
     <Container maxWidth="md" style={{ marginTop: "50px" }}>
-      <Typography variant="h4" gutterBottom style={{ color: "#002147", fontWeight: "bold" }}>
+      <Typography variant="h4" gutterBottom style={{ color: getThemeColor(theme, "NUS_BLUE"), fontWeight: "bold" }}>
         Campus Bus Routes
       </Typography>
-      <Typography variant="body1" gutterBottom style={{ color: "#FF6600", marginBottom: "20px" }}>
+      <Typography
+        variant="body1"
+        gutterBottom
+        style={{ color: getThemeColor(theme, "NUS_ORANGE"), marginBottom: "20px" }}
+      >
         Navigate the NUS campus easily using our bus services.
       </Typography>
       <Box>

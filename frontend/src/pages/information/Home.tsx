@@ -1,5 +1,7 @@
 import React from "react";
-import { Box, Typography, Grid, Card, CardContent, Button, Container, CardMedia } from "@mui/material";
+import { Box, Typography, Card, CardContent, Button, Container, CardMedia, Grid2 as Grid } from "@mui/material";
+import { getThemeColor, getCardShadow } from "../../theme/constants";
+import { useTheme } from "@mui/material/styles";
 
 import academicProgramsImage from "../../assets/images/academics.jpg";
 import busRoutesImage from "../../assets/images/bus-routes.jpg";
@@ -48,22 +50,35 @@ const informationData = [
   },
 ];
 
-export const InformationHome: React.FC = () => {
+export const InformationPage: React.FC = () => {
+  const theme = useTheme();
+
   return (
     <Container maxWidth="lg" style={{ marginTop: "50px" }}>
-      <Typography variant="h3" gutterBottom align="center" style={{ color: "#002147", fontWeight: "bold" }}>
+      <Typography
+        variant="h3"
+        gutterBottom
+        align="center"
+        style={{ color: getThemeColor(theme, "NUS_BLUE"), fontWeight: "bold" }}
+      >
         Campus Information
       </Typography>
-      <Typography variant="body1" color="textSecondary" align="center" gutterBottom style={{ color: "#FF6600" }}>
+      <Typography
+        variant="body1"
+        color="textSecondary"
+        align="center"
+        gutterBottom
+        style={{ color: getThemeColor(theme, "NUS_ORANGE") }}
+      >
         Learn more about what NUS has to offer, from academic programs to essential campus facilities.
       </Typography>
       <Grid container spacing={4} style={{ marginTop: "30px" }}>
         {informationData.map((info, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
             <Card
               sx={{
                 borderRadius: 2,
-                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                boxShadow: getCardShadow(theme),
                 "&:hover": {
                   transform: "scale(1.03)",
                 },
@@ -71,7 +86,11 @@ export const InformationHome: React.FC = () => {
             >
               <CardMedia component="img" height="140" image={info.image} alt={info.title} />
               <CardContent>
-                <Typography variant="h5" gutterBottom style={{ color: "#002147", fontWeight: "bold" }}>
+                <Typography
+                  variant="h5"
+                  gutterBottom
+                  style={{ color: getThemeColor(theme, "NUS_BLUE"), fontWeight: "bold" }}
+                >
                   {info.title}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
@@ -84,7 +103,7 @@ export const InformationHome: React.FC = () => {
                     href={info.link}
                     target="_blank" // Opens link in a new tab
                     rel="noopener noreferrer" // Improves security
-                    style={{ backgroundColor: "#FF6600", color: "#FFFFFF" }}
+                    style={{ backgroundColor: getThemeColor(theme, "NUS_ORANGE"), color: theme.palette.common.white }}
                   >
                     Learn More
                   </Button>

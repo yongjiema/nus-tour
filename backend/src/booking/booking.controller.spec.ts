@@ -18,7 +18,7 @@ import {
   TEST_NON_EXISTENT_ID,
 } from "../common/testing";
 import { TokenBlacklistService } from "../auth/token-blacklist.service";
-import { User } from "../common/types/request.types";
+import type { User } from "../database/entities/user.entity";
 
 // Create a mock JwtAuthGuard that always returns true for canActivate
 class MockJwtAuthGuard {
@@ -50,19 +50,9 @@ describe("BookingController", () => {
     addToBlacklist: jest.fn(),
   };
 
-  const sampleEntityUser = {
-    id: TEST_USER_ID_1,
-    email: "test@example.com",
-    username: "Test User",
-    password: "hash",
-    unhashedPassword: "password",
-    roles: [],
-    comparePassword: jest.fn(),
-  } as unknown as import("../database/entities/user.entity").User;
-
   // Mock request object
   const mockRequest = {
-    user: { id: TEST_USER_ID_1, email: "test@example.com", username: "Test User" } as User,
+    user: { id: TEST_USER_ID_1, email: "test@example.com", firstName: "Test", lastName: "User" } as User,
   } as unknown as AuthenticatedRequest;
 
   beforeEach(async () => {
@@ -254,7 +244,15 @@ describe("BookingController", () => {
         id: bookingId,
         date: new Date("2025-01-01"),
         status: BookingStatus.AWAITING_PAYMENT,
-        user: sampleEntityUser,
+        user: {
+          id: TEST_USER_ID_1,
+          email: "test@example.com",
+          firstName: "Test",
+          lastName: "User",
+          password: "",
+          roles: [],
+          comparePassword: jest.fn(),
+        } as unknown as User,
       };
 
       mockBookingService.getBookingById.mockResolvedValue(booking);
@@ -273,12 +271,12 @@ describe("BookingController", () => {
         user: {
           id: TEST_ANOTHER_USER_ID,
           email: "other@example.com",
-          username: "Other",
+          firstName: "Other",
+          lastName: "User",
           password: "",
-          unhashedPassword: "",
           roles: [],
           comparePassword: jest.fn(),
-        } as unknown as import("../database/entities/user.entity").User,
+        } as unknown as User,
       };
 
       mockBookingService.getBookingById.mockResolvedValue(booking);

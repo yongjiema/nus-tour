@@ -1,7 +1,9 @@
 import React from "react";
 import { Box, Typography, Container, CardMedia } from "@mui/material";
-import { styled } from "@mui/material/styles";
+import { styled, useTheme } from "@mui/material/styles";
+import { Link } from "react-router-dom";
 import NUSPhoto from "../../assets/images/nus-campus.jpg";
+import { getThemeColor } from "../../theme/constants";
 
 // Styled components for consistent UI
 const PageTitle = styled(Typography)(({ theme }) => ({
@@ -30,11 +32,11 @@ const ButtonContainer = styled(Box)(({ theme }) => ({
   flexWrap: "wrap",
 }));
 
-const ActionButton = styled("a")(({ theme, color = "primary" }) => {
+const ActionButton = styled(Link)(({ theme, color = "primary" }) => {
   const getColor = () => {
     switch (color) {
       case "orange":
-        return "#FF6600";
+        return getThemeColor(theme, "NUS_ORANGE");
       case "green":
         return theme.palette.success.main;
       default:
@@ -44,7 +46,7 @@ const ActionButton = styled("a")(({ theme, color = "primary" }) => {
 
   return {
     backgroundColor: getColor(),
-    color: "#FFFFFF",
+    color: theme.palette.common.white,
     padding: `${theme.spacing(1.5)} ${theme.spacing(3)}`,
     fontSize: "18px",
     borderRadius: 0,
@@ -60,7 +62,11 @@ const ActionButton = styled("a")(({ theme, color = "primary" }) => {
     transition: "background-color 0.3s ease",
     "&:hover": {
       backgroundColor:
-        color === "orange" ? "#E05A00" : color === "green" ? theme.palette.success.dark : theme.palette.primary.dark,
+        color === "orange"
+          ? getThemeColor(theme, "NUS_ORANGE_DARK")
+          : color === "green"
+          ? theme.palette.success.dark
+          : theme.palette.primary.dark,
       textDecoration: "none",
     },
     [theme.breakpoints.down("sm")]: {
@@ -70,6 +76,8 @@ const ActionButton = styled("a")(({ theme, color = "primary" }) => {
 });
 
 export const Home: React.FC = () => {
+  const theme = useTheme();
+
   return (
     <Container
       maxWidth="lg"
@@ -109,15 +117,15 @@ export const Home: React.FC = () => {
 
       {/* Call-to-Action Section */}
       <ButtonContainer>
-        <ActionButton href="/information" color="primary">
+        <ActionButton to="/information" color="primary">
           Learn More About NUS
         </ActionButton>
 
-        <ActionButton href="/register" color="orange">
+        <ActionButton to="/register" color="orange">
           Book a Campus Tour
         </ActionButton>
 
-        <ActionButton href="/checkin" color="green">
+        <ActionButton to="/checkin" color="green">
           Check In
         </ActionButton>
       </ButtonContainer>
@@ -126,7 +134,7 @@ export const Home: React.FC = () => {
           marginTop: "50px",
           marginBottom: "50px",
           textAlign: "center",
-          color: "#666",
+          color: theme.palette.text.secondary,
         }}
       >
         <Typography variant="body2" color="textSecondary" align="center">

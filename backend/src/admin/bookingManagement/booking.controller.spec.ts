@@ -7,6 +7,7 @@ import { BookingService } from "./booking.service";
 import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
 import { Booking } from "../../database/entities/booking.entity";
 import { BookingStatus } from "../../database/entities/enums";
+import type { User } from "../../database/entities/user.entity";
 
 class _MockGuard {
   canActivate() {
@@ -28,12 +29,12 @@ describe("BookingController", () => {
     user: {
       id: TEST_USER_ID_1,
       email: "test@example.com",
-      username: "TestUser",
-      password: "hash",
-      unhashedPassword: "password",
+      password: "hashed-password",
       roles: [],
       comparePassword: jest.fn(),
-    } as unknown as import("../../database/entities/user.entity").User,
+      firstName: "Test",
+      lastName: "User",
+    } as unknown as User,
   };
 
   const mockService = {

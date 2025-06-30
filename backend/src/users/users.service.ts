@@ -2,6 +2,7 @@ import { Injectable, ConflictException, NotFoundException, Logger } from "@nestj
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "../database/entities/user.entity";
+import { Role } from "../database/entities/role.entity";
 import { RegisterDto } from "../auth/dto/register.dto";
 import { LoginDto } from "../auth/dto/login.dto";
 import { UpdateUserDto } from "../auth/dto/update-user.dto";
@@ -13,10 +14,12 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Role)
+    private rolesRepository: Repository<Role>,
   ) {}
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+    return this.usersRepository.findOne({ where: { email }, relations: ["roles"] });
   }
 
   async register(registerDto: RegisterDto): Promise<User> {
@@ -29,10 +32,35 @@ export class UsersService {
       throw new ConflictException("Email is already in use");
     }
 
-    const user = this.usersRepository.create({ email, firstName, lastName, password });
+    // Find or create the USER role
+    let userRole = await this.rolesRepository.findOne({ where: { name: "USER" } });
+    if (!userRole) {
+      this.logger.debug("USER role not found, creating it");
+      userRole = this.rolesRepository.create({ name: "USER" });
+      userRole = await this.rolesRepository.save(userRole);
+    }
+
+    const user = this.usersRepository.create({
+      email,
+      firstName,
+      lastName,
+      password,
+      roles: [userRole],
+    });
     const createdUser = await this.usersRepository.save(user);
     this.logger.debug(`User created successfully with id: ${createdUser.id}`);
-    return createdUser;
+
+    // Reload the user with relations to ensure roles are properly loaded
+    const userWithRoles = await this.usersRepository.findOne({
+      where: { id: createdUser.id },
+      relations: ["roles"],
+    });
+
+    if (!userWithRoles) {
+      throw new Error("Failed to create user");
+    }
+
+    return userWithRoles;
   }
 
   async validateUser(loginDto: LoginDto): Promise<User> {
@@ -47,7 +75,7 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
+    const user = await this.usersRepository.findOne({ where: { id }, relations: ["roles"] });
     if (!user) {
       throw new NotFoundException("User not found");
     }
