@@ -4,10 +4,9 @@ import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/role.decorator";
 import { DashboardService } from "./dashboard.service";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, MoreThanOrEqual } from "typeorm";
 import { Booking } from "../database/entities/booking.entity";
 import { BookingStatus } from "../database/entities/enums";
-import { MoreThanOrEqual } from "typeorm";
 
 @Controller("admin/dashboard")
 @UseGuards(JwtAuthGuard, RolesGuard)

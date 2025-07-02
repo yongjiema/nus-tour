@@ -173,6 +173,9 @@ describe("AuthProvider", () => {
         return null;
       });
 
+      // Mock backend profile call to return a valid user
+      mockGet.mockResolvedValue({ data: { id: "user-123", roles: ["USER"] } });
+
       const result = await authProvider.check();
 
       expect(result).toEqual({

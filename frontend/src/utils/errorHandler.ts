@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import { AxiosError, isAxiosError } from "axios";
 
 /**
  * Error Handling for Refine Applications:
@@ -77,7 +77,7 @@ const ERROR_MESSAGES = {
  * @returns A user-friendly error message
  */
 export const getErrorMessage = (error: unknown): string => {
-  if (axios.isAxiosError(error)) {
+  if (isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiErrorResponse>;
     const status = axiosError.response?.status;
     const resData = axiosError.response?.data;

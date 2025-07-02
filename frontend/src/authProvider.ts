@@ -139,24 +139,39 @@ export const authProvider = {
     });
   },
 
-  check: () => {
+  check: async () => {
     const pathname = window.location.pathname;
     const token = localStorage.getItem("access_token");
-    const storedUser = localStorage.getItem("user");
 
-    // Get user data and roles from stored user object
-    const user = storedUser ? (JSON.parse(storedUser) as UserData) : null;
-    const roles = user?.roles ?? [];
-    const id = user?.id;
-
-    // If no token, user is not authenticated
+    // Quick exit: if no token, treat as unauthenticated immediately
     if (!token) {
-      return Promise.resolve({
+      return {
         authenticated: false,
         redirectTo: "/login",
         roles: [],
-      });
+      } as const;
     }
+
+    // Validate token by calling backend profile endpoint
+    let user: UserData | null = null;
+    try {
+      const response = await axiosInstance.get<UserData>("/auth/profile");
+      user = response.data;
+      // Persist latest user payload for quick access next time
+      localStorage.setItem("user", JSON.stringify(user));
+    } catch {
+      // Token invalid or server unreachable – treat as unauthenticated
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user");
+      return {
+        authenticated: false,
+        redirectTo: "/login",
+        roles: [],
+      } as const;
+    }
+
+    const roles = user.roles;
+    const id = user.id;
 
     // Public routes - still return auth data if available
     if (
@@ -167,39 +182,39 @@ export const authProvider = {
       pathname === "/checkin" ||
       pathname === "/testimonials"
     ) {
-      return Promise.resolve({
+      return {
         authenticated: true,
         roles,
         id,
-      });
+      } as const;
     }
 
     // Check if user is trying to access admin routes without admin role
     if (pathname.startsWith("/admin") && !roles.includes(UserRole.ADMIN)) {
-      return Promise.resolve({
+      return {
         authenticated: true,
         redirectTo: "/dashboard/user",
         roles,
         id,
-      });
+      } as const;
     }
 
     // Check if user is trying to access user routes with only admin role
     if (pathname === "/dashboard/user" && roles.includes(UserRole.ADMIN) && !roles.includes(UserRole.USER)) {
-      return Promise.resolve({
+      return {
         authenticated: true,
         redirectTo: "/admin",
         roles,
         id,
-      });
+      } as const;
     }
 
     // For all other authenticated routes, return full auth data
-    return Promise.resolve({
+    return {
       authenticated: true,
       roles,
       id,
-    });
+    } as const;
   },
 
   refresh: async () => {
@@ -266,5 +281,3 @@ export const authProvider = {
     }
   },
 };
-
-export default authProvider;

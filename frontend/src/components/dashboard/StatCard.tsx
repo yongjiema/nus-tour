@@ -99,5 +99,3 @@ export const StatCardContainer: React.FC<StatCardContainerProps> = ({ children, 
     </StyledStatCard>
   );
 };
-
-export default StatCard;

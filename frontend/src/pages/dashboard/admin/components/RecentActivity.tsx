@@ -19,28 +19,19 @@ import PersonIcon from "@mui/icons-material/Person";
 import FeedbackIcon from "@mui/icons-material/Feedback";
 import HistoryIcon from "@mui/icons-material/History";
 import { formatDateDisplay } from "../../../../utils/dateUtils";
-import type { ActivityItem } from "../../../../services/api";
-import { getThemeColor } from "../../../../theme/constants";
+import type { ActivityItem } from "../../../../types/api.types";
+import { getSubtleBackground } from "../../../../theme/constants";
+import { SectionTitle } from "../../../../components/shared/ui";
 
-const SectionTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: "bold",
-  color: getThemeColor(theme, "NUS_BLUE"),
-  marginBottom: "16px",
-  display: "flex",
-  alignItems: "center",
-  "& svg": {
-    marginRight: "8px",
-  },
-}));
-
-const ActivityContainer = styled(Paper)(({ theme: _theme }) => ({
+const ActivityContainer = styled(Paper)(({ theme }) => ({
   borderRadius: "12px",
   overflow: "hidden",
+  backgroundColor: theme.palette.background.paper,
 }));
 
 const ActivityHeader = styled(Box)(({ theme }) => ({
   padding: "16px 24px",
-  backgroundColor: theme.palette.grey[100],
+  backgroundColor: getSubtleBackground(theme, "medium"),
   borderBottom: `1px solid ${theme.palette.divider}`,
 }));
 
@@ -55,7 +46,7 @@ const ActivityList = styled(List)(({ theme }) => ({
     background: theme.palette.background.paper,
   },
   "&::-webkit-scrollbar-thumb": {
-    backgroundColor: theme.palette.grey[400],
+    backgroundColor: theme.palette.mode === "dark" ? theme.palette.grey[600] : theme.palette.grey[400],
     borderRadius: "3px",
   },
 }));
@@ -65,7 +56,7 @@ const ActivityListItem = styled(ListItem)(({ theme }) => ({
   paddingLeft: "20px",
   transition: "background-color 0.2s",
   "&:hover": {
-    backgroundColor: theme.palette.grey[100],
+    backgroundColor: getSubtleBackground(theme, "light"),
   },
   "&:not(:last-child)": {
     borderBottom: `1px solid ${theme.palette.divider}`,
@@ -127,7 +118,7 @@ const RecentActivity: React.FC<RecentActivityProps> = React.memo(({ activities, 
 
       <ActivityContainer elevation={2}>
         <ActivityHeader>
-          <Typography variant="h6" sx={{ fontWeight: "medium" }}>
+          <Typography variant="h6" sx={{ fontWeight: "medium", color: "text.primary" }}>
             Latest Updates
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -152,7 +143,17 @@ const RecentActivity: React.FC<RecentActivityProps> = React.memo(({ activities, 
           </List>
         ) : activities.length === 0 ? (
           <Box sx={{ p: 3, textAlign: "center" }}>
-            <Alert severity="info" sx={{ mb: 2 }}>
+            <Alert
+              severity="info"
+              sx={{
+                mb: 2,
+                backgroundColor: theme.palette.mode === "dark" ? `${theme.palette.info.main}20` : undefined,
+                color: theme.palette.text.primary,
+                "& .MuiAlert-icon": {
+                  color: theme.palette.info.main,
+                },
+              }}
+            >
               No recent activity to display
             </Alert>
             <Typography variant="body2" color="text.secondary">
@@ -163,7 +164,7 @@ const RecentActivity: React.FC<RecentActivityProps> = React.memo(({ activities, 
           <ActivityList aria-label="Recent activities list">
             {activities.map((activity) => {
               const { icon, label, color, borderColor } = getActivityDetails(activity.type);
-              const formattedTime = formatDateDisplay(activity.timestamp);
+              const formattedTime = formatDateDisplay(activity.timestamp.toString());
               const activityId = typeof activity.id === "string" ? activity.id : String(activity.id);
               return (
                 <ActivityListItem key={activityId} sx={{ borderLeftColor: borderColor }}>
@@ -173,7 +174,9 @@ const RecentActivity: React.FC<RecentActivityProps> = React.memo(({ activities, 
                   <ListItemText
                     primary={
                       <Box display="flex" alignItems="center" gap={1}>
-                        {activity.description}
+                        <Typography variant="body2" color="text.primary">
+                          {activity.description}
+                        </Typography>
                         <Chip
                           label={label}
                           size="small"
@@ -198,4 +201,5 @@ const RecentActivity: React.FC<RecentActivityProps> = React.memo(({ activities, 
   );
 });
 
+RecentActivity.displayName = "RecentActivity";
 export default RecentActivity;

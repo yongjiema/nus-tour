@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Box,
-  Typography,
   Paper,
   Table,
   TableBody,
@@ -20,9 +19,10 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
-import { useAdminBookings, useAdminUpdateBookingStatus } from "../../../services/api";
+import { useAdminBookings, useAdminUpdateBookingStatus } from "../../../hooks";
+import { DashboardContainer } from "../../../components/shared/dashboard";
 
-const AdminBookingManagement: React.FC = () => {
+export const AdminBookingManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -60,7 +60,7 @@ const AdminBookingManagement: React.FC = () => {
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+        <CircularProgress size={60} thickness={4} />
       </Box>
     );
   }
@@ -74,11 +74,7 @@ const AdminBookingManagement: React.FC = () => {
   }
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Booking Management
-      </Typography>
-
+    <DashboardContainer>
       {/* Search */}
       <Box mb={3}>
         <TextField
@@ -196,8 +192,6 @@ const AdminBookingManagement: React.FC = () => {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Paper>
-    </Box>
+    </DashboardContainer>
   );
 };
-
-export default AdminBookingManagement;

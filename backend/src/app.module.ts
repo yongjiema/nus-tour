@@ -12,10 +12,14 @@ import { CheckinModule } from "./checkin/checkin.module";
 import { FeedbackModule } from "./feedback/feedback.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { DatabaseSeedModule } from "./database/seed/database-seed.module";
+import { appConfig } from "./config";
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      load: [appConfig],
+      isGlobal: true,
+    }),
     DatabaseModule,
     AuthModule,
     UsersModule,

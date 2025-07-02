@@ -3,10 +3,9 @@
   "version": "0.0.1",
   "description": "NUS Tour",
   "scripts": {
-    "install": "npm run install:toolkit && npm run install:backend && npm run install:frontend",
-    "install:toolkit": "npm install",
-    "install:backend": "cd backend && npm install && cd ..",
-    "install:frontend": "cd frontend && npm install && cd ..",
+    "preinstall": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
     "check": "npm run lint && npm run test",
     "format": "npm run format:backend && npm run format:frontend",
     "format:backend": "cd backend && npm run format",
@@ -35,8 +34,6 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
     "concurrently": "^9.1.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2"

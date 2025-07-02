@@ -115,3 +115,6 @@ const Feedback: React.FC = () => {
 };
 
 export default Feedback;
+
+export { default as FeedbackList } from "./list";
+export { default as FeedbackForm } from "./form";

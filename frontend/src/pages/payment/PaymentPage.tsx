@@ -23,8 +23,8 @@ import {
   CreditCard as CreditCardIcon,
   AccountBalanceWallet as WalletIcon,
 } from "@mui/icons-material";
-import { getThemeColor } from "../../theme/constants";
 import { usePayment } from "../../hooks/usePayment";
+import { ActionButton } from "../../components/shared/ui";
 import { useCustomMutation } from "@refinedev/core";
 import { BookingStatus } from "../../types/enums";
 import { PublicHeader } from "../../components/header/public";
@@ -65,18 +65,6 @@ const PaymentMethodCard = styled(Card)(({ theme }) => ({
   "&.selected": {
     borderColor: theme.palette.primary.main,
     backgroundColor: theme.palette.primary.light + "10",
-  },
-}));
-
-const ActionButton = styled(Button)(({ theme }) => ({
-  marginTop: theme.spacing(3),
-  padding: theme.spacing(1.5, 4),
-  backgroundColor: getThemeColor(theme, "NUS_BLUE"),
-  "&:hover": {
-    backgroundColor: theme.palette.primary.dark,
-  },
-  "&:disabled": {
-    backgroundColor: theme.palette.action.disabled,
   },
 }));
 

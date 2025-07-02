@@ -4,22 +4,10 @@ import { Controller } from "react-hook-form";
 import type { FieldValues, Resolver } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { Box, Typography, TextField, Rating, Button, FormControlLabel, Checkbox } from "@mui/material";
+import { Box, Typography, Rating, FormControlLabel, Checkbox } from "@mui/material";
 import { styled } from "@mui/material/styles";
-
-const FormContainer = styled(Box)({
-  maxWidth: 500,
-  margin: "0 auto",
-});
-
-const SubmitButton = styled(Button)({
-  marginTop: "16px",
-  backgroundColor: "primary.main",
-  fontWeight: "bold",
-  "&:hover": {
-    backgroundColor: "primary.dark",
-  },
-});
+import { FormField } from "../../components/shared/forms/FormField";
+import { FormActions } from "../../components/shared/forms/FormActions";
 
 const RatingContainer = styled(Box)({
   marginBottom: "24px",
@@ -55,7 +43,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
   const [_comment, _setComment] = useState("");
   const [_error, _setError] = useState<string | null>(null);
   const [_isSubmitting, _setIsSubmitting] = useState(false);
-  const _FormContainer = FormContainer; // Fix unused variable
 
   const {
     handleSubmit,
@@ -150,7 +137,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
         control={control}
         name="comments"
         render={({ field }) => (
-          <TextField
+          <FormField
             {...field}
             fullWidth
             multiline
@@ -170,9 +157,10 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
       />
 
       {/* Submit Button */}
-      <SubmitButton type="submit" variant="contained" fullWidth disabled={_isSubmitting || formLoading}>
-        {_isSubmitting || formLoading ? "Submitting..." : "Submit Feedback"}
-      </SubmitButton>
+      <FormActions
+        isLoading={_isSubmitting || formLoading}
+        submitText={_isSubmitting || formLoading ? "Submitting..." : "Submit Feedback"}
+      />
     </Box>
   );
 };

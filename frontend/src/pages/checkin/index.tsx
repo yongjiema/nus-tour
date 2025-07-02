@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Container, Typography, TextField, Box, Alert } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { useCustomMutation, useNotification } from "@refinedev/core";
-import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
+import { useCustomMutation, useNotification, useOne } from "@refinedev/core";
+import { AuthPaper, SubmitButton } from "../../components/styled";
+import { PageTitle } from "../../components/shared/ui";
 import { useParams, useNavigate } from "react-router-dom";
-import { useOne } from "@refinedev/core";
 import { handleRefineError } from "../../utils/errorHandler";
 
 // Styled components for consistent UI

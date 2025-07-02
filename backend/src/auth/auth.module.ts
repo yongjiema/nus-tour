@@ -9,6 +9,7 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
 import { AuthController } from "./auth.controller";
 import { RolesGuard } from "./roles.guard";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { getRequiredAppConfig } from "../config";
 
 @Module({
   imports: [
@@ -17,10 +18,13 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => ({
-        secret: cfg.get<string>("JWT_SECRET", "defaultSecretKey"),
-        signOptions: { expiresIn: "1h" },
-      }),
+      useFactory: (cfg: ConfigService) => {
+        const appConfig = getRequiredAppConfig(cfg);
+        return {
+          secret: appConfig.jwt.secret,
+          signOptions: { expiresIn: appConfig.jwt.expiresIn },
+        };
+      },
     }),
     forwardRef(() => UsersModule),
   ],

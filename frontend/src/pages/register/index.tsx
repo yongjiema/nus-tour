@@ -1,12 +1,17 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useCustomMutation, useNotification } from "@refinedev/core";
-import { TextField, Container, Grid2 as Grid, Alert } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Container, Grid2 as Grid, Alert, Typography } from "@mui/material";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
+import { AuthPaper } from "../../components/styled";
+import { PageTitle } from "../../components/shared/ui";
 import { handleRefineError } from "../../utils/errorHandler";
+import { FormField } from "../../components/shared/forms/FormField";
+import { FormActions } from "../../components/shared/forms/FormActions";
+import { AuthHeader } from "../../components/header/auth";
+import { useTheme } from "@mui/material/styles";
 
 interface RegisterFormInputs {
   firstName: string;
@@ -32,6 +37,7 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
   const { open } = useNotification();
   const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
 
   const {
     register,
@@ -109,93 +115,106 @@ const Register: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
-      <AuthPaper>
-        <PageTitle variant="h4" gutterBottom>
-          Register
-        </PageTitle>
+    <>
+      <AuthHeader />
+      <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
+        <AuthPaper>
+          <PageTitle variant="h4" gutterBottom>
+            Register
+          </PageTitle>
 
-        <form onSubmit={handleFormSubmit} noValidate>
-          <Grid container spacing={3}>
-            <Grid size={12}>{error && <Alert severity="error">{error}</Alert>}</Grid>
+          <form onSubmit={handleFormSubmit} noValidate>
+            <Grid container spacing={3}>
+              <Grid size={12}>{error && <Alert severity="error">{error}</Alert>}</Grid>
 
-            <Grid size={6}>
-              <TextField
-                label="First Name"
-                fullWidth
-                required
-                variant="outlined"
-                autoComplete="given-name"
-                {...register("firstName")}
-                error={!!errors.firstName}
-                helperText={errors.firstName ? errors.firstName.message ?? "" : ""}
-              />
+              <Grid size={6}>
+                <FormField
+                  label="First Name"
+                  fullWidth
+                  required
+                  variant="outlined"
+                  autoComplete="given-name"
+                  {...register("firstName")}
+                  error={!!errors.firstName}
+                  helperText={errors.firstName ? errors.firstName.message ?? "" : ""}
+                />
+              </Grid>
+
+              <Grid size={6}>
+                <FormField
+                  label="Last Name"
+                  fullWidth
+                  required
+                  variant="outlined"
+                  autoComplete="family-name"
+                  {...register("lastName")}
+                  error={!!errors.lastName}
+                  helperText={errors.lastName ? errors.lastName.message ?? "" : ""}
+                />
+              </Grid>
+
+              <Grid size={12}>
+                <FormField
+                  label="Email"
+                  type="email"
+                  fullWidth
+                  required
+                  variant="outlined"
+                  autoComplete="email"
+                  {...register("email")}
+                  error={!!errors.email}
+                  helperText={errors.email ? errors.email.message ?? "" : ""}
+                />
+              </Grid>
+
+              <Grid size={12}>
+                <FormField
+                  label="Password"
+                  type="password"
+                  fullWidth
+                  required
+                  variant="outlined"
+                  autoComplete="new-password"
+                  {...register("password")}
+                  error={!!errors.password}
+                  helperText={errors.password ? errors.password.message ?? "" : ""}
+                />
+              </Grid>
+
+              <Grid size={12}>
+                <FormField
+                  label="Confirm Password"
+                  type="password"
+                  fullWidth
+                  required
+                  variant="outlined"
+                  autoComplete="new-password"
+                  {...register("confirmPassword")}
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword ? errors.confirmPassword.message ?? "" : ""}
+                />
+              </Grid>
+
+              <Grid size={12}>
+                <Typography variant="body2" color="text.secondary">
+                  Already have an account?{" "}
+                  <RouterLink
+                    to="/login"
+                    style={{ color: theme.palette.secondary.main, fontWeight: 600, textDecoration: "underline" }}
+                  >
+                    Login
+                  </RouterLink>
+                </Typography>
+              </Grid>
+
+              <Grid size={12}>
+                <FormActions isLoading={isSubmitting} submitText={isSubmitting ? "Registering..." : "Register"} />
+              </Grid>
             </Grid>
-
-            <Grid size={6}>
-              <TextField
-                label="Last Name"
-                fullWidth
-                required
-                variant="outlined"
-                autoComplete="family-name"
-                {...register("lastName")}
-                error={!!errors.lastName}
-                helperText={errors.lastName ? errors.lastName.message ?? "" : ""}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <TextField
-                label="Email"
-                type="email"
-                fullWidth
-                required
-                variant="outlined"
-                autoComplete="email"
-                {...register("email")}
-                error={!!errors.email}
-                helperText={errors.email ? errors.email.message ?? "" : ""}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <TextField
-                label="Password"
-                type="password"
-                fullWidth
-                required
-                variant="outlined"
-                autoComplete="new-password"
-                {...register("password")}
-                error={!!errors.password}
-                helperText={errors.password ? errors.password.message ?? "" : ""}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <TextField
-                label="Confirm Password"
-                type="password"
-                fullWidth
-                required
-                variant="outlined"
-                autoComplete="new-password"
-                {...register("confirmPassword")}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword ? errors.confirmPassword.message ?? "" : ""}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <SubmitButton type="submit" variant="contained" fullWidth disabled={isSubmitting}>
-                {isSubmitting ? "Registering..." : "Register"}
-              </SubmitButton>
-            </Grid>
-          </Grid>
-        </form>
-      </AuthPaper>
-    </Container>
+          </form>
+        </AuthPaper>
+      </Container>
+    </>
   );
 };
 

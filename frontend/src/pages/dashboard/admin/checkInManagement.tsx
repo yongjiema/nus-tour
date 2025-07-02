@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Box,
-  Typography,
   Paper,
   Table,
   TableBody,
@@ -20,9 +19,10 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
-import { useAdminBookings, useAdminUpdateBookingStatus } from "../../../services/api";
+import { useAdminBookings, useAdminUpdateBookingStatus } from "../../../hooks";
+import { DashboardContainer } from "../../../components/shared/dashboard";
 
-const AdminCheckInManagement: React.FC = () => {
+export const AdminCheckInManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -62,7 +62,7 @@ const AdminCheckInManagement: React.FC = () => {
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+        <CircularProgress size={60} thickness={4} />
       </Box>
     );
   }
@@ -76,11 +76,7 @@ const AdminCheckInManagement: React.FC = () => {
   }
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Check-In Management
-      </Typography>
-
+    <DashboardContainer>
       <Alert severity="info" sx={{ mb: 3 }}>
         Manage check-ins for confirmed bookings. Mark bookings as completed when participants arrive.
       </Alert>
@@ -150,6 +146,7 @@ const AdminCheckInManagement: React.FC = () => {
                       size="small"
                       variant="contained"
                       color="success"
+                      startIcon={<CheckCircleIcon />}
                       onClick={() => {
                         handleCheckIn(booking.id.toString());
                       }}
@@ -179,8 +176,6 @@ const AdminCheckInManagement: React.FC = () => {
           No confirmed bookings found for check-in.
         </Alert>
       )}
-    </Box>
+    </DashboardContainer>
   );
 };
-
-export default AdminCheckInManagement;

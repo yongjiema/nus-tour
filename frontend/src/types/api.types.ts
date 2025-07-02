@@ -1,8 +1,31 @@
 // Generic API response wrapper
 export interface ApiResponse<T> {
   data: T;
-  status: number;
+  status?: number;
   message?: string;
+}
+
+// Auth related types
+export interface AuthResponse {
+  access_token: string;
+}
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  access_token: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    roles: string[];
+  };
 }
 
 // User related types
@@ -18,23 +41,67 @@ export interface UserProfile {
 
 // Booking related types
 export interface Booking {
-  id: string; // UUID primary identifier
+  id: string;
+  bookingId: string;
+  name: string;
+  email: string;
   date: string;
   timeSlot: string;
   groupSize: number;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  status: string;
+  bookingStatus: string;
+  checkedIn: boolean;
   hasFeedback: boolean;
-  userId: string;
+  createdAt: Date;
+  deposit: number;
+  userId?: string;
   user?: UserProfile;
-  createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface BookingsResponse {
   data: Booking[];
   total: number;
-  page: number;
-  limit: number;
+  page?: number;
+  limit?: number;
+}
+
+export interface CreateBookingRequest {
+  date: string;
+  timeSlot: string;
+  groupSize: number;
+  name: string;
+  email: string;
+  phone?: string;
+  participants?: number;
+  specialRequests?: string;
+}
+
+export interface CreateBookingResponse {
+  id: string;
+  date: string;
+  groupSize: number;
+  deposit: number;
+  timeSlot: string;
+  status: string;
+  hasFeedback: boolean;
+  createdAt: string;
+  modifiedAt: string;
+}
+
+export interface BookingStatusUpdateRequest {
+  status: string;
+  transactionId: string;
+  checkInTime?: string;
+}
+
+export interface AdminBookingStatusUpdateRequest {
+  status: string;
+}
+
+export interface TimeSlotAvailability {
+  slot: string;
+  available: number;
 }
 
 // Payment related types
@@ -47,6 +114,17 @@ export interface Payment {
   userId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PaymentData {
+  bookingId: string;
+  amount: number;
+  paymentMethod?: string;
+}
+
+export interface PaymentResponse {
+  id: string;
+  transactionId: string;
 }
 
 export interface PaymentsResponse {
@@ -66,6 +144,14 @@ export interface Feedback {
   updatedAt: string;
 }
 
+export interface FeedbackRequest {
+  bookingId: string;
+  email: string;
+  rating: number;
+  comment: string;
+  submittedAt: string;
+}
+
 export interface FeedbacksResponse {
   data: Feedback[];
   total: number;
@@ -74,9 +160,12 @@ export interface FeedbacksResponse {
 // Dashboard related types
 export interface DashboardStats {
   totalBookings: number;
-  pendingCheckIns: number;
-  completedTours: number;
-  feedbacks: number;
+  pendingBookings: number;
+  completedBookings: number;
+  totalRevenue: number;
+  pendingCheckIns?: number;
+  completedTours?: number;
+  feedbacks?: number;
 }
 
 export interface DashboardApiResponse {
@@ -92,9 +181,4 @@ export interface ActivityItem {
 
 export interface ActivityApiResponse {
   data: ActivityItem[];
-}
-
-// Auth related types
-export interface AuthResponse {
-  access_token: string;
 }

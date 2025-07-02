@@ -4,6 +4,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import importPlugin from "eslint-plugin-import";
 
 export default defineConfig([
   // Global ignores
@@ -20,6 +21,8 @@ export default defineConfig([
     extends: [
       tseslint.configs.strictTypeChecked,
       tseslint.configs.stylisticTypeChecked,
+      importPlugin.flatConfigs.recommended,
+      importPlugin.flatConfigs.typescript,
       reactHooks.configs["recommended-latest"],
       reactRefresh.configs.vite,
     ],
@@ -28,6 +31,13 @@ export default defineConfig([
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    settings: {
+      "import/resolver": {
+        typescript: {
+          project: "./tsconfig.json",
+        },
       },
     },
     rules: {

@@ -1,10 +1,11 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Container, Typography, Box, Paper, Button, styled, Divider, CircularProgress } from "@mui/material";
+import { Container, Typography, Box, Paper, styled, Divider, CircularProgress } from "@mui/material";
 import { CheckCircle } from "@mui/icons-material";
 import { useOne } from "@refinedev/core";
 import { PublicHeader } from "../../components/header/public";
 import { getThemeColor } from "../../theme/constants";
+import { ActionButton } from "../../components/shared/ui";
 import { useTheme } from "@mui/material/styles";
 
 const ConfirmationPaper = styled(Paper)(({ theme }) => ({
@@ -23,15 +24,6 @@ const DetailsRow = styled(Box)(({ theme }) => ({
   display: "flex",
   justifyContent: "space-between",
   padding: theme.spacing(1, 0),
-}));
-
-const ActionButton = styled(Button)(({ theme }) => ({
-  marginTop: theme.spacing(3),
-  padding: theme.spacing(1.5, 4),
-  backgroundColor: getThemeColor(theme, "NUS_BLUE"),
-  "&:hover": {
-    backgroundColor: theme.palette.primary.dark,
-  },
 }));
 
 const BookingConfirmation: React.FC = () => {

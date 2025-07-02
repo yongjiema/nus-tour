@@ -2,7 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { PaymentsService } from "./payments.service";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Payment } from "../database/entities/payments.entity";
-import { User } from "../database/entities/user.entity";
+import { User, User as EntityUser } from "../database/entities/user.entity";
 import { Booking } from "../database/entities/booking.entity";
 import { BookingService } from "../booking/booking.service";
 import { Logger, NotFoundException, ForbiddenException } from "@nestjs/common";
@@ -21,7 +21,6 @@ import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
 import { BookingStatus } from "../database/entities/enums";
 import { jest } from "@jest/globals";
-import { User as EntityUser } from "../database/entities/user.entity";
 
 type JestMock = ReturnType<typeof jest.fn>;
 

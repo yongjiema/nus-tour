@@ -2,7 +2,7 @@ import * as React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import Login from "../index";
+import LoginPage from "../index";
 import { render } from "../../../../test/utils/render";
 
 // Mock Refine hooks
@@ -45,7 +45,7 @@ describe("Login Component", () => {
   });
 
   it("renders login form with all fields", () => {
-    render(<Login />);
+    render(<LoginPage />);
 
     expect(screen.getByRole("heading", { name: /login/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
@@ -54,7 +54,7 @@ describe("Login Component", () => {
   });
 
   it("validates required fields", async () => {
-    render(<Login />);
+    render(<LoginPage />);
 
     const submitButton = screen.getByRole("button", { name: /login/i });
     await userEvent.click(submitButton);
@@ -66,7 +66,7 @@ describe("Login Component", () => {
   });
 
   it("validates email format", async () => {
-    render(<Login />);
+    render(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email/i);
     await userEvent.type(emailInput, "invalid-email");
@@ -80,7 +80,7 @@ describe("Login Component", () => {
   });
 
   it("submits form with valid credentials", async () => {
-    render(<Login />);
+    render(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
@@ -102,7 +102,7 @@ describe("Login Component", () => {
     const errorMessage = "Invalid credentials";
     mockLogin.mockRejectedValue(new Error(errorMessage));
 
-    render(<Login />);
+    render(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);

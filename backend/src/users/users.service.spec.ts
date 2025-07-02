@@ -1,11 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, ObjectLiteral } from "typeorm";
 import { UsersService } from "./users.service";
 import { User } from "../database/entities/user.entity";
 import { NotFoundException, ConflictException } from "@nestjs/common";
 import { TEST_NON_EXISTENT_BOOKING_ID, TEST_USER_ID_1, TEST_USER_ID_2, TEST_USER_ROLE_ID } from "../common/testing";
-import { ObjectLiteral } from "typeorm";
 import { Role } from "../database/entities/role.entity";
 
 // Mock bcrypt for tests

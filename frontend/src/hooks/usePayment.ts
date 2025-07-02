@@ -2,17 +2,7 @@ import { useCustomMutation, useNotification } from "@refinedev/core";
 import { useNavigate } from "react-router-dom";
 import { logger } from "../utils/logger";
 import { handleRefineError } from "../utils/errorHandler";
-
-export interface PaymentData {
-  bookingId: string; // UUID
-  amount: number;
-  paymentMethod?: string;
-}
-
-interface PaymentResponse {
-  id: string;
-  transactionId: string;
-}
+import type { PaymentData, PaymentResponse } from "../types/api.types";
 
 export const usePayment = () => {
   const navigate = useNavigate();

@@ -136,3 +136,5 @@ const TestimonialsPage: React.FC = () => {
 };
 
 export default TestimonialsPage;
+
+export { default as TestimonialsPage } from "./index";
