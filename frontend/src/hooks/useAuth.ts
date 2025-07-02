@@ -1,11 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCustomMutation } from "@refinedev/core";
 import { authProvider } from "../authProvider";
+import type { RegisterRequest, RegisterResponse } from "../types/api.types";
 
-/**
- * Custom hook for handling user authentication
- * @returns Authentication state and user ID
- */
+// Registration hook
+export const useRegister = () => {
+  const { mutate, isPending } = useCustomMutation<RegisterResponse>();
+
+  const register = (data: RegisterRequest) => {
+    mutate({
+      url: "auth/register",
+      method: "post",
+      values: data,
+    });
+  };
+
+  return { register, isPending };
+};
+
+// Authentication state checking hook
 export const useAuthentication = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);

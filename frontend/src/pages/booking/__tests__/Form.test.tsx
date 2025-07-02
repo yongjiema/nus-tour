@@ -1,5 +1,5 @@
 import * as React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render } from "../../../../test/utils/render";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -28,7 +28,7 @@ vi.mock("react-router-dom", async () => {
 const mockCreateBooking = vi.fn();
 const mockUseAvailableTimeSlots = vi.fn();
 
-vi.mock("../../../services/api", () => ({
+vi.mock("../../../hooks", () => ({
   useCreateBooking: () => ({
     createBooking: mockCreateBooking,
   }),
@@ -101,6 +101,11 @@ describe("BookingForm Component", () => {
       value: "http://localhost:3000/home",
       writable: true,
     });
+  });
+
+  afterEach(() => {
+    // Clear any pending timeouts to prevent unhandled errors
+    vi.clearAllTimers();
   });
 
   it("renders booking form with all fields", () => {
@@ -257,17 +262,17 @@ describe("BookingForm Component", () => {
     // Wait for the success message
     await waitFor(
       () => {
-        expect(screen.getByText("Booking created successfully! Redirecting to payment...")).toBeInTheDocument();
+        expect(screen.getByText("Booking successful! Redirecting to confirmation...")).toBeInTheDocument();
       },
-      { timeout: 1000 },
+      { timeout: 3000 },
     );
 
-    // Wait for navigation
+    // Wait for navigation (the component has a 1.5s timeout)
     await waitFor(
       () => {
         expect(mockNavigate).toHaveBeenCalledWith("/payment/success");
       },
-      { timeout: 2000 },
+      { timeout: 4000 },
     );
   });
 });

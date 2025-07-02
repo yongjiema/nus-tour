@@ -1,8 +1,20 @@
 // Shared dashboard components
-export { default as StatCard } from "./StatCard";
-export { StatCardContainer } from "./StatCard";
-export { default as TabPanel } from "./TabPanel";
-export * from "./StyledComponents";
+export { StatCard, StatCardContainer } from "./StatCard";
+export { TabPanel } from "./TabPanel";
+export {
+  StatusChip,
+  DashboardCard,
+  TabPanelContainer,
+  SectionHeader,
+  StatsGrid,
+  StatPaper,
+  TabsContainer,
+  EmptyStateContainer,
+  CardContent,
+} from "./StyledComponents";
+
+// Re-export ActionButton from shared UI
+export { ActionButton } from "../shared/ui";
 
 // Re-export types
 export type { StatCardProps, StatCardContainerProps } from "./StatCard";

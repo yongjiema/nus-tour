@@ -84,7 +84,8 @@ const PrivateRoute: React.FC<{ requiredRole?: UserRole }> = ({ requiredRole }) =
       required: requiredRole,
       current: userRoles,
     });
-    return userRoles.includes(UserRole.ADMIN) ? <Navigate to="/dashboard/admin" /> : <Navigate to="/dashboard/user" />;
+    // Redirect to login on role mismatch to enforce explicit re-authentication
+    return <Navigate to="/login" />;
   }
 
   logger.debug("Access granted to protected route");

@@ -1,6 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { BadRequestException } from "@nestjs/common";
-import { Logger } from "@nestjs/common";
+import { BadRequestException, Logger } from "@nestjs/common";
 import { TEST_BOOKING_ID_5, TEST_USER_ID_1 } from "../../common/testing";
 import { BookingController } from "./booking.controller";
 import { BookingService } from "./booking.service";

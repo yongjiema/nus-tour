@@ -2,7 +2,7 @@ import * as React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import Register from "../index";
+import RegisterPage from "../index";
 import { render } from "../../../../test/utils/render";
 
 // Mock Refine hooks
@@ -70,7 +70,7 @@ describe("Register Component", () => {
   });
 
   it("renders registration form with all fields", () => {
-    render(<Register />);
+    render(<RegisterPage />);
 
     expect(screen.getByRole("heading", { name: /register/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe("Register Component", () => {
   });
 
   it("validates required fields", async () => {
-    render(<Register />);
+    render(<RegisterPage />);
 
     const submitButton = screen.getByRole("button", { name: /register/i });
     await userEvent.click(submitButton);
@@ -100,7 +100,7 @@ describe("Register Component", () => {
   });
 
   it("validates email format", async () => {
-    render(<Register />);
+    render(<RegisterPage />);
 
     const emailInput = screen.getByLabelText(/email/i);
     await userEvent.type(emailInput, "invalid-email");
@@ -114,7 +114,7 @@ describe("Register Component", () => {
   });
 
   it("validates password confirmation match", async () => {
-    render(<Register />);
+    render(<RegisterPage />);
 
     // Use direct DOM queries for password fields
     const passwordInput = document.querySelector('input[name="password"]');
@@ -139,7 +139,7 @@ describe("Register Component", () => {
   });
 
   it("validates minimum password length", async () => {
-    render(<Register />);
+    render(<RegisterPage />);
 
     // Use direct DOM query for password field
     const passwordInput = document.querySelector('input[name="password"]');
@@ -160,7 +160,7 @@ describe("Register Component", () => {
   });
 
   it("submits registration with valid data", async () => {
-    render(<Register />);
+    render(<RegisterPage />);
 
     // Use updated field names
     const firstNameInput = screen.getByLabelText(/first name/i);
@@ -215,7 +215,7 @@ describe("Register Component", () => {
       }
     });
 
-    render(<Register />);
+    render(<RegisterPage />);
 
     const firstNameInput = screen.getByLabelText(/first name/i);
     const lastNameInput = screen.getByLabelText(/last name/i);

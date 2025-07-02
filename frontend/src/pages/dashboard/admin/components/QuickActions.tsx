@@ -4,13 +4,8 @@ import { styled } from "@mui/material/styles";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import EventNoteIcon from "@mui/icons-material/EventNote";
-import { getThemeColor } from "../../../../theme/constants";
-
-const SectionTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: "bold",
-  color: getThemeColor(theme, "NUS_BLUE"),
-  marginBottom: "16px",
-}));
+import { SectionTitle } from "../../../../components/shared/ui";
+import { TRANSITIONS } from "../../../../theme/constants";
 
 const ActionCard = styled(Paper)(({ theme }) => ({
   padding: "16px",
@@ -22,15 +17,16 @@ const ActionCard = styled(Paper)(({ theme }) => ({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  transition: "all 0.2s ease-in-out",
+  transition: `all ${TRANSITIONS.short}`,
   "&:hover": {
     transform: "translateY(-4px)",
-    backgroundColor: theme.palette.primary.light,
+    backgroundColor: theme.palette.primary.main,
+    boxShadow: theme.shadows[8],
     "& .MuiTypography-root": {
-      color: theme.palette.common.white,
+      color: theme.palette.primary.contrastText,
     },
     "& .MuiSvgIcon-root": {
-      color: theme.palette.common.white,
+      color: theme.palette.primary.contrastText,
     },
   },
 }));
@@ -40,71 +36,70 @@ const IconWrapper = styled(Box)(({ theme }) => ({
   "& .MuiSvgIcon-root": {
     fontSize: "2rem",
     color: theme.palette.primary.main,
+    transition: `color ${TRANSITIONS.short}`,
   },
 }));
 
-const ActionText = styled(Typography)({
+const ActionText = styled(Typography)(({ theme }) => ({
   fontWeight: "bold",
   fontSize: "1rem",
-});
+  color: theme.palette.text.primary,
+  transition: `color ${TRANSITIONS.short}`,
+}));
 
 interface QuickActionsProps {
   navigate: (path: string) => void | Promise<void>;
 }
 
-const QuickActions: React.FC<QuickActionsProps> = React.memo(({ navigate }) => {
+const QuickActions: React.FC<QuickActionsProps> = ({ navigate }) => {
   const actions = [
     {
       title: "Manage Bookings",
       icon: <EventNoteIcon />,
       path: "/admin/bookings",
-      ariaLabel: "Navigate to booking management",
     },
     {
       title: "Manage Check-Ins",
       icon: <HowToRegIcon />,
       path: "/admin/check-ins",
-      ariaLabel: "Navigate to check-in management",
     },
     {
       title: "View Feedback",
       icon: <RateReviewIcon />,
       path: "/admin/feedback",
-      ariaLabel: "Navigate to feedback management",
     },
   ];
 
-  const handleNavigation = (path: string): void => {
-    const result = navigate(path);
-    if (result instanceof Promise) {
-      void result;
-    }
-  };
-
   return (
-    <Box mt={5} mb={4}>
+    <Box mt={4} mb={4}>
       <SectionTitle variant="h5" gutterBottom>
         Quick Actions
       </SectionTitle>
       <Grid container spacing={3}>
         {actions.map((action, index) => (
-          <Grid size={{ xs: 12, sm: 4 }} key={index}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
             <ActionCard
               elevation={2}
-              onClick={() => {
-                handleNavigation(action.path);
-              }}
-              aria-label={action.ariaLabel}
+              onClick={() => void navigate(action.path)}
               role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  void navigate(action.path);
+                }
+              }}
+              aria-label={`Navigate to ${action.title}`}
             >
               <IconWrapper>{action.icon}</IconWrapper>
-              <ActionText>{action.title}</ActionText>
+              <ActionText variant="body1">{action.title}</ActionText>
             </ActionCard>
           </Grid>
         ))}
       </Grid>
     </Box>
   );
-});
+};
 
+QuickActions.displayName = "QuickActions";
 export default QuickActions;

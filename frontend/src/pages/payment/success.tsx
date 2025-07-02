@@ -1,18 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Container,
-  Typography,
-  Box,
-  Paper,
-  Button,
-  Divider,
-  styled,
-  CircularProgress,
-  Grid2 as Grid,
-} from "@mui/material";
+import { Container, Typography, Box, Paper, Divider, styled, CircularProgress, Grid2 as Grid } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { getThemeColor } from "../../theme/constants";
+import { ActionButton } from "../../components/shared/ui";
 import { useTheme } from "@mui/material/styles";
 
 const SuccessPaper = styled(Paper)(({ theme }) => ({
@@ -35,15 +26,6 @@ const DetailRow = styled(Box)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
   "&:last-child": {
     borderBottom: "none",
-  },
-}));
-
-const ActionButton = styled(Button)(({ theme }) => ({
-  marginTop: theme.spacing(3),
-  padding: theme.spacing(1.5, 4),
-  backgroundColor: getThemeColor(theme, "NUS_BLUE"),
-  "&:hover": {
-    backgroundColor: theme.palette.primary.dark,
   },
 }));
 

@@ -2,8 +2,6 @@ import React from "react";
 import { Box, Typography, Card, CardContent, Button, Container, CardMedia, Grid2 as Grid } from "@mui/material";
 import { getThemeColor, getCardShadow } from "../../theme/constants";
 import { useTheme } from "@mui/material/styles";
-import { useNavigate } from "react-router-dom";
-
 import academicProgramsImage from "../../assets/images/academics.jpg";
 import busRoutesImage from "../../assets/images/bus-routes.jpg";
 import canteensImage from "../../assets/images/canteens.jpg";
@@ -53,7 +51,6 @@ const informationData = [
 
 export const Information: React.FC = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -117,17 +114,6 @@ export const Information: React.FC = () => {
           </Grid>
         ))}
       </Grid>
-
-      <Button
-        variant="contained"
-        size="large"
-        style={{ backgroundColor: getThemeColor(theme, "NUS_ORANGE"), color: theme.palette.common.white }}
-        onClick={() => {
-          void navigate("/booking");
-        }}
-      >
-        Book Your Tour Now
-      </Button>
     </Container>
   );
 };

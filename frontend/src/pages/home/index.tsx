@@ -2,20 +2,10 @@ import React from "react";
 import { Box, Typography, Container, CardMedia } from "@mui/material";
 import { styled, useTheme } from "@mui/material/styles";
 import { Link } from "react-router-dom";
+import { useIsAuthenticated } from "@refinedev/core";
 import NUSPhoto from "../../assets/images/nus-campus.jpg";
 import { getThemeColor } from "../../theme/constants";
-
-// Styled components for consistent UI
-const PageTitle = styled(Typography)(({ theme }) => ({
-  color: theme.palette.primary.main,
-  fontWeight: "bold",
-  marginBottom: theme.spacing(1),
-}));
-
-const Subtitle = styled(Typography)(({ theme }) => ({
-  color: theme.palette.secondary.main,
-  marginBottom: theme.spacing(2),
-}));
+import { PageTitle, Subtitle } from "../../components/shared/ui";
 
 const BodyText = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(5),
@@ -77,6 +67,10 @@ const ActionButton = styled(Link)(({ theme, color = "primary" }) => {
 
 export const Home: React.FC = () => {
   const theme = useTheme();
+  const { data: isAuthenticated } = useIsAuthenticated();
+
+  // Determine the booking route based on authentication status
+  const bookingRoute = isAuthenticated ? "/booking" : "/register";
 
   return (
     <Container
@@ -121,7 +115,7 @@ export const Home: React.FC = () => {
           Learn More About NUS
         </ActionButton>
 
-        <ActionButton to="/register" color="orange">
+        <ActionButton to={bookingRoute} color="orange">
           Book a Campus Tour
         </ActionButton>
 

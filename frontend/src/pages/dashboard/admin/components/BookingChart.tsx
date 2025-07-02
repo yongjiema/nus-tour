@@ -3,18 +3,7 @@ import { Box, Paper, Typography, Skeleton, useTheme, Alert } from "@mui/material
 import { styled } from "@mui/system";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from "recharts";
 import InsightsIcon from "@mui/icons-material/Insights";
-import { getThemeColor } from "../../../../theme/constants";
-
-const SectionTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: "bold",
-  color: getThemeColor(theme, "NUS_BLUE"),
-  marginBottom: "16px",
-  display: "flex",
-  alignItems: "center",
-  "& svg": {
-    marginRight: "8px",
-  },
-}));
+import { SectionTitle } from "../../../../components/shared/ui";
 
 const ChartContainer = styled(Paper)(({ theme: _theme }) => ({
   padding: "24px",

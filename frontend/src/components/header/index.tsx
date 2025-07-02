@@ -63,3 +63,4 @@ const RefineLayoutHeader: React.FC<RefineLayoutHeaderProps> = ({ sticky = true }
 };
 
 export default RefineLayoutHeader;
+export { RefineLayoutHeader as Header };

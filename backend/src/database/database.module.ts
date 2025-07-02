@@ -1,13 +1,17 @@
 import { Module, Logger } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { buildTypeOrmOptions } from "./typeorm.config";
 import { TimeSlot } from "./entities/timeSlot.entity";
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRoot(buildTypeOrmOptions()),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => buildTypeOrmOptions(configService),
+    }),
     TypeOrmModule.forFeature([TimeSlot]),
   ],
   providers: [],

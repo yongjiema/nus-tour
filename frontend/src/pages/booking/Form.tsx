@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
-import type { SubmitHandler, FieldValues } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { Box, Button, TextField, MenuItem, Alert, CircularProgress } from "@mui/material";
+import { Box, MenuItem, Alert, CircularProgress } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
 import { useNavigate } from "react-router-dom";
 import { useNotification } from "@refinedev/core";
 import { logger } from "../../utils/logger";
-import { useCreateBooking, useAvailableTimeSlots, type TimeSlotAvailability } from "../../services/api";
+import { useCreateBooking, useAvailableTimeSlots } from "../../hooks";
+import type { TimeSlotAvailability } from "../../types/api.types";
+import { FormField } from "../../components/shared/forms/FormField";
+import { FormActions } from "../../components/shared/forms/FormActions";
 
 // Constants
 const tomorrow = dayjs().add(1, "day");
@@ -37,12 +39,7 @@ const BookingForm: React.FC = () => {
   const { createBooking } = useCreateBooking();
 
   // Fetch available time slots for the selected date
-  const {
-    data: slotsData,
-    isLoading: slotsLoading,
-    error: slotsError,
-    refetch: refetchSlots,
-  } = useAvailableTimeSlots(selectedDate);
+  const { data: slotsData, isLoading: slotsLoading, refetch: refetchSlots } = useAvailableTimeSlots(selectedDate);
 
   // Update available slots when data changes
   useEffect(() => {
@@ -77,7 +74,6 @@ const BookingForm: React.FC = () => {
   };
 
   const {
-    register,
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
@@ -106,7 +102,7 @@ const BookingForm: React.FC = () => {
     }
   }, [watchedDate, selectedDate, setValue, refetchSlots]);
 
-  const processSubmit: SubmitHandler<BookingFormData> = (data) => {
+  const processSubmit = (data: BookingFormData) => {
     setError("");
     setSuccess(false);
 
@@ -200,24 +196,20 @@ const BookingForm: React.FC = () => {
       // Use the data provider hook with proper error handling
       createBooking(requestData, {
         onSuccess: (response) => {
-          logger.debug("Booking created successfully", { responseId: response.id, responseData: response });
+          logger.debug("Booking created successfully");
           setSuccess(true);
           open?.({
             message: "Booking created successfully! Redirecting to payment...",
             type: "success",
           });
-
           // Navigate to payment success page with booking data after a short delay
           redirectTimeoutRef.current = setTimeout(() => {
-            // Use only properties that exist on CreateBookingResponse
             if (response.id) {
               const bookingData = {
                 id: response.id,
                 amount: response.deposit,
               };
               logger.debug("Navigating to payment with booking data", { bookingData });
-
-              // Store booking data for payment page
               try {
                 localStorage.setItem(STORAGE_KEYS.BOOKING_DATA, JSON.stringify(bookingData));
                 void navigate("/payment/success");
@@ -320,140 +312,98 @@ const BookingForm: React.FC = () => {
     };
   }, []);
 
-  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void handleSubmit(processSubmit as SubmitHandler<FieldValues>)(event);
-  }
-
   return (
-    <Box component="form" onSubmit={handleFormSubmit} sx={{ maxWidth: 600, margin: "0 auto" }}>
-      {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 2 }}
-          onClose={() => {
-            setSuccess(false);
-          }}
-        >
-          Booking created successfully! Redirecting to payment...
-        </Alert>
-      )}
-
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 2 }}
-          onClose={() => {
-            setError("");
-          }}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {slotsError && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Unable to load available time slots. Please try refreshing the page.
-        </Alert>
-      )}
-
+    <Box
+      component="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSubmit(processSubmit)();
+      }}
+      noValidate
+      sx={{ mt: 2 }}
+    >
       <Controller
         name="date"
         control={control}
-        render={({ field }) => {
-          const handleDateChange = (newValue: Dayjs | null) => {
-            field.onChange(newValue);
-          };
-          return (
-            <DatePicker
-              label="Booking Date"
-              value={field.value}
-              onChange={handleDateChange}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  margin: "normal",
-                  error: !!errors.date,
-                  helperText: typeof errors.date?.message === "string" ? errors.date.message : "",
-                },
-              }}
-              disablePast
-              minDate={tomorrow}
-            />
-          );
-        }}
+        render={({ field }) => (
+          <DatePicker
+            {...field}
+            label="Booking Date"
+            minDate={tomorrow}
+            value={field.value}
+            onChange={(date) => {
+              field.onChange(date);
+            }}
+            slotProps={{
+              textField: { fullWidth: true, required: true, error: !!errors.date, helperText: errors.date?.message },
+            }}
+          />
+        )}
       />
-
       <Controller
         name="timeSlot"
         control={control}
-        render={({ field }) => {
-          const handleTimeSlotChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-            field.onChange(event.target.value);
-          };
-          return (
-            <TextField
-              select
-              label="Time Slot"
-              value={field.value}
-              onChange={handleTimeSlotChange}
-              error={!!errors.timeSlot}
-              helperText={
-                (typeof errors.timeSlot?.message === "string" ? errors.timeSlot.message : "") ||
-                (slotsLoading
-                  ? "Loading available slots..."
-                  : availableSlots.length === 0
-                  ? "No available slots for this date"
-                  : "")
-              }
-              fullWidth
-              margin="normal"
-              disabled={slotsLoading || availableSlots.length === 0}
-            >
-              {slotsLoading ? (
-                <MenuItem disabled>
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                  Loading slots...
+        render={({ field }) => (
+          <FormField
+            {...field}
+            select
+            label="Time Slot"
+            fullWidth
+            required
+            error={!!errors.timeSlot}
+            helperText={errors.timeSlot?.message}
+            disabled={slotsLoading || availableSlots.length === 0}
+          >
+            {slotsLoading ? (
+              <MenuItem value="" disabled>
+                <CircularProgress size={20} /> Loading...
+              </MenuItem>
+            ) : (
+              availableSlots.map((slot) => (
+                <MenuItem key={slot.slot} value={slot.slot} disabled={slot.available <= 0}>
+                  {slot.slot} {slot.available <= 0 ? "(Full)" : `(${slot.available} available)`}
                 </MenuItem>
-              ) : (
-                availableSlots.map((slot) => (
-                  <MenuItem key={slot.slot} value={slot.slot} disabled={slot.available <= 0}>
-                    {slot.slot} ({slot.available} available)
-                  </MenuItem>
-                ))
-              )}
-            </TextField>
-          );
+              ))
+            )}
+          </FormField>
+        )}
+      />
+      <Controller
+        name="groupSize"
+        control={control}
+        render={({ field }) => (
+          <FormField
+            {...field}
+            type="number"
+            label="Group Size"
+            fullWidth
+            required
+            error={!!errors.groupSize}
+            helperText={errors.groupSize?.message}
+            slotProps={{ htmlInput: { min: 1, max: 50 } }}
+          />
+        )}
+      />
+      {/* Error message */}
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      )}
+      {/* Success message */}
+      {success && (
+        <Alert severity="success" sx={{ mt: 2 }}>
+          Booking successful! Redirecting to confirmation...
+        </Alert>
+      )}
+      {/* Actions */}
+      <FormActions
+        onSubmit={() => {
+          void handleSubmit(processSubmit)();
         }}
+        isLoading={isSubmitting}
+        submitText="Book Tour"
       />
-
-      <TextField
-        label="Group Size"
-        type="number"
-        {...register("groupSize")}
-        error={!!errors.groupSize}
-        helperText={typeof errors.groupSize?.message === "string" ? errors.groupSize.message : ""}
-        fullWidth
-        margin="normal"
-        slotProps={{ htmlInput: { min: 1, max: 50 } }}
-      />
-
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        fullWidth
-        sx={{ mt: 3 }}
-        disabled={isSubmitting || slotsLoading || availableSlots.length === 0}
-      >
-        {isSubmitting
-          ? "Submitting..."
-          : slotsLoading
-          ? "Loading..."
-          : availableSlots.length === 0
-          ? "No Slots Available"
-          : "Book Tour"}
-      </Button>
     </Box>
   );
 };

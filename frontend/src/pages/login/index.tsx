@@ -1,11 +1,16 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLogin, useNotification } from "@refinedev/core";
-import { TextField, Container, Grid2 as Grid, Alert } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Container, Grid2 as Grid, Alert, Typography } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { AuthPaper, PageTitle, SubmitButton } from "../../components/styled";
+import { AuthPaper } from "../../components/styled";
+import { PageTitle } from "../../components/shared/ui";
+import { FormField } from "../../components/shared/forms/FormField";
+import { FormActions } from "../../components/shared/forms/FormActions";
+import { AuthHeader } from "../../components/header/auth";
+import { useTheme } from "@mui/material/styles";
 
 interface LoginFormInputs {
   email: string;
@@ -26,10 +31,10 @@ const validationSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
-  const navigate = useNavigate();
   const { mutateAsync: login } = useLogin();
   const { open } = useNotification();
   const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
 
   const {
     register,
@@ -46,39 +51,29 @@ const Login: React.FC = () => {
       const response = await login(data);
 
       if (response.success) {
-        // Get user data from localStorage after successful login
+        // Show welcome toast using refined redirect (user data now in localStorage)
         const storedUser = localStorage.getItem("user");
-        const user = storedUser ? (JSON.parse(storedUser) as User) : null;
+        let displayName: string | null = null;
+        try {
+          if (storedUser) {
+            const parsed = JSON.parse(storedUser) as User;
+            displayName =
+              [parsed.firstName, parsed.lastName].filter(Boolean).join(" ") ||
+              (parsed.email ? parsed.email.split("@")[0] : null);
+          }
+        } catch {
+          displayName = null;
+        }
 
-        // Create display name from user data
-        const displayName = user
-          ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email?.split("@")[0]
-          : null;
-
-        // Show welcome message with fallback
         open?.({
-          message: `Welcome back${displayName ? `, ${displayName}` : ""}!`,
+          message: `Welcome back${displayName ? ", " + displayName : ""}!`,
           type: "success",
         });
-
-        // Navigate based on role
-        const roles = user?.roles;
-        if (roles?.includes("ADMIN")) {
-          await navigate("/admin");
-        } else if (roles?.includes("USER")) {
-          await navigate("/dashboard/user");
-        } else {
-          open?.({
-            message: "Invalid user role",
-            type: "error",
-          });
-        }
+        // No manual navigate – authProvider.redirectTo handles it.
       }
     } catch (err: unknown) {
-      // Handle error and display it in the UI
       const errorMessage = err instanceof Error ? err.message : "Login failed. Please try again.";
       setError(errorMessage);
-      // Only log errors in development
       if (process.env.NODE_ENV === "development") {
         console.error("Login error:", err);
       }
@@ -91,53 +86,66 @@ const Login: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
-      <AuthPaper>
-        <PageTitle variant="h4" gutterBottom>
-          Login
-        </PageTitle>
+    <>
+      <AuthHeader />
+      <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
+        <AuthPaper>
+          <PageTitle variant="h4" gutterBottom>
+            Login
+          </PageTitle>
 
-        <form onSubmit={handleFormSubmit} noValidate>
-          <Grid container spacing={3}>
-            <Grid size={12}>{error && <Alert severity="error">{error}</Alert>}</Grid>
+          <form onSubmit={handleFormSubmit} noValidate>
+            <Grid container spacing={3}>
+              <Grid size={12}>{error && <Alert severity="error">{error}</Alert>}</Grid>
 
-            <Grid size={12}>
-              <TextField
-                label="Email"
-                type="email"
-                fullWidth
-                required
-                variant="outlined"
-                autoComplete="email"
-                {...register("email")}
-                error={!!errors.email}
-                helperText={errors.email?.message}
-              />
+              <Grid size={12}>
+                <FormField
+                  label="Email"
+                  type="email"
+                  fullWidth
+                  required
+                  variant="outlined"
+                  autoComplete="email"
+                  {...register("email")}
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
+                />
+              </Grid>
+
+              <Grid size={12}>
+                <FormField
+                  label="Password"
+                  type="password"
+                  fullWidth
+                  required
+                  variant="outlined"
+                  autoComplete="current-password"
+                  {...register("password")}
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                />
+              </Grid>
+
+              <Grid size={12}>
+                <Typography variant="body2" color="text.secondary">
+                  Don&apos;t have an account?{" "}
+                  <RouterLink
+                    to="/register"
+                    style={{ color: theme.palette.secondary.main, fontWeight: 600, textDecoration: "underline" }}
+                  >
+                    Register
+                  </RouterLink>
+                </Typography>
+              </Grid>
+
+              <Grid size={12}>
+                <FormActions isLoading={isSubmitting} submitText={isSubmitting ? "Logging in..." : "Login"} />
+              </Grid>
             </Grid>
-
-            <Grid size={12}>
-              <TextField
-                label="Password"
-                type="password"
-                fullWidth
-                required
-                variant="outlined"
-                autoComplete="current-password"
-                {...register("password")}
-                error={!!errors.password}
-                helperText={errors.password?.message}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <SubmitButton type="submit" variant="contained" fullWidth disabled={isSubmitting}>
-                {isSubmitting ? "Logging in..." : "Login"}
-              </SubmitButton>
-            </Grid>
-          </Grid>
-        </form>
-      </AuthPaper>
-    </Container>
+          </form>
+        </AuthPaper>
+      </Container>
+    </>
   );
 };
 

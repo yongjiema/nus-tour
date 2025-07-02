@@ -1,51 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, CircularProgress, Container, Grid2 as Grid } from "@mui/material";
-import { styled } from "@mui/system";
+import { Box, CircularProgress, Grid2 as Grid, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useDashboardStats, useActivityFeed, type ActivityItem } from "../../../services/api";
-import RefineLayoutHeader from "../../../components/header";
+import { useDashboardStats, useActivityFeed } from "../../../hooks";
+import type { ActivityItem } from "../../../types/api.types";
+import {
+  StatCardGrid,
+  SectionWrapper,
+  DashboardHeader,
+  DashboardContainer,
+} from "../../../components/shared/dashboard";
 
 // Import separated components
-import StatCards from "./components/StatCards";
-import QuickActions from "./components/QuickActions";
-import BookingChart from "./components/BookingChart";
-import RecentActivity from "./components/RecentActivity";
+import { QuickActions, BookingChart, RecentActivity } from "./components";
 
-const DashboardContainer = styled(Container)(({ theme }) => ({
-  paddingTop: theme.spacing(4),
-  paddingBottom: theme.spacing(6),
-}));
-
-const PageHeader = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  marginBottom: theme.spacing(4),
-  [theme.breakpoints.down("sm")]: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-    gap: theme.spacing(2),
-  },
-}));
-
-const HeaderTitle = styled(Box)({
-  display: "flex",
-  alignItems: "center",
-});
-
-const SectionWrapper = styled(Box)(() => ({
-  animation: "fadeIn 0.5s ease-in",
-  "@keyframes fadeIn": {
-    "0%": {
-      opacity: 0,
-      transform: "translateY(10px)",
-    },
-    "100%": {
-      opacity: 1,
-      transform: "translateY(0)",
-    },
-  },
-}));
+// Icons
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import PersonIcon from "@mui/icons-material/Person";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
+import RateReviewIcon from "@mui/icons-material/RateReview";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 
 function isActivityItemArray(data: unknown): data is ActivityItem[] {
   return (
@@ -113,56 +86,74 @@ const AdminDashboard: React.FC = () => {
     [dashboardStats],
   );
 
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  // Prepare stats for StatCardGrid
+  const statsForCards = [
+    {
+      title: "Total Bookings",
+      value: dashboardStats.totalBookings,
+      icon: <CalendarMonthIcon />,
+      color: "primary" as const,
+    },
+    {
+      title: "Pending Check-Ins",
+      value: dashboardStats.pendingCheckIns,
+      icon: <PersonIcon />,
+      color: "warning" as const,
+    },
+    {
+      title: "Completed Tours",
+      value: dashboardStats.completedTours,
+      icon: <DoneAllIcon />,
+      color: "success" as const,
+    },
+    {
+      title: "Total Feedbacks",
+      value: dashboardStats.feedbacks,
+      icon: <RateReviewIcon />,
+      color: "info" as const,
+    },
+  ];
 
   if (statsLoading || activityLoading) {
     return (
-      <Container>
-        <RefineLayoutHeader />
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
-        </Box>
-      </Container>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress size={60} thickness={4} />
+      </Box>
     );
   }
 
   if (statsError || activityError) {
     return (
-      <Container>
-        <RefineLayoutHeader />
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <Typography color="error">Failed to load dashboard data. Please try refreshing the page.</Typography>
-        </Box>
-      </Container>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Alert severity="error" sx={{ maxWidth: 600 }}>
+          Failed to load dashboard data. Please try refreshing the page.
+        </Alert>
+      </Box>
     );
   }
 
   return (
-    <DashboardContainer maxWidth="xl">
-      <PageHeader>
-        <HeaderTitle>
-          <Typography variant="h4" fontWeight="bold" color="primary.dark">
-            Admin Dashboard
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            {currentDate}
-          </Typography>
-        </HeaderTitle>
-      </PageHeader>
-
+    <DashboardContainer>
+      {/* Dashboard Header with Icon */}
       <SectionWrapper>
-        <StatCards stats={dashboardStats} isLoading={statsLoading} />
+        <DashboardHeader
+          title="Welcome to Admin Dashboard"
+          subtitle="Monitor and manage your NUS Tour operations"
+          icon={<DashboardIcon />}
+        />
       </SectionWrapper>
 
+      {/* Statistics Cards */}
+      <SectionWrapper>
+        <StatCardGrid stats={statsForCards} isLoading={statsLoading} />
+      </SectionWrapper>
+
+      {/* Quick Actions */}
       <SectionWrapper>
         <QuickActions navigate={navigate} />
       </SectionWrapper>
 
+      {/* Charts and Activity */}
       <Grid container spacing={4}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <SectionWrapper>
@@ -179,4 +170,4 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-export default AdminDashboard;
+export { AdminDashboard };
