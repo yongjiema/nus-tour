@@ -157,7 +157,7 @@ export const authProvider = {
               pathname === "/register" ||
               pathname.startsWith("/information") ||
               pathname === "/u" ||
-              pathname.startsWith("/u?tab=") ||
+              (pathname === "/u" && new URL(window.location.href).searchParams.has("tab")) ||
               pathname === "/u/profile" ||
               pathname === "/testimonials"
             ) {
