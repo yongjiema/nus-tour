@@ -1,7 +1,7 @@
 import React from "react";
-import { Box, Typography, Container, CardMedia } from "@mui/material";
+import { Box, Typography, Container, CardMedia, Tooltip } from "@mui/material";
 import { styled, useTheme } from "@mui/material/styles";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useIsAuthenticated } from "@refinedev/core";
 import NUSPhoto from "../../assets/images/nus-campus.jpg";
 import { getThemeColor } from "../../theme/constants";
@@ -22,7 +22,7 @@ const ButtonContainer = styled(Box)(({ theme }) => ({
   flexWrap: "wrap",
 }));
 
-const ActionButton = styled(Link)(({ theme, color = "primary" }) => {
+const ActionButton = styled("button")(({ theme, color = "primary" }) => {
   const getColor = () => {
     switch (color) {
       case "orange":
@@ -50,6 +50,8 @@ const ActionButton = styled(Link)(({ theme, color = "primary" }) => {
     textDecoration: "none",
     fontWeight: "bold",
     transition: "background-color 0.3s ease",
+    border: "none",
+    cursor: "pointer",
     "&:hover": {
       backgroundColor:
         color === "orange"
@@ -67,10 +69,58 @@ const ActionButton = styled(Link)(({ theme, color = "primary" }) => {
 
 export const Home: React.FC = () => {
   const theme = useTheme();
-  const { data: isAuthenticated } = useIsAuthenticated();
+  const { data: authData } = useIsAuthenticated();
+  const navigate = useNavigate();
 
-  // Determine the booking route based on authentication status
-  const bookingRoute = isAuthenticated ? "/booking" : "/register";
+  // Extract authentication status and user data from the data object
+  const isAuthenticated = authData?.authenticated === true;
+  const authDataWithRoles = authData as { roles?: string[] } | undefined;
+  const userRoles = Array.isArray(authDataWithRoles?.roles) ? authDataWithRoles.roles : [];
+  const isAdmin = userRoles.includes("ADMIN");
+  const isUser = userRoles.includes("USER");
+
+  // Different routing based on user roles
+  // - Admin + User roles: Allow access to user features (booking/check-in)
+  // - Admin only: Redirect to admin dashboard for management
+  // - User only: Standard user dashboard access
+  // - Unauthenticated: Store redirect intention and send to login
+  const handleBookingClick = () => {
+    if (isAuthenticated) {
+      // If admin has both roles, prefer user dashboard for booking
+      if (isAdmin && isUser) {
+        void navigate("/u?tab=book-tour");
+      } else if (isAdmin && !isUser) {
+        // Admin-only: redirect to admin dashboard with a note about booking management
+        void navigate("/admin");
+      } else {
+        // Regular user
+        void navigate("/u?tab=book-tour");
+      }
+    } else {
+      // Store the intended destination for after login
+      sessionStorage.setItem("redirectAfterLogin", "/u?tab=book-tour");
+      void navigate("/login");
+    }
+  };
+
+  const handleCheckinClick = () => {
+    if (isAuthenticated) {
+      // If admin has both roles, prefer user dashboard for check-in
+      if (isAdmin && isUser) {
+        void navigate("/u?tab=check-in");
+      } else if (isAdmin && !isUser) {
+        // Admin-only: redirect to admin dashboard
+        void navigate("/admin");
+      } else {
+        // Regular user
+        void navigate("/u?tab=check-in");
+      }
+    } else {
+      // Store the intended destination for after login
+      sessionStorage.setItem("redirectAfterLogin", "/u?tab=check-in");
+      void navigate("/login");
+    }
+  };
 
   return (
     <Container
@@ -97,8 +147,22 @@ export const Home: React.FC = () => {
         Welcome to NUS Tour
       </PageTitle>
 
-      <Subtitle variant="h6" gutterBottom>
-        Discover, Learn, and Experience NUS through our guided campus tours.
+      <Subtitle
+        variant="h6"
+        gutterBottom
+        sx={{
+          // Use responsive font sizes with better scaling
+          fontSize: { xs: "1rem", sm: "1.1rem", md: "1.25rem" },
+          lineHeight: { xs: 1.4, sm: 1.5 },
+          // Ensure consistent spacing
+          maxWidth: "700px",
+          mx: "auto",
+          textAlign: "center",
+          mb: 3, // Use consistent margin bottom
+        }}
+      >
+        <span style={{ whiteSpace: "nowrap" }}>Discover, Learn, and Experience NUS</span>{" "}
+        <span style={{ whiteSpace: "nowrap" }}>through our guided campus tours.</span>
       </Subtitle>
 
       <BodyText variant="body1">
@@ -111,17 +175,39 @@ export const Home: React.FC = () => {
 
       {/* Call-to-Action Section */}
       <ButtonContainer>
-        <ActionButton to="/information" color="primary">
-          Learn More About NUS
-        </ActionButton>
+        <Link to="/information" style={{ textDecoration: "none" }}>
+          <ActionButton color="primary">Learn More About NUS</ActionButton>
+        </Link>
 
-        <ActionButton to={bookingRoute} color="orange">
-          Book a Campus Tour
-        </ActionButton>
+        <Tooltip
+          title={
+            isAuthenticated && isAdmin && !isUser
+              ? "Go to admin dashboard to manage all bookings"
+              : isAuthenticated && isAdmin && isUser
+              ? "Book a tour (you'll access the user dashboard)"
+              : "Book a tour"
+          }
+          arrow
+        >
+          <ActionButton onClick={handleBookingClick} color="orange">
+            {isAuthenticated && isAdmin && !isUser ? "Manage Bookings" : "Book a Campus Tour"}
+          </ActionButton>
+        </Tooltip>
 
-        <ActionButton to="/checkin" color="green">
-          Check In
-        </ActionButton>
+        <Tooltip
+          title={
+            isAuthenticated && isAdmin && !isUser
+              ? "Go to admin dashboard to manage check-ins"
+              : isAuthenticated && isAdmin && isUser
+              ? "Check in to your tour (you'll access the user dashboard)"
+              : "Check in to your tour"
+          }
+          arrow
+        >
+          <ActionButton onClick={handleCheckinClick} color="green">
+            {isAuthenticated && isAdmin && !isUser ? "Manage Check-ins" : "Check In"}
+          </ActionButton>
+        </Tooltip>
       </ButtonContainer>
       <footer
         style={{

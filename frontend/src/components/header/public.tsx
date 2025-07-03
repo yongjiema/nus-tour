@@ -80,10 +80,10 @@ export const PublicHeader: React.FC = () => {
   const handleProfileClick = () => {
     handleMenuClose();
     // Navigate to appropriate dashboard based on user role
-    if (user.roles.includes("ADMIN")) {
-      void navigate("/dashboard/admin");
+    if (user?.roles.includes("ADMIN")) {
+      void navigate("/admin");
     } else {
-      void navigate("/dashboard/user");
+      void navigate("/u");
     }
   };
 
@@ -92,15 +92,16 @@ export const PublicHeader: React.FC = () => {
       {/* Public Header */}
       <AppBar position="static" sx={{ backgroundColor: theme.palette.primary.main }}>
         <Container maxWidth="lg">
-          <Toolbar>
+          <Toolbar sx={{ minHeight: 56 }}>
             <Typography
-              variant="h6"
+              variant="subtitle1"
               component="div"
               sx={{
                 flexGrow: 1,
                 color: theme.palette.secondary.main,
                 cursor: "pointer",
                 fontWeight: "bold",
+                transition: "color 0.2s ease-in-out",
                 "&:hover": {
                   color: theme.palette.secondary.light,
                 },
@@ -132,7 +133,6 @@ export const PublicHeader: React.FC = () => {
                     onClick={handleMenuOpen}
                     size="small"
                     sx={{
-                      ml: 1,
                       color: theme.palette.common.white,
                       "&:hover": {
                         backgroundColor: getOverlayBackground(theme, "light"),

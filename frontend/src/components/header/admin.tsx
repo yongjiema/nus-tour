@@ -74,7 +74,23 @@ const AdminHeader: React.FC = () => {
           <MenuOpenIcon />
         </IconButton>
         {/* Title */}
-        <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            flexGrow: 1,
+            fontWeight: "bold",
+            color: theme.palette.secondary.main,
+            cursor: "pointer",
+            mr: 2,
+            transition: "color 0.2s ease-in-out",
+            "&:hover": {
+              color: theme.palette.secondary.light,
+            },
+          }}
+          onClick={() => {
+            void navigate("/admin");
+          }}
+        >
           NUS Tour Admin
         </Typography>
         {/* Theme Toggle */}

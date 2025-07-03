@@ -159,7 +159,12 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
             You haven't made any tour bookings yet. Start exploring NUS with our guided tours!
           </Typography>
         </Box>
-        <ActionButton color="primary" variant="contained" size="large" onClick={() => void navigate("/booking")}>
+        <ActionButton
+          color="primary"
+          variant="contained"
+          size="large"
+          onClick={() => void navigate("/u?tab=book-tour")}
+        >
           Book a Tour Now
         </ActionButton>
       </EmptyStateContainer>
@@ -314,7 +319,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
                           <ActionButton
                             variant="outlined"
                             color="primary"
-                            onClick={() => void navigate("/checkin")}
+                            onClick={() => void navigate("/u?tab=check-in")}
                             size="small"
                           >
                             <CheckCircleIcon sx={{ fontSize: "1rem", mr: 0.5 }} />

@@ -171,7 +171,12 @@ export const FeedbackTab: React.FC<FeedbackTabProps> = ({
             You haven't left any feedback yet. Complete a tour to share your experience with us!
           </Typography>
         </Box>
-        <ActionButton color="primary" variant="contained" size="large" onClick={() => void navigate("/booking")}>
+        <ActionButton
+          color="primary"
+          variant="contained"
+          size="large"
+          onClick={() => void navigate("/u?tab=book-tour")}
+        >
           Book a Tour Now
         </ActionButton>
       </EmptyStateContainer>

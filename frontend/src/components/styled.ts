@@ -2,9 +2,13 @@ import { styled } from "@mui/material/styles";
 import { Paper, Button } from "@mui/material";
 
 export const AuthPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(5),
+  padding: theme.spacing(4),
   borderRadius: theme.shape.borderRadius * 1.5,
   boxShadow: theme.shadows[3],
+  [theme.breakpoints.down("sm")]: {
+    padding: theme.spacing(3),
+    margin: theme.spacing(2),
+  },
 }));
 
 export const PrimaryButton = styled(Button)(({ theme }) => ({

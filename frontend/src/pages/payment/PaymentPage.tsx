@@ -322,7 +322,7 @@ const PaymentPage: React.FC = () => {
   }, [bookingData, selectedMethod, processPayment, updateBookingStatus, navigate]);
 
   const handleBackToBooking = useCallback(() => {
-    void navigate("/booking");
+    void navigate("/u?tab=book-tour");
   }, [navigate]);
 
   // Wrapper function to handle async payment properly

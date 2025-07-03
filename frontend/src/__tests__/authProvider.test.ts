@@ -75,7 +75,7 @@ describe("AuthProvider", () => {
 
       expect(result).toEqual({
         success: true,
-        redirectTo: "/dashboard/user",
+        redirectTo: "/u",
       });
 
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith("access_token", "test-token");
@@ -163,7 +163,7 @@ describe("AuthProvider", () => {
     it("returns authenticated when token exists", async () => {
       // Mock window.location.pathname
       Object.defineProperty(window, "location", {
-        value: { pathname: "/dashboard/user" },
+        value: { pathname: "/u" },
         writable: true,
       });
 
@@ -188,7 +188,7 @@ describe("AuthProvider", () => {
     it("returns unauthenticated when no token exists", async () => {
       // Mock window.location.pathname
       Object.defineProperty(window, "location", {
-        value: { pathname: "/dashboard/user" },
+        value: { pathname: "/u" },
         writable: true,
       });
 

@@ -39,7 +39,7 @@ const Feedback: React.FC = () => {
               message: "Feedback submitted successfully!",
               type: "success",
             });
-            void navigate("/dashboard/user");
+            void navigate("/u");
           },
           onError: (error) => {
             handleRefineError(error, open);
