@@ -1,17 +1,12 @@
-import { IsNotEmpty, IsNumber, IsEnum, IsString, IsOptional } from "class-validator";
-import { BookingLifecycleStatus } from "../../database/entities/enums";
+import { IsNotEmpty, IsNumber, IsString, IsOptional } from "class-validator";
 
 export class CreatePaymentDto {
   @IsNotEmpty()
-  bookingId: string | number;
+  bookingId!: string;
 
   @IsOptional()
   @IsNumber()
   amount?: number;
-
-  @IsOptional()
-  @IsEnum(BookingLifecycleStatus)
-  status?: BookingLifecycleStatus;
 
   @IsOptional()
   @IsString()

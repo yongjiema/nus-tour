@@ -3,7 +3,6 @@ import { useList } from "@refinedev/core";
 import {
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   Rating,
@@ -12,6 +11,7 @@ import {
   CircularProgress,
   Divider,
   Alert,
+  Grid2 as Grid,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
@@ -85,7 +85,9 @@ const TestimonialsPage: React.FC = () => {
     );
   }
 
-  const testimonials = data?.data || [];
+  // After loading and error checks, Refine useList guarantees data structure
+  const testimonials = data.data;
+  const hasTestimonials = testimonials.length > 0;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -98,20 +100,16 @@ const TestimonialsPage: React.FC = () => {
         </PageSubtitle>
       </Box>
 
-      {testimonials.length === 0 ? (
-        <Alert severity="info" sx={{ mt: 3 }}>
-          No testimonials available yet. Be the first to share your experience!
-        </Alert>
-      ) : (
+      {hasTestimonials ? (
         <Grid container spacing={3}>
           {testimonials.map((feedback) => (
-            <Grid item xs={12} md={6} key={feedback.id}>
+            <Grid size={{ xs: 12, md: 6 }} key={feedback.id}>
               <TestimonialCard elevation={2}>
                 <CardContent>
                   <Box display="flex" mb={2}>
-                    <UserAvatar>{feedback.user?.name?.charAt(0) || "V"}</UserAvatar>
+                    <UserAvatar>{feedback.user?.name ? feedback.user.name.charAt(0) : "V"}</UserAvatar>
                     <Box>
-                      <Typography variant="subtitle1">{feedback.user?.name || "Visitor"}</Typography>
+                      <Typography variant="subtitle1">{feedback.user?.name ?? "Visitor"}</Typography>
                       <Rating value={feedback.rating} readOnly size="small" />
                     </Box>
                   </Box>
@@ -121,16 +119,22 @@ const TestimonialsPage: React.FC = () => {
                     <Typography variant="body1">{feedback.comments}</Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block" }}>
-                    Tour Date: {formatDateDisplay(feedback.booking?.tourDate || feedback.createdAt)}
+                    Tour Date: {formatDateDisplay(feedback.booking?.tourDate ?? feedback.createdAt)}
                   </Typography>
                 </CardContent>
               </TestimonialCard>
             </Grid>
           ))}
         </Grid>
+      ) : (
+        <Alert severity="info" sx={{ mt: 3 }}>
+          No testimonials available yet. Be the first to share your experience!
+        </Alert>
       )}
     </Container>
   );
 };
 
 export default TestimonialsPage;
+
+export { default as TestimonialsPage } from "./index";

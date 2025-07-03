@@ -4,6 +4,7 @@ import { Repository } from "typeorm";
 import { Feedback } from "../database/entities/feedback.entity";
 import { Booking } from "../database/entities/booking.entity";
 import { CreateFeedbackDto } from "./dto/create-feedback.dto";
+import { User } from "../database/entities/user.entity";
 
 @Injectable()
 export class FeedbackService {
@@ -25,18 +26,20 @@ export class FeedbackService {
 
     // Create the feedback with proper relation objects
     const feedback = this.feedbackRepository.create({
-      ...createFeedbackDto,
-      user: { id: userId },
-      booking: { id: createFeedbackDto.bookingId },
+      rating: createFeedbackDto.rating,
+      comments: createFeedbackDto.comments,
+      isPublic: createFeedbackDto.isPublic ?? false,
+      user: { id: userId } as unknown as User,
+      booking: { id: createFeedbackDto.bookingId } as unknown as Booking,
     });
 
     // Mark the booking as having feedback
-    await this.bookingRepository.update(createFeedbackDto.bookingId, { hasFeedback: true });
+    await this.bookingRepository.update({ id: createFeedbackDto.bookingId }, { hasFeedback: true });
 
     return this.feedbackRepository.save(feedback);
   }
 
-  async findAll(query: any = {}): Promise<[Feedback[], number]> {
+  async findAll(query: Partial<Feedback> = {}): Promise<[Feedback[], number]> {
     return this.feedbackRepository.findAndCount({
       where: query,
       relations: ["user", "booking"],
@@ -44,20 +47,24 @@ export class FeedbackService {
     });
   }
 
-  async findOne(id: number): Promise<Feedback> {
+  async findOne(id: string): Promise<Feedback | null> {
     return this.feedbackRepository.findOne({
       where: { id },
       relations: ["user", "booking"],
     });
   }
 
-  async update(id: number, updateData: any): Promise<Feedback> {
-    await this.feedbackRepository.update(id, updateData);
-    return this.findOne(id);
+  async update(id: string, updateData: Partial<Feedback>): Promise<Feedback> {
+    await this.feedbackRepository.update({ id }, updateData);
+    const feedback = await this.findOne(id);
+    if (feedback == null) {
+      throw new NotFoundException(`Feedback with ID ${id} not found`);
+    }
+    return feedback;
   }
 
-  async remove(id: number): Promise<void> {
-    await this.feedbackRepository.delete(id);
+  async remove(id: string): Promise<void> {
+    await this.feedbackRepository.delete({ id });
   }
 
   async count(): Promise<number> {
@@ -65,11 +72,11 @@ export class FeedbackService {
   }
 
   async getAverageRating(): Promise<number> {
-    const result = await this.feedbackRepository
+    const raw: { average: string | null } | undefined = await this.feedbackRepository
       .createQueryBuilder("feedback")
       .select("AVG(feedback.rating)", "average")
       .getRawOne();
-    return parseFloat(result.average) || 0;
+    return raw?.average ? parseFloat(raw.average) : 0;
   }
 
   async getFeedbacksByUserId(userId: string): Promise<Feedback[]> {

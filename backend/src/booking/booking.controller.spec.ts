@@ -4,10 +4,21 @@ import { BookingService } from "./booking.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { Booking } from "../database/entities/booking.entity";
 import { BadRequestException, NotFoundException, Logger, ForbiddenException } from "@nestjs/common";
-import { BookingLifecycleStatus } from "../database/entities/enums";
+import { AuthenticatedRequest } from "../common/types/request.types";
+import { BookingStatus } from "../database/entities/enums";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { JwtService } from "@nestjs/jwt";
+import {
+  TEST_BOOKING_ID_10,
+  TEST_BOOKING_ID_100,
+  TEST_BOOKING_ID_20,
+  TEST_USER_ID_1,
+  TEST_MOCK_USER_ID,
+  TEST_ANOTHER_USER_ID,
+  TEST_NON_EXISTENT_ID,
+} from "../common/testing";
 import { TokenBlacklistService } from "../auth/token-blacklist.service";
+import type { User } from "../database/entities/user.entity";
 
 // Create a mock JwtAuthGuard that always returns true for canActivate
 class MockJwtAuthGuard {
@@ -18,22 +29,20 @@ class MockJwtAuthGuard {
 
 describe("BookingController", () => {
   let controller: BookingController;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let bookingService: BookingService;
+  let _bookingService: BookingService;
 
   const mockBookingService = {
     createBooking: jest.fn(),
-    getAllBookings: jest.fn(),
+    findAll: jest.fn(),
     getBookingById: jest.fn(),
     getAvailableTimeSlots: jest.fn(),
-    getAllBookingByEmail: jest.fn(),
-    getBookingByBookingId: jest.fn(),
+    getAllBookingByUserId: jest.fn(),
     updateStatus: jest.fn(),
   };
 
   const mockJwtService = {
     sign: jest.fn().mockReturnValue("mock_token"),
-    verify: jest.fn().mockReturnValue({ id: "user_id", email: "test@example.com" }),
+    verify: jest.fn().mockReturnValue({ id: TEST_MOCK_USER_ID, email: "test@example.com" }),
   };
 
   const mockTokenBlacklistService = {
@@ -43,12 +52,8 @@ describe("BookingController", () => {
 
   // Mock request object
   const mockRequest = {
-    user: {
-      id: "user-1",
-      email: "test@example.com",
-      username: "Test User",
-    },
-  };
+    user: { id: TEST_USER_ID_1, email: "test@example.com", firstName: "Test", lastName: "User" } as User,
+  } as unknown as AuthenticatedRequest;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -80,7 +85,7 @@ describe("BookingController", () => {
       .compile();
 
     controller = module.get<BookingController>(BookingController);
-    bookingService = module.get<BookingService>(BookingService);
+    _bookingService = module.get<BookingService>(BookingService);
     jest.clearAllMocks();
   });
 
@@ -95,8 +100,6 @@ describe("BookingController", () => {
   describe("createBooking", () => {
     it("should create a booking successfully", async () => {
       const createBookingDto: CreateBookingDto = {
-        name: "Test User",
-        email: "test@example.com",
         date: "2025-01-01",
         groupSize: 5,
         timeSlot: "09:00 AM - 10:00 AM",
@@ -105,17 +108,13 @@ describe("BookingController", () => {
 
       // Create a booking with correct types
       const booking: Partial<Booking> = {
-        id: 1,
-        bookingId: "abc-123",
-        name: createBookingDto.name,
-        email: createBookingDto.email,
+        id: TEST_BOOKING_ID_10,
         date: new Date(createBookingDto.date),
         groupSize: createBookingDto.groupSize,
         deposit: createBookingDto.deposit,
         timeSlot: createBookingDto.timeSlot,
-        status: BookingLifecycleStatus.PENDING_PAYMENT,
+        status: BookingStatus.AWAITING_PAYMENT,
         hasFeedback: false,
-        generateBookingId: () => {},
       };
 
       mockBookingService.createBooking.mockResolvedValue(booking);
@@ -125,19 +124,13 @@ describe("BookingController", () => {
       expect(result).toEqual(booking);
 
       // The controller should pass a modified version of the DTO to the service
-      expect(mockBookingService.createBooking).toHaveBeenCalledWith({
-        ...createBookingDto,
-        email: mockRequest.user.email,
-        name: mockRequest.user.username,
-      });
+      expect(mockBookingService.createBooking).toHaveBeenCalledWith(createBookingDto, mockRequest.user);
     });
 
     it("should throw a BadRequestException for invalid booking details", async () => {
       const invalidBookingDto: CreateBookingDto = {
-        name: "Test User",
-        email: "test@example.com",
         date: "2025-01-01",
-        groupSize: 0, // invalid because the group size is below the minimum allowed value
+        groupSize: 0,
         timeSlot: "09:00 AM - 10:00 AM",
         deposit: 50,
       };
@@ -145,11 +138,7 @@ describe("BookingController", () => {
       mockBookingService.createBooking.mockRejectedValue(new BadRequestException("Group size must be at least 1"));
 
       await expect(controller.createBooking(invalidBookingDto, mockRequest)).rejects.toThrow(BadRequestException);
-      expect(mockBookingService.createBooking).toHaveBeenCalledWith({
-        ...invalidBookingDto,
-        email: mockRequest.user.email,
-        name: mockRequest.user.username,
-      });
+      expect(mockBookingService.createBooking).toHaveBeenCalledWith(invalidBookingDto, mockRequest.user);
     });
   });
 
@@ -173,37 +162,29 @@ describe("BookingController", () => {
     it("should return a list of all bookings", async () => {
       const bookings: Partial<Booking>[] = [
         {
-          id: 1,
-          bookingId: "abc-123",
-          name: "Test1",
-          email: "test1@example.com",
+          id: TEST_BOOKING_ID_10,
           date: new Date("2025-01-01"),
           groupSize: 10,
           deposit: 50,
           timeSlot: "09:00 AM - 10:00 AM",
-          status: BookingLifecycleStatus.PENDING_PAYMENT,
+          status: BookingStatus.AWAITING_PAYMENT,
           hasFeedback: false,
-          generateBookingId: () => {},
         },
         {
-          id: 2,
-          bookingId: "def-456",
-          name: "Test2",
-          email: "test2@example.com",
+          id: TEST_BOOKING_ID_20,
           date: new Date("2025-01-02"),
           groupSize: 5,
           deposit: 50,
           timeSlot: "10:00 AM - 11:00 AM",
-          status: BookingLifecycleStatus.PENDING_PAYMENT,
+          status: BookingStatus.AWAITING_PAYMENT,
           hasFeedback: false,
-          generateBookingId: () => {},
         },
       ];
 
-      mockBookingService.getAllBookings.mockResolvedValue(bookings);
+      mockBookingService.findAll.mockResolvedValue(bookings);
       const result = await controller.getAllBookings();
       expect(result).toEqual(bookings);
-      expect(mockBookingService.getAllBookings).toHaveBeenCalled();
+      expect(mockBookingService.findAll).toHaveBeenCalled();
     });
   });
 
@@ -211,97 +192,105 @@ describe("BookingController", () => {
     it("should return bookings for the authenticated user", async () => {
       const userBookings = [
         {
-          id: 1,
-          bookingId: "abc-123",
-          name: "Test User",
-          email: "test@example.com",
+          id: TEST_BOOKING_ID_100,
+          bookingId: TEST_BOOKING_ID_10,
           date: new Date("2025-01-01"),
-          status: BookingLifecycleStatus.PENDING_PAYMENT,
+          status: BookingStatus.AWAITING_PAYMENT,
         },
       ];
 
-      mockBookingService.getAllBookingByEmail.mockResolvedValue(userBookings);
+      mockBookingService.getAllBookingByUserId.mockResolvedValue(userBookings);
 
       const result = await controller.getUserBookings(mockRequest);
       expect(result).toEqual({
         data: userBookings,
         total: 1,
       });
-      expect(mockBookingService.getAllBookingByEmail).toHaveBeenCalledWith(mockRequest.user.email);
+      expect(mockBookingService.getAllBookingByUserId).toHaveBeenCalledWith(mockRequest.user.id);
     });
   });
 
   describe("getBookingById", () => {
     it("should return a booking when found", async () => {
+      const bookingId = TEST_BOOKING_ID_10;
       const booking: Partial<Booking> = {
-        id: 1,
-        bookingId: "abc-123",
-        name: "Test1",
-        email: "test1@example.com",
+        id: bookingId,
         date: new Date("2025-01-01"),
         groupSize: 10,
         deposit: 50,
         timeSlot: "09:00 AM - 10:00 AM",
-        status: BookingLifecycleStatus.PENDING_PAYMENT,
+        status: BookingStatus.AWAITING_PAYMENT,
         hasFeedback: false,
-        generateBookingId: () => {},
       };
 
       mockBookingService.getBookingById.mockResolvedValue(booking);
-      const result = await controller.getBookingById(1);
+      const result = await controller.getBookingById(bookingId);
       expect(result).toEqual(booking);
-      expect(mockBookingService.getBookingById).toHaveBeenCalledWith(1);
+      expect(mockBookingService.getBookingById).toHaveBeenCalledWith(bookingId);
     });
 
     it("should throw a NotFoundException when booking is not found", async () => {
+      const missingBookingId = TEST_NON_EXISTENT_ID;
       mockBookingService.getBookingById.mockRejectedValue(new NotFoundException("Booking not found"));
-      await expect(controller.getBookingById(999)).rejects.toThrow(NotFoundException);
-      expect(mockBookingService.getBookingById).toHaveBeenCalledWith(999);
+      await expect(controller.getBookingById(missingBookingId)).rejects.toThrow(NotFoundException);
+      expect(mockBookingService.getBookingById).toHaveBeenCalledWith(missingBookingId);
     });
   });
 
   describe("getBookingByBookingId", () => {
     it("should return a booking when found by booking ID", async () => {
-      const bookingId = "abc-123";
+      const bookingId = TEST_BOOKING_ID_10;
       const booking: Partial<Booking> = {
-        id: 1,
-        bookingId,
-        name: "Test User",
-        email: mockRequest.user.email,
+        id: bookingId,
         date: new Date("2025-01-01"),
-        status: BookingLifecycleStatus.PENDING_PAYMENT,
+        status: BookingStatus.AWAITING_PAYMENT,
+        user: {
+          id: TEST_USER_ID_1,
+          email: "test@example.com",
+          firstName: "Test",
+          lastName: "User",
+          password: "",
+          roles: [],
+          comparePassword: jest.fn(),
+        } as unknown as User,
       };
 
-      mockBookingService.getBookingByBookingId.mockResolvedValue(booking);
+      mockBookingService.getBookingById.mockResolvedValue(booking);
 
       const result = await controller.getBookingByBookingId(bookingId, mockRequest);
       expect(result).toEqual(booking);
-      expect(mockBookingService.getBookingByBookingId).toHaveBeenCalledWith(bookingId);
+      expect(mockBookingService.getBookingById).toHaveBeenCalledWith(bookingId);
     });
 
     it("should throw ForbiddenException when user does not own the booking", async () => {
-      const bookingId = "abc-123";
+      const bookingId = TEST_BOOKING_ID_10;
       const booking: Partial<Booking> = {
-        id: 1,
-        bookingId,
-        name: "Test User",
-        email: "different@example.com", // Different from the authenticated user
+        id: bookingId,
         date: new Date("2025-01-01"),
-        status: BookingLifecycleStatus.PENDING_PAYMENT,
+        status: BookingStatus.AWAITING_PAYMENT,
+        user: {
+          id: TEST_ANOTHER_USER_ID,
+          email: "other@example.com",
+          firstName: "Other",
+          lastName: "User",
+          password: "",
+          roles: [],
+          comparePassword: jest.fn(),
+        } as unknown as User,
       };
 
-      mockBookingService.getBookingByBookingId.mockResolvedValue(booking);
+      mockBookingService.getBookingById.mockResolvedValue(booking);
 
       await expect(controller.getBookingByBookingId(bookingId, mockRequest)).rejects.toThrow(ForbiddenException);
-      expect(mockBookingService.getBookingByBookingId).toHaveBeenCalledWith(bookingId);
+      expect(mockBookingService.getBookingById).toHaveBeenCalledWith(bookingId);
     });
 
     it("should throw NotFoundException when booking is not found", async () => {
-      const bookingId = "non-existent";
-      mockBookingService.getBookingByBookingId.mockRejectedValue(new NotFoundException("Booking not found"));
+      const bookingId = TEST_BOOKING_ID_10;
+      mockBookingService.getBookingById.mockRejectedValue(new NotFoundException("Booking not found"));
 
       await expect(controller.getBookingByBookingId(bookingId, mockRequest)).rejects.toThrow(NotFoundException);
-      expect(mockBookingService.getBookingByBookingId).toHaveBeenCalledWith(bookingId);
+      expect(mockBookingService.getBookingById).toHaveBeenCalledWith(bookingId);
     });
   });
 });

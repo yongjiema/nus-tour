@@ -1,32 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "@refinedev/react-hook-form";
-import { Controller, Resolver, FieldValues } from "react-hook-form";
+import { Controller } from "react-hook-form";
+import type { FieldValues, Resolver } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { Box, Typography, TextField, Rating, Button, FormControlLabel, Checkbox, FormHelperText } from "@mui/material";
+import { Box, Typography, Rating, FormControlLabel, Checkbox } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { useErrorHandler } from "../../utils/errorHandler";
-
-const FormContainer = styled(Box)({
-  maxWidth: 500,
-  margin: "0 auto",
-});
-
-const SubmitButton = styled(Button)({
-  marginTop: "16px",
-  backgroundColor: "primary.main",
-  fontWeight: "bold",
-  "&:hover": {
-    backgroundColor: "primary.dark",
-  },
-});
+import { FormField } from "../../components/shared/forms/FormField";
+import { FormActions } from "../../components/shared/forms/FormActions";
 
 const RatingContainer = styled(Box)({
   marginBottom: "24px",
 });
 
 interface FeedbackFormProps {
-  bookingId: number;
+  bookingId: string;
   onSuccess?: () => void;
 }
 
@@ -51,12 +39,15 @@ const feedbackSchema = yup.object().shape({
 });
 
 const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => {
-  const { handleError } = useErrorHandler();
+  const [_rating, _setRating] = useState<number | null>(null);
+  const [_comment, _setComment] = useState("");
+  const [_error, _setError] = useState<string | null>(null);
+  const [_isSubmitting, _setIsSubmitting] = useState(false);
 
   const {
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting: _formSubmitting },
     register,
     refineCore: { onFinish, formLoading },
     reset,
@@ -74,6 +65,10 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
         message: "Thank you for your feedback!",
         type: "success",
       },
+      errorNotification: {
+        message: "Failed to submit feedback. Please try again.",
+        type: "error",
+      },
       redirect: false,
       meta: {
         bookingId,
@@ -89,14 +84,24 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
         onSuccess();
       }
     } catch (error) {
-      handleError(error);
+      // Refine will automatically handle the error via errorNotification
+      console.error("Feedback submission error:", error);
     }
   };
 
-  const handleFormSubmit = handleSubmit((data) => onSubmit(data as FeedbackFormInputs));
+  const handleFormSubmission = (data: FieldValues) => {
+    void onSubmit(data as FeedbackFormInputs);
+  };
 
   return (
-    <FormContainer component="form" onSubmit={handleFormSubmit}>
+    <Box
+      component="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSubmit(handleFormSubmission)(e);
+      }}
+      sx={{ maxWidth: 500, margin: "0 auto" }}
+    >
       <Typography variant="subtitle1" gutterBottom>
         How was your tour experience?
       </Typography>
@@ -110,10 +115,21 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
           control={control}
           name="rating"
           render={({ field }) => (
-            <Rating {...field} precision={1} size="large" onChange={(_, value) => field.onChange(value)} />
+            <Rating
+              {...field}
+              precision={1}
+              size="large"
+              onChange={(_, value) => {
+                field.onChange(value);
+              }}
+            />
           )}
         />
-        {errors.rating && <FormHelperText error>{errors.rating.message?.toString()}</FormHelperText>}
+        {errors.rating && (
+          <Typography color="error" variant="caption">
+            {errors.rating.message ? (errors.rating.message as string) : "Please provide a valid rating"}
+          </Typography>
+        )}
       </RatingContainer>
 
       {/* Comments Field */}
@@ -121,7 +137,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
         control={control}
         name="comments"
         render={({ field }) => (
-          <TextField
+          <FormField
             {...field}
             fullWidth
             multiline
@@ -129,7 +145,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
             margin="normal"
             label="Share your thoughts about the tour"
             error={!!errors.comments}
-            helperText={errors.comments?.message?.toString()}
+            helperText={errors.comments?.message ? (errors.comments.message as string) : ""}
           />
         )}
       />
@@ -141,10 +157,11 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
       />
 
       {/* Submit Button */}
-      <SubmitButton type="submit" variant="contained" fullWidth disabled={isSubmitting || formLoading}>
-        {isSubmitting || formLoading ? "Submitting..." : "Submit Feedback"}
-      </SubmitButton>
-    </FormContainer>
+      <FormActions
+        isLoading={_isSubmitting || formLoading}
+        submitText={_isSubmitting || formLoading ? "Submitting..." : "Submit Feedback"}
+      />
+    </Box>
   );
 };
 

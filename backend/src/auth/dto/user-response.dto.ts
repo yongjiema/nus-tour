@@ -1,6 +1,7 @@
 export class UserResponseDto {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
+  id!: string;
+  firstName?: string;
+  lastName?: string;
+  email!: string;
+  roles!: string[];
 }

@@ -1,233 +1,265 @@
-import React, { useState, useEffect } from "react";
-import { Controller, FieldValues, Resolver } from "react-hook-form";
+import React, { useState, useEffect, useRef } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useApiUrl } from "@refinedev/core";
 import * as yup from "yup";
-import { Box, Button, TextField, MenuItem, Alert } from "@mui/material";
+import { Box, MenuItem, Alert, CircularProgress } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { isValid } from "date-fns";
-import { useForm } from "@refinedev/react-hook-form";
+import dayjs, { Dayjs } from "dayjs";
 import { useNavigate } from "react-router-dom";
+import { useNotification } from "@refinedev/core";
+import { logger } from "../../utils/logger";
+import { useCreateBooking, useAvailableTimeSlots } from "../../hooks";
+import type { TimeSlotAvailability } from "../../types/api.types";
+import { FormField } from "../../components/shared/forms/FormField";
+import { FormActions } from "../../components/shared/forms/FormActions";
 
-const tomorrow = new Date();
-tomorrow.setDate(tomorrow.getDate() + 1);
-
-// Define time slots constant
-const timeSlots = [
-  "09:00 AM - 10:00 AM",
-  "10:00 AM - 11:00 AM",
-  "11:00 AM - 12:00 PM",
-  "01:00 PM - 02:00 PM",
-  "02:00 PM - 03:00 PM",
-  "03:00 PM - 04:00 PM",
-] as const;
-
-// Define the type for time slots
-type TimeSlot = (typeof timeSlots)[number];
-
-// Define the schema (only once)
-const bookingSchema = yup
-  .object({
-    date: yup.date().min(tomorrow, "Booking date must be from tomorrow onwards").required("Booking date is required"),
-    timeSlot: yup.string().oneOf(timeSlots, "Please select a valid time slot").required("Time slot is required"),
-    groupSize: yup
-      .number()
-      .min(1, "Group size must be at least 1")
-      .max(50, "Group size cannot exceed 50")
-      .integer("Group size must be a whole number")
-      .required("Group size is required"),
-  })
-  .required();
+// Constants
+const tomorrow = dayjs().add(1, "day");
+const STORAGE_KEYS = {
+  BOOKING_DATA: "booking-data",
+  PAYMENT_CONFIRMATION: "payment_confirmation",
+} as const;
 
 // Define the form data type
 interface BookingFormData {
-  date: Date;
-  timeSlot: TimeSlot;
+  date: Dayjs;
+  timeSlot: string;
   groupSize: number;
 }
 
 const BookingForm: React.FC = () => {
-  const apiUrl = useApiUrl();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(tomorrow.format("YYYY-MM-DD"));
+  const [availableSlots, setAvailableSlots] = useState<TimeSlotAvailability[]>([]);
+  const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const navigate = useNavigate();
+  const { open } = useNotification();
+  const { createBooking } = useCreateBooking();
+
+  // Fetch available time slots for the selected date
+  const { data: slotsData, isLoading: slotsLoading, refetch: refetchSlots } = useAvailableTimeSlots(selectedDate);
+
+  // Update available slots when data changes
+  useEffect(() => {
+    if (slotsData?.data) {
+      setAvailableSlots(slotsData.data);
+    }
+  }, [slotsData]);
+
+  // Create dynamic schema based on available slots
+  const createBookingSchema = (slots: TimeSlotAvailability[]) => {
+    const validSlots = slots.map((slot) => slot.slot);
+
+    return yup
+      .object({
+        date: yup
+          .mixed<Dayjs>()
+          .test("is-dayjs", "Invalid date", (value) => dayjs.isDayjs(value) && value.isValid())
+          .test("is-future", "Booking date must be from tomorrow onwards", (value) => {
+            if (!value || !dayjs.isDayjs(value)) return false;
+            return value.isAfter(dayjs(), "day");
+          })
+          .required("Booking date is required"),
+        timeSlot: yup.string().oneOf(validSlots, "Please select a valid time slot").required("Time slot is required"),
+        groupSize: yup
+          .number()
+          .min(1, "Group size must be at least 1")
+          .max(50, "Group size cannot exceed 50")
+          .integer("Group size must be a whole number")
+          .required("Group size is required"),
+      })
+      .required();
+  };
 
   const {
-    refineCore: { formLoading },
-    register,
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
+    setValue,
+    watch,
   } = useForm<BookingFormData>({
-    resolver: yupResolver(bookingSchema) as unknown as Resolver<FieldValues, Record<string, never>>,
-    refineCoreProps: {
-      action: "create",
-      resource: "bookings",
-      redirect: false,
-    },
+    resolver: yupResolver(createBookingSchema(availableSlots)),
     defaultValues: {
       date: tomorrow,
       groupSize: 1,
-      timeSlot: "09:00 AM - 10:00 AM" as TimeSlot,
+      timeSlot: "",
     },
   });
 
-  const processSubmit = async (data: BookingFormData) => {
+  // Watch for date changes to refetch slots
+  const watchedDate = watch("date");
+
+  useEffect(() => {
+    if (dayjs.isDayjs(watchedDate)) {
+      const newDate = watchedDate.format("YYYY-MM-DD");
+      if (newDate !== selectedDate) {
+        setSelectedDate(newDate);
+        setValue("timeSlot", ""); // Reset time slot when date changes
+        void refetchSlots();
+      }
+    }
+  }, [watchedDate, selectedDate, setValue, refetchSlots]);
+
+  const processSubmit = (data: BookingFormData) => {
     setError("");
     setSuccess(false);
 
-    console.log(`API URL: ${apiUrl}/bookings`);
-    console.log("Creating booking with data:", {
-      ...data,
-      date: data.date?.toISOString(),
-      formattedDate: data.date?.toISOString().split("T")[0],
+    // Validate that selected time slot is still available
+    const selectedSlot = availableSlots.find((slot) => slot.slot === data.timeSlot);
+    if (!selectedSlot || selectedSlot.available <= 0) {
+      setError("Selected time slot is no longer available. Please choose another slot.");
+      return;
+    }
+
+    logger.debug("Creating booking with data", {
+      data: {
+        ...data,
+        date: data.date.toISOString(),
+        formattedDate: data.date.format("YYYY-MM-DD"),
+      },
     });
 
     try {
-      if (!data.date || !isValid(data.date)) {
+      if (!dayjs(data.date).isValid()) {
         setError("Invalid date. Please select a valid date.");
         return;
       }
 
       const token = localStorage.getItem("access_token");
       if (!token) {
-        console.error("No access token found");
-        navigate("/login");
+        logger.error("No access token found");
+        void navigate("/login");
         return;
       }
 
-      console.log(`Token present (length: ${token.length})`);
+      logger.debug("Token present", { tokenLength: token.length });
 
-      const formattedDate = data.date.toISOString().split("T")[0];
+      const formattedDate = data.date.format("YYYY-MM-DD");
 
-      console.log("Sending date to server:", formattedDate);
+      logger.debug("Sending date to server", { formattedDate });
 
       const userStr = localStorage.getItem("user");
-      const userData = userStr ? JSON.parse(userStr) : null;
 
-      if (!userData || !userData.email || !userData.username) {
+      // Type guard for user data
+      const parseUserData = (str: string): { email: string; firstName: string; lastName?: string } | null => {
+        try {
+          const parsed = JSON.parse(str) as unknown;
+          if (
+            typeof parsed === "object" &&
+            parsed !== null &&
+            "email" in parsed &&
+            "firstName" in parsed &&
+            typeof (parsed as Record<string, unknown>).email === "string" &&
+            typeof (parsed as Record<string, unknown>).firstName === "string"
+          ) {
+            const userData = parsed as { email: string; firstName: string; lastName?: unknown };
+            return {
+              email: userData.email,
+              firstName: userData.firstName,
+              lastName: typeof userData.lastName === "string" ? userData.lastName : undefined,
+            };
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      };
+
+      const userData = userStr ? parseUserData(userStr) : null;
+
+      if (!userData) {
         setError("User information not found. Please log in again.");
-        navigate("/login");
+        void navigate("/login");
         return;
       }
 
-      const bookingData = {
+      const typedUserData = userData as { email: string; firstName: string; lastName?: string };
+      if (!typedUserData.email || !typedUserData.firstName) {
+        setError("User information not found. Please log in again.");
+        void navigate("/login");
+        return;
+      }
+
+      // Create display name from firstName and lastName
+      const displayName = [typedUserData.firstName, typedUserData.lastName].filter(Boolean).join(" ");
+
+      const requestData = {
         date: formattedDate,
         timeSlot: data.timeSlot,
         groupSize: Number(data.groupSize),
-        name: userData.username,
-        email: userData.email,
+        name: displayName,
+        email: typedUserData.email,
       };
 
-      const response = await fetch(`${apiUrl}/bookings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(bookingData),
-      });
-
-      console.log(`Sent request to: ${apiUrl}/bookings`);
-
-      if (!response.ok) {
-        const status = response.status;
-        console.error(`Server returned status: ${status}`);
-
-        try {
-          const contentType = response.headers.get("content-type");
-          console.log(`Error response content type: ${contentType}`);
-
-          const errorText = await response.text();
-          console.log(`Raw error response: "${errorText}"`);
-
-          let errorMessage = `Failed to create booking (Status ${status})`;
-
-          if (errorText && errorText.trim() !== "") {
-            try {
-              if (contentType?.includes("application/json")) {
-                const errorData = JSON.parse(errorText);
-                errorMessage = errorData.message || errorMessage;
-                console.error("Parsed error details:", errorData);
-              } else {
-                errorMessage = errorText;
+      // Use the data provider hook with proper error handling
+      createBooking(requestData, {
+        onSuccess: (response) => {
+          logger.debug("Booking created successfully");
+          setSuccess(true);
+          open?.({
+            message: "Booking created successfully! Redirecting to payment...",
+            type: "success",
+          });
+          // Navigate to payment success page with booking data after a short delay
+          redirectTimeoutRef.current = setTimeout(() => {
+            if (response.id) {
+              const bookingData = {
+                id: response.id,
+                amount: response.deposit,
+              };
+              logger.debug("Navigating to payment with booking data", { bookingData });
+              try {
+                localStorage.setItem(STORAGE_KEYS.BOOKING_DATA, JSON.stringify(bookingData));
+                void navigate("/payment/success");
+              } catch (storageError) {
+                logger.error(
+                  "Failed to store booking data",
+                  storageError instanceof Error ? storageError : new Error(String(storageError)),
+                );
+                setError("Booking created but navigation failed. Please contact support.");
               }
-            } catch (parseError) {
-              console.error("Failed to parse error response:", parseError);
+            } else {
+              logger.error(
+                "Unexpected response structure",
+                new Error(`Response missing id: ${JSON.stringify(response)}`),
+              );
+              setError("Booking created but payment data is unavailable. Please contact support.");
             }
-          } else {
-            console.error("Server returned empty error response");
+          }, 1500);
+        },
+        onError: (error: unknown) => {
+          logger.error("Booking creation error", error instanceof Error ? error : new Error(String(error)));
+          let errorMessage =
+            error instanceof Error ? error.message : "An unexpected error occurred while creating the booking";
+
+          // Check for unique constraint violation (duplicate slot)
+          interface ErrorWithResponse {
+            response?: {
+              data?: {
+                message?: string;
+                detail?: string;
+              };
+            };
           }
 
-          throw new Error(errorMessage);
-        } catch (responseError) {
-          console.error("Error handling response:", responseError);
+          const typedError = error as ErrorWithResponse;
+          if (typedError.response?.data?.detail?.includes("already exists")) {
+            errorMessage = "Sorry, this time slot is no longer available. Please choose another slot.";
+          }
+          setError(errorMessage);
+        },
+      });
+    } catch (err: unknown) {
+      logger.error("Booking creation error", err instanceof Error ? err : new Error(String(err)));
 
-          throw new Error(`Request failed: ${(responseError as Error).message}`);
-        }
-      }
-
-      // Declare variable outside the conditional block
-      let newBooking;
-
-      // Check response type
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        newBooking = await response.json();
-        console.log("Booking created successfully:", newBooking);
+      if (err instanceof Error) {
+        setError(err.message);
       } else {
-        throw new Error("Server returned non-JSON response");
+        setError("An unexpected error occurred while creating the booking");
       }
-
-      // Now newBooking is accessible here
-      console.log("Saving booking data to localStorage:", newBooking);
-      localStorage.setItem("booking-data", JSON.stringify(newBooking));
-
-      // Log before navigation
-      console.log(`Redirecting to payment page with booking ID: ${newBooking.bookingId || newBooking.id}`);
-      navigate(`/payment/${newBooking.bookingId || newBooking.id}`);
-
-      // After successful booking creation and response parsing
-      console.log("Booking created successfully:", newBooking);
-
-      // Ensure bookingId exists before redirecting
-      if (!newBooking || !newBooking.bookingId) {
-        setError("Booking created but no ID was returned");
-        console.error("Missing booking ID in response:", newBooking);
-        return;
-      }
-
-      // Store in localStorage with proper structure
-      localStorage.setItem(
-        "booking-data",
-        JSON.stringify({
-          bookingId: newBooking.bookingId,
-          id: newBooking.id,
-          deposit: newBooking.deposit || 50,
-          date: newBooking.date,
-          timeSlot: newBooking.timeSlot,
-          groupSize: newBooking.groupSize,
-        }),
-      );
-
-      console.log(`Redirecting to payment with bookingId: ${newBooking.bookingId}`);
-      navigate(`/payment/${newBooking.bookingId}`);
-
-      // And it's accessible here too
-      setSuccess(true);
-      setTimeout(() => {
-        navigate(`/payment/${newBooking.bookingId}`);
-      }, 1000);
-    } catch (err) {
-      console.error("Error creating booking:", err);
-      const error = err as Error;
-      setError(error.message || "An error occurred while creating your booking");
     }
-  };
-
-  // Wrapper function to handle the type conversion
-  const onSubmit = (formData: FieldValues) => {
-    return processSubmit(formData as BookingFormData);
   };
 
   // Enhanced session verification
@@ -239,8 +271,8 @@ const BookingForm: React.FC = () => {
 
     // Check if user is authenticated
     if (!token || !user) {
-      console.log("No authentication found, redirecting to login");
-      navigate("/login");
+      logger.debug("No authentication found, redirecting to login");
+      void navigate("/login");
       return;
     }
 
@@ -256,88 +288,122 @@ const BookingForm: React.FC = () => {
       sessionStorage.setItem("booking_flow_valid", "true");
     } else {
       // Allow the user to proceed but show a notice
-      console.log("User accessed booking page directly");
+      logger.debug("User accessed booking page directly");
       setError("For the best experience, start from the home page. You may continue with your booking.");
-      setTimeout(() => setError(""), 5000);
+
+      // Clear error message after 5 seconds
+      const errorTimeout = setTimeout(() => {
+        setError("");
+      }, 5000);
+
+      // Return cleanup function for this timeout
+      return () => {
+        clearTimeout(errorTimeout);
+      };
     }
   }, [navigate]);
 
+  // Cleanup timeout on component unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ maxWidth: 600, margin: "0 auto" }}>
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(false)}>
-          Booking created successfully! Redirecting to payment...
-        </Alert>
-      )}
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
-          {error}
-        </Alert>
-      )}
-
+    <Box
+      component="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSubmit(processSubmit)();
+      }}
+      noValidate
+      sx={{ mt: 2 }}
+    >
       <Controller
         name="date"
         control={control}
         render={({ field }) => (
           <DatePicker
+            {...field}
             label="Booking Date"
+            minDate={tomorrow}
             value={field.value}
-            onChange={(newValue) => {
-              field.onChange(newValue);
+            onChange={(date) => {
+              field.onChange(date);
             }}
             slotProps={{
-              textField: {
-                fullWidth: true,
-                margin: "normal",
-                error: !!errors.date,
-                helperText: errors.date?.message?.toString(),
-              },
+              textField: { fullWidth: true, required: true, error: !!errors.date, helperText: errors.date?.message },
             }}
-            disablePast
-            minDate={tomorrow}
           />
         )}
       />
-
       <Controller
         name="timeSlot"
         control={control}
-        defaultValue="09:00 AM - 10:00 AM"
         render={({ field }) => (
-          <TextField
+          <FormField
+            {...field}
             select
             label="Time Slot"
-            value={field.value}
-            onChange={field.onChange}
-            error={!!errors.timeSlot}
-            helperText={errors.timeSlot?.message?.toString()}
             fullWidth
-            margin="normal"
+            required
+            error={!!errors.timeSlot}
+            helperText={errors.timeSlot?.message}
+            disabled={slotsLoading || availableSlots.length === 0}
           >
-            {timeSlots.map((slot) => (
-              <MenuItem key={slot} value={slot}>
-                {slot}
+            {slotsLoading ? (
+              <MenuItem value="" disabled>
+                <CircularProgress size={20} /> Loading...
               </MenuItem>
-            ))}
-          </TextField>
+            ) : (
+              availableSlots.map((slot) => (
+                <MenuItem key={slot.slot} value={slot.slot} disabled={slot.available <= 0}>
+                  {slot.slot} {slot.available <= 0 ? "(Full)" : `(${slot.available} available)`}
+                </MenuItem>
+              ))
+            )}
+          </FormField>
         )}
       />
-
-      <TextField
-        label="Group Size"
-        type="number"
-        {...register("groupSize")}
-        error={!!errors.groupSize}
-        helperText={errors.groupSize?.message?.toString()}
-        fullWidth
-        margin="normal"
-        InputProps={{ inputProps: { min: 1, max: 50 } }}
+      <Controller
+        name="groupSize"
+        control={control}
+        render={({ field }) => (
+          <FormField
+            {...field}
+            type="number"
+            label="Group Size"
+            fullWidth
+            required
+            error={!!errors.groupSize}
+            helperText={errors.groupSize?.message}
+            slotProps={{ htmlInput: { min: 1, max: 50 } }}
+          />
+        )}
       />
-
-      <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3 }} disabled={formLoading}>
-        {formLoading ? "Submitting..." : "Book Tour"}
-      </Button>
+      {/* Error message */}
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      )}
+      {/* Success message */}
+      {success && (
+        <Alert severity="success" sx={{ mt: 2 }}>
+          Booking successful! Redirecting to confirmation...
+        </Alert>
+      )}
+      {/* Actions */}
+      <FormActions
+        onSubmit={() => {
+          void handleSubmit(processSubmit)();
+        }}
+        isLoading={isSubmitting}
+        submitText="Book Tour"
+      />
     </Box>
   );
 };

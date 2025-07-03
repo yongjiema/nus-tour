@@ -3,6 +3,7 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { UsersService } from "./users.service";
 import { UpdateUserDto } from "../auth/dto/update-user.dto";
 import { UserResponseDto } from "../auth/dto/user-response.dto";
+import { AuthenticatedRequest } from "../common/types/request.types";
 
 @Controller("users")
 export class UsersController {
@@ -10,21 +11,36 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get("profile")
-  async getProfile(@Req() req: any) {
+  async getProfile(@Req() req: AuthenticatedRequest) {
     const user = await this.usersService.findById(req.user.id);
-    return user;
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: user.roles.map((r) => (typeof r === "string" ? r : r.name)),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch("profile")
-  async updateProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+  async updateProfile(
+    @Req() req: AuthenticatedRequest,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
     const updatedUser = await this.usersService.update(req.user.id, updateUserDto);
-    return updatedUser;
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      roles: updatedUser.roles.map((r) => (typeof r === "string" ? r : r.name)),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete("profile")
-  async deleteAccount(@Req() req: any): Promise<{ message: string }> {
+  async deleteAccount(@Req() req: AuthenticatedRequest): Promise<{ message: string }> {
     await this.usersService.delete(req.user.id);
     return { message: "Account deleted successfully." };
   }
@@ -33,6 +49,12 @@ export class UsersController {
   @Get()
   async getAllUsers(): Promise<UserResponseDto[]> {
     const users = await this.usersService.findAll();
-    return users;
+    return users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      roles: u.roles.map((r) => (typeof r === "string" ? r : r.name)),
+    }));
   }
 }

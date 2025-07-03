@@ -1,31 +1,27 @@
-import { Module } from "@nestjs/common";
+import { Module, Logger } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { User } from "./entities/user.entity";
-import { Booking } from "./entities/booking.entity";
-import { Checkin } from "./entities/checkin.entity";
-import { Feedback } from "./entities/feedback.entity";
-import { Payment } from "./entities/payments.entity";
+import { buildTypeOrmOptions } from "./typeorm.config";
+import { TimeSlot } from "./entities/timeSlot.entity";
 
 @Module({
   imports: [
-    ConfigModule.forRoot(), // Ensure environment variables are loaded
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: "postgres",
-        host: configService.get("DB_HOST", "localhost"),
-        port: configService.get<number>("DB_PORT", 5432),
-        ssl: configService.get("DB_SSL") === "true" ? { rejectUnauthorized: false } : false,
-        database: configService.get("DB_NAME", "nus_tour"),
-        username: configService.get("DB_USER", "postgres"),
-        password: configService.get("DB_PASSWORD", "password"),
-        entities: [User, Booking, Checkin, Feedback, Payment],
-        synchronize: (configService.get("NODE_ENV") ?? "development") === "development",
-        logging: (configService.get("NODE_ENV") ?? "development") === "development",
-      }),
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => buildTypeOrmOptions(configService),
     }),
+    TypeOrmModule.forFeature([TimeSlot]),
   ],
+  providers: [],
 })
-export class DatabaseModule {}
+export class DatabaseModule {
+  // Seeding is handled centrally by DatabaseSeedModule in non-production environments
+
+  /**
+   * Non-static member so the class is not considered "empty" by the
+   * @typescript-eslint/no-extraneous-class rule. It has no runtime cost.
+   */
+  private readonly _logger = new Logger(DatabaseModule.name);
+}

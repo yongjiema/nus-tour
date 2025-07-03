@@ -1,62 +1,64 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, Check, OneToOne, CreateDateColumn } from "typeorm";
-import { v4 as uuidv4 } from "uuid";
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  Check,
+  OneToOne,
+  CreateDateColumn,
+  ManyToOne,
+  Index,
+  UpdateDateColumn,
+} from "typeorm";
 import { Checkin } from "./checkin.entity";
 import { Payment } from "./payments.entity";
-import { BookingLifecycleStatus } from "./enums";
+import { BookingStatus } from "./enums";
+import { User } from "./user.entity";
 
 @Entity("booking")
-@Check("CHK_email_format", "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'")
 @Check("CHK_groupSize_range", '"groupSize" > 0 AND "groupSize" <= 50')
-@Check(
-  "CHK_timeslot_valid",
-  "\"timeSlot\" IN ('09:00 AM - 10:00 AM', '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM', '03:00 PM - 04:00 PM')",
-)
+@Index("IDX_booking_date_timeslot_unique", ["date", "timeSlot"], { unique: true })
 export class Booking {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column({ unique: true })
-  bookingId: string;
-
-  @Column()
-  name: string;
-
-  @Column()
-  email: string;
+  /**
+   * Primary identifier – exposed to clients. Using UUID prevents row-count inference.
+   */
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @Column({ type: "date" })
-  date: Date; // The date of the booking itself
+  date!: Date; // The date of the booking itself
 
   @Column()
-  groupSize: number;
+  groupSize!: number;
 
   @Column({ default: 50 })
-  deposit: number;
+  deposit!: number;
 
-  @Column()
-  timeSlot: string;
+  @Column({ length: 50 })
+  timeSlot!: string;
 
   @Column({ default: false })
-  hasFeedback: boolean;
+  hasFeedback!: boolean;
 
   @Column({
     type: "enum",
-    enum: BookingLifecycleStatus,
-    default: BookingLifecycleStatus.PENDING_PAYMENT,
+    enum: BookingStatus,
+    default: BookingStatus.AWAITING_PAYMENT,
   })
-  status: BookingLifecycleStatus;
+  status!: BookingStatus;
 
   @CreateDateColumn()
-  createdAt: Date; // When the booking record was created
+  createdAt!: Date; // When the booking record was created
+
+  @UpdateDateColumn()
+  modifiedAt!: Date;
 
   @OneToOne(() => Checkin, (checkin) => checkin.booking, { nullable: true })
-  checkin: Checkin;
+  checkin!: Checkin | null;
 
   @OneToOne(() => Payment, (payment) => payment.booking, { nullable: true })
-  payment: Payment;
+  payment!: Payment | null;
 
-  @BeforeInsert()
-  generateBookingId() {
-    this.bookingId = uuidv4();
-  }
+  // Relation to the user who created the booking.
+  @ManyToOne(() => User, (user) => user.bookings, { nullable: false, eager: true })
+  user!: User;
 }

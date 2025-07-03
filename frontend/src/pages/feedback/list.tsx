@@ -1,6 +1,7 @@
 import React from "react";
 import { List, ListItem, Divider, Typography, Rating, Box, Chip, IconButton, Paper } from "@mui/material";
-import { useList, useUpdate, BaseRecord } from "@refinedev/core";
+import { useList, useUpdate } from "@refinedev/core";
+import type { BaseRecord } from "@refinedev/core";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
@@ -34,7 +35,7 @@ const FeedbackList: React.FC = () => {
         values: { isPublic: !isCurrentlyPublic },
       },
       {
-        onSuccess: () => refetch(),
+        onSuccess: () => void refetch(),
       },
     );
   };
@@ -61,12 +62,17 @@ const FeedbackList: React.FC = () => {
                     </Box>
                     <Box>
                       <Chip
-                        label={feedback.booking?.tourName || "Tour"}
+                        label={feedback.booking?.tourName ?? "Tour"}
                         size="small"
                         color="primary"
                         variant="outlined"
                       />
-                      <IconButton size="small" onClick={() => handleToggleVisibility(feedback.id, feedback.isPublic)}>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          handleToggleVisibility(feedback.id, feedback.isPublic);
+                        }}
+                      >
                         {feedback.isPublic ? <VisibilityIcon /> : <VisibilityOffIcon />}
                       </IconButton>
                     </Box>
@@ -75,7 +81,7 @@ const FeedbackList: React.FC = () => {
                     {feedback.comments}
                   </Typography>
                   <Typography variant="subtitle2" mt={1}>
-                    By: {feedback.user?.name || "Anonymous"}
+                    By: {feedback.user?.name ?? "Anonymous"}
                   </Typography>
                 </Box>
               </ListItem>

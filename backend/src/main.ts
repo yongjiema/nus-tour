@@ -1,60 +1,33 @@
 import { NestFactory } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
 import { AppModule } from "./app.module";
-import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { NewsEventService } from "./news-event/news-event.service";
+import { ValidationPipe } from "@nestjs/common";
+import { AllExceptionsFilter } from "./common/exceptions/all-exceptions.filter";
+import { HttpExceptionFilter } from "./common/exceptions/http-exception.filter";
+import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
+import { getRequiredAppConfig } from "./config";
 
-async function bootstrap() {
-  console.log("Starting NestJS application...");
-  try {
-    const app = await NestFactory.create(AppModule);
-    console.log("NestJS application created successfully");
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const appConfig = getRequiredAppConfig(configService);
 
-    const configService = app.get(ConfigService);
-    const port = process.env.PORT || 3000;
-    console.log(`Configured port: ${port}`);
+  // Enable CORS
+  app.enableCors({
+    origin: appConfig.cors.origin,
+    credentials: appConfig.cors.credentials,
+    methods: appConfig.cors.methods,
+    allowedHeaders: appConfig.cors.headers,
+  });
 
-    // Enable CORS
-    app.enableCors({
-      origin: configService.get<string>("CORS_ORIGIN", "http://localhost:5173"),
-      credentials: configService.get<boolean>("CORS_CREDENTIALS", true),
-      methods: configService.get<string>("CORS_METHODS", "GET,POST,PUT,DELETE,PATCH,OPTIONS")?.split(","),
-      allowedHeaders: configService
-        .get<string>("CORS_HEADERS", "Content-Type,Authorization,X-Requested-With,Accept")
-        ?.split(","),
-    });
-    console.log("CORS enabled");
+  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
-    const config = new DocumentBuilder()
-      .setTitle("NUS Tour API")
-      .setDescription("NUS Tour API description")
-      .setVersion("1.0")
-      .addBearerAuth()
-      .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup("api", app, document);
+  await app.listen(appConfig.port);
 
-    // 获取 NewsEventService 并执行初始数据抓取
-    const newsEventService = app.get(NewsEventService);
-    setTimeout(() => {
-      newsEventService.fetchAndSaveLatestNewsAndEvents();
-    }, 5000); // 延迟5秒执行，确保数据库连接已建立
-
-    try {
-      // Listen on all interfaces
-      await app.listen(port, "0.0.0.0");
-      console.log(`🚀 Application is running at: http://localhost:${port}`);
-
-      // Log database connection status
-      const server = app.getHttpServer();
-      console.log("Server started successfully");
-    } catch (error) {
-      console.error("Failed to start the server:", error);
-      process.exit(1);
-    }
-  } catch (error) {
-    console.error("Failed to create NestJS application:", error);
-    process.exit(1);
-  }
+  // Application bootstrap log - standard practice in NestJS samples
+  console.log(`🚀 Application is running at: http://localhost:${appConfig.port}`);
 }
-bootstrap();
+
+void bootstrap();

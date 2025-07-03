@@ -1,12 +1,5 @@
 {
-  "cSpell.words": [
-    "Checkin",
-    "checkins",
-    "kbar",
-    "ormconfig",
-    "paynow",
-    "refinedev",
-    "timeslot",
-    "uuidv"
-  ]
+  // https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-newer-typescript-versions
+  "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }

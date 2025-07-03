@@ -1,15 +1,17 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Container, Typography, Box, Paper, Button, styled, Divider, CircularProgress } from "@mui/material";
+import { Container, Typography, Box, Paper, styled, Divider, CircularProgress } from "@mui/material";
 import { CheckCircle } from "@mui/icons-material";
 import { useOne } from "@refinedev/core";
 import { PublicHeader } from "../../components/header/public";
+import { getThemeColor } from "../../theme/constants";
+import { ActionButton } from "../../components/shared/ui";
+import { useTheme } from "@mui/material/styles";
 
 const ConfirmationPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
   marginTop: theme.spacing(3),
   borderRadius: "8px",
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
 }));
 
 const SuccessIcon = styled(CheckCircle)(({ theme }) => ({
@@ -24,18 +26,10 @@ const DetailsRow = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1, 0),
 }));
 
-const ActionButton = styled(Button)(({ theme }) => ({
-  marginTop: theme.spacing(3),
-  padding: theme.spacing(1.5, 4),
-  backgroundColor: "#002147",
-  "&:hover": {
-    backgroundColor: "#001a38",
-  },
-}));
-
 const BookingConfirmation: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
 
   const { data, isLoading } = useOne({
     resource: "bookings",
@@ -53,12 +47,12 @@ const BookingConfirmation: React.FC = () => {
   if (!data?.data) {
     return (
       <Container maxWidth="sm" sx={{ mt: 6 }}>
-        <ConfirmationPaper>
+        <ConfirmationPaper elevation={2}>
           <Typography variant="h6" color="error" align="center">
             Booking not found. Please check your booking details.
           </Typography>
           <Box sx={{ textAlign: "center", mt: 2 }}>
-            <ActionButton variant="contained" onClick={() => navigate("/booking")}>
+            <ActionButton variant="contained" onClick={() => void navigate("/booking")}>
               Return to Booking
             </ActionButton>
           </Box>
@@ -73,7 +67,18 @@ const BookingConfirmation: React.FC = () => {
     <>
       <PublicHeader />
       <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
-        <ConfirmationPaper>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            textAlign: "center",
+            background: `linear-gradient(135deg, ${getThemeColor(theme, "NUS_BLUE")} 0%, ${getThemeColor(
+              theme,
+              "NUS_BLUE",
+            )}dd 100%)`,
+            color: theme.palette.common.white,
+          }}
+        >
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
             <SuccessIcon />
             <Typography variant="h4" align="center" gutterBottom>
@@ -94,7 +99,7 @@ const BookingConfirmation: React.FC = () => {
             <Typography variant="body2" color="textSecondary">
               Booking ID
             </Typography>
-            <Typography variant="body2">{booking.bookingId}</Typography>
+            <Typography variant="body2">{booking.id}</Typography>
           </DetailsRow>
 
           <DetailsRow>
@@ -147,16 +152,16 @@ const BookingConfirmation: React.FC = () => {
               variant="body2"
               sx={{ color: booking.paymentStatus === "completed" ? "success.main" : "warning.main" }}
             >
-              {booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)}
+              {String(booking.paymentStatus).charAt(0).toUpperCase() + String(booking.paymentStatus).slice(1)}
             </Typography>
           </DetailsRow>
 
           <Box sx={{ textAlign: "center", mt: 3 }}>
-            <ActionButton variant="contained" onClick={() => navigate("/")}>
+            <ActionButton variant="contained" onClick={() => void navigate("/")}>
               Return to Home
             </ActionButton>
           </Box>
-        </ConfirmationPaper>
+        </Paper>
       </Container>
     </>
   );

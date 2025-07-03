@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from "@nestjs/common";
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req, UseGuards, Logger } from "@nestjs/common";
 import { FeedbackService } from "./feedback.service";
 import { CreateFeedbackDto } from "./dto/create-feedback.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
 import { Roles } from "../auth/role.decorator";
-import { Logger } from "@nestjs/common";
+import { AuthenticatedRequest } from "../common/types/request.types";
 
 @Controller("feedback")
 export class FeedbackController {
@@ -14,12 +14,13 @@ export class FeedbackController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(@Body() createFeedbackDto: CreateFeedbackDto, @Request() req) {
+  create(@Body() createFeedbackDto: CreateFeedbackDto, @Req() req: AuthenticatedRequest) {
+    this.logger.log(`Creating feedback for user: ${req.user.id}`);
     return this.feedbackService.create(createFeedbackDto, req.user.id);
   }
 
   @Get()
-  findAll(@Query() query) {
+  findAll(@Query() query: { isPublic?: boolean; [key: string]: unknown }) {
     return this.feedbackService.findAll(query);
   }
 
@@ -30,7 +31,7 @@ export class FeedbackController {
 
   @Get("user")
   @UseGuards(JwtAuthGuard)
-  async getUserFeedbacks(@Request() req) {
+  async getUserFeedbacks(@Req() req: AuthenticatedRequest) {
     this.logger.log(`Getting feedbacks for user: ${JSON.stringify(req.user)}`);
     const feedbacks = await this.feedbackService.getFeedbacksByUserId(req.user.id);
     this.logger.log(`Found ${feedbacks.length} feedbacks for user`);
@@ -42,20 +43,26 @@ export class FeedbackController {
 
   @Get(":id")
   findOne(@Param("id") id: string) {
-    return this.feedbackService.findOne(+id);
+    return this.feedbackService.findOne(id);
   }
 
   @Patch(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles("admin")
-  update(@Param("id") id: string, @Body() updateData: any) {
-    return this.feedbackService.update(+id, updateData);
+  @Roles("ADMIN")
+  update(@Param("id") id: string, @Body() updateFeedbackDto: Record<string, unknown>) {
+    return this.feedbackService.update(id, updateFeedbackDto);
   }
 
   @Delete(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles("admin")
+  @Roles("ADMIN")
   remove(@Param("id") id: string) {
-    return this.feedbackService.remove(+id);
+    return this.feedbackService.remove(id);
+  }
+
+  @Get("average")
+  async getAverageRating(): Promise<{ averageRating: number }> {
+    const average = await this.feedbackService.getAverageRating();
+    return { averageRating: average };
   }
 }

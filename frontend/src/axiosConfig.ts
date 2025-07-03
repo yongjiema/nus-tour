@@ -16,8 +16,8 @@ axiosInstance.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
+  (error: unknown) => {
+    return Promise.reject(new Error(error instanceof Error ? error.message : String(error)));
   },
 );
 

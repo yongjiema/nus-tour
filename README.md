@@ -21,12 +21,16 @@ DB_PORT=<port>
 DB_NAME=<database>
 DB_USER=<user>
 DB_PASSWORD=<password>
+DB_SSL=<true/false>
 
 # CORS Configuration
 CORS_ORIGIN=http://localhost:5173
 CORS_CREDENTIALS=true
 CORS_METHODS=GET,POST,PUT,DELETE
 CORS_HEADERS=Content-Type,Authorization
+
+# JWT
+JWT_SECRET=your_secret_key
 ```
 
 ### Frontend `.env`
@@ -41,8 +45,8 @@ To set up and run the web application locally, follow these steps:
 
 1. **Set Up Environment Variables**: Ensure `.env` files are correctly configured in both the backend and frontend directories.
 2. **Navigate to the project directory**: `cd nus-tour`
-3. **Install dependencies**: `npm run install:all`
-4. **Start the application**: `npm run start:dev:all`
+3. **Install dependencies**: `npm install`
+4. **Start the application**: `npm run start:dev`
 
 The application will be running at:
 

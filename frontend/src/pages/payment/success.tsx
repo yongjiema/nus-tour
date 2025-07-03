@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Container, Typography, Box, Paper, Button, Divider, Grid, styled, CircularProgress } from "@mui/material";
+import { Container, Typography, Box, Paper, Divider, styled, CircularProgress, Grid2 as Grid } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { PublicHeader } from "../../components/header/public";
+import { getThemeColor } from "../../theme/constants";
+import { ActionButton } from "../../components/shared/ui";
+import { useTheme } from "@mui/material/styles";
 
 const SuccessPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
   marginTop: theme.spacing(3),
   marginBottom: theme.spacing(3),
   borderRadius: "8px",
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
 }));
 
 const SuccessIcon = styled(CheckCircleIcon)(({ theme }) => ({
@@ -22,18 +23,9 @@ const DetailRow = styled(Box)(({ theme }) => ({
   display: "flex",
   justifyContent: "space-between",
   padding: theme.spacing(1.5, 0),
-  borderBottom: "1px solid #eaeaea",
+  borderBottom: `1px solid ${theme.palette.divider}`,
   "&:last-child": {
     borderBottom: "none",
-  },
-}));
-
-const ActionButton = styled(Button)(({ theme }) => ({
-  marginTop: theme.spacing(3),
-  padding: theme.spacing(1.5, 4),
-  backgroundColor: "#002147",
-  "&:hover": {
-    backgroundColor: "#001a38",
   },
 }));
 
@@ -49,14 +41,18 @@ const PaymentSuccessPage: React.FC = () => {
   const navigate = useNavigate();
   const [paymentDetails, setPaymentDetails] = useState<PaymentConfirmation | null>(null);
   const [loading, setLoading] = useState(true);
+  const theme = useTheme();
 
   useEffect(() => {
     // Retrieve payment confirmation from localStorage
     const storedData = localStorage.getItem("payment_confirmation");
     if (storedData) {
       try {
-        const parsedData = JSON.parse(storedData);
+        const parsedData = JSON.parse(storedData) as PaymentConfirmation;
         setPaymentDetails(parsedData);
+        // Clean up localStorage after successfully loading the data
+        localStorage.removeItem("booking-data");
+        localStorage.removeItem("payment_confirmation");
       } catch (e) {
         console.error("Error parsing payment confirmation data:", e);
       }
@@ -65,11 +61,11 @@ const PaymentSuccessPage: React.FC = () => {
   }, [id]);
 
   const handleViewBookings = () => {
-    navigate("/my-bookings");
+    void navigate("/my-bookings");
   };
 
   const handleReturnHome = () => {
-    navigate("/");
+    void navigate("/");
   };
 
   if (loading) {
@@ -83,7 +79,7 @@ const PaymentSuccessPage: React.FC = () => {
   if (!paymentDetails) {
     return (
       <Container maxWidth="sm" sx={{ mt: 6 }}>
-        <SuccessPaper>
+        <SuccessPaper elevation={2}>
           <Typography variant="h6" color="error" align="center">
             Payment confirmation details not found.
           </Typography>
@@ -98,84 +94,95 @@ const PaymentSuccessPage: React.FC = () => {
   }
 
   return (
-    <>
-      <PublicHeader />
-      <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
-        <SuccessPaper>
-          <Box display="flex" flexDirection="column" alignItems="center" mb={4}>
-            <SuccessIcon />
-            <Typography variant="h4" gutterBottom align="center">
-              Payment Successful!
-            </Typography>
-            <Typography variant="body1" color="textSecondary" align="center">
-              Your booking has been confirmed. Thank you for your payment.
-            </Typography>
-          </Box>
-
-          <Divider sx={{ mb: 3 }} />
-
-          <Typography variant="h6" gutterBottom>
-            Payment Details
+    <Container maxWidth="md" sx={{ mt: 6, mb: 6, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          textAlign: "center",
+          background: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          maxWidth: 600,
+          width: "100%",
+        }}
+      >
+        <Box display="flex" flexDirection="column" alignItems="center" mb={4}>
+          <SuccessIcon />
+          <Typography variant="h4" gutterBottom align="center">
+            Payment Successful!
           </Typography>
+          <Typography variant="body1" color="textSecondary" align="center">
+            Your booking has been confirmed. Thank you for your payment.
+          </Typography>
+        </Box>
 
-          <Box sx={{ mb: 3 }}>
-            <DetailRow>
-              <Typography variant="body1" color="textSecondary">
-                Booking ID
-              </Typography>
-              <Typography variant="body1" fontWeight="bold">
-                {paymentDetails.bookingId}
-              </Typography>
-            </DetailRow>
+        <Divider sx={{ mb: 3 }} />
 
-            <DetailRow>
-              <Typography variant="body1" color="textSecondary">
-                Amount Paid
-              </Typography>
-              <Typography variant="body1" fontWeight="bold">
-                SGD {paymentDetails.amount.toFixed(2)}
-              </Typography>
-            </DetailRow>
+        <Typography variant="h6" gutterBottom>
+          Payment Details
+        </Typography>
 
-            <DetailRow>
-              <Typography variant="body1" color="textSecondary">
-                Transaction ID
-              </Typography>
-              <Typography variant="body1" fontWeight="bold">
-                {paymentDetails.transactionId}
-              </Typography>
-            </DetailRow>
+        <Box sx={{ mb: 3 }}>
+          <DetailRow>
+            <Typography variant="body1" color="textSecondary">
+              Booking ID
+            </Typography>
+            <Typography variant="body1" fontWeight="bold">
+              {paymentDetails.bookingId}
+            </Typography>
+          </DetailRow>
 
-            <DetailRow>
-              <Typography variant="body1" color="textSecondary">
-                Payment Date
-              </Typography>
-              <Typography variant="body1" fontWeight="bold">
-                {new Date(paymentDetails.date).toLocaleString()}
-              </Typography>
-            </DetailRow>
-          </Box>
+          <DetailRow>
+            <Typography variant="body1" color="textSecondary">
+              Amount Paid
+            </Typography>
+            <Typography variant="body1" fontWeight="bold">
+              SGD {paymentDetails.amount.toFixed(2)}
+            </Typography>
+          </DetailRow>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <ActionButton variant="contained" fullWidth onClick={handleViewBookings}>
-                View My Bookings
-              </ActionButton>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <ActionButton
-                variant="outlined"
-                fullWidth
-                onClick={handleReturnHome}
-                sx={{ backgroundColor: "transparent", color: "#002147", border: "1px solid #002147" }}
-              >
-                Return to Home
-              </ActionButton>
-            </Grid>
+          <DetailRow>
+            <Typography variant="body1" color="textSecondary">
+              Transaction ID
+            </Typography>
+            <Typography variant="body1" fontWeight="bold">
+              {paymentDetails.transactionId}
+            </Typography>
+          </DetailRow>
+
+          <DetailRow>
+            <Typography variant="body1" color="textSecondary">
+              Payment Date
+            </Typography>
+            <Typography variant="body1" fontWeight="bold">
+              {new Date(paymentDetails.date).toLocaleString()}
+            </Typography>
+          </DetailRow>
+        </Box>
+
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <ActionButton variant="contained" fullWidth onClick={handleViewBookings}>
+              View My Bookings
+            </ActionButton>
           </Grid>
-        </SuccessPaper>
-      </Container>
-    </>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <ActionButton
+              variant="outlined"
+              fullWidth
+              onClick={handleReturnHome}
+              sx={{
+                backgroundColor: "transparent",
+                color: getThemeColor(theme, "NUS_BLUE"),
+                border: `1px solid ${getThemeColor(theme, "NUS_BLUE")}`,
+              }}
+            >
+              Return to Home
+            </ActionButton>
+          </Grid>
+        </Grid>
+      </Paper>
+    </Container>
   );
 };
 

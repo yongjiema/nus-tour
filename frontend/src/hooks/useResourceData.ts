@@ -1,4 +1,12 @@
-import { useList, UseListProps, BaseRecord, HttpError, GetListResponse } from "@refinedev/core";
+import { useList } from "@refinedev/core";
+import type { UseListProps, BaseRecord, GetListResponse, HttpError } from "@refinedev/core";
+
+interface ErrorWithResponse extends HttpError {
+  response?: {
+    status: number;
+    data: unknown;
+  };
+}
 
 /**
  * Custom hook for fetching resources with standardized error handling and logging
@@ -18,24 +26,26 @@ export const useResourceData = <TData extends BaseRecord = BaseRecord>(
     resource,
     queryOptions: {
       enabled: !!userId,
-      onError: (error: HttpError) => {
+      onError: (error: ErrorWithResponse) => {
         if (isDev) {
           console.error(`Error fetching ${resource}:`, error);
-          console.error(`${resource} error details:`, {
-            status: error?.response?.status,
-            data: error?.response?.data,
-          });
+          if (error.response) {
+            console.error(`${resource} error details:`, {
+              status: error.response.status,
+              data: error.response.data,
+            });
+          }
         }
       },
       onSuccess: (data: GetListResponse<TData>) => {
         if (isDev) {
           console.log(`${resource} data received:`, {
             total: data.total,
-            count: data.data?.length,
+            count: data.data.length,
           });
         }
       },
-      ...(config?.queryOptions || {}),
+      ...(config?.queryOptions ?? {}),
     },
     ...config,
   });

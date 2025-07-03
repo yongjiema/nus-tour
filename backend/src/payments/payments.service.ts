@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { Injectable, NotFoundException, Logger, ForbiddenException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In } from "typeorm";
 import { Payment } from "../database/entities/payments.entity";
@@ -7,7 +7,6 @@ import { Booking } from "../database/entities/booking.entity";
 import { BookingService } from "../booking/booking.service";
 import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentStatusDto } from "./dto/update-payment-status.dto";
-import { BookingLifecycleStatus } from "../database/entities/enums";
 
 @Injectable()
 export class PaymentsService {
@@ -23,114 +22,79 @@ export class PaymentsService {
     private bookingService: BookingService,
   ) {}
 
-  async createPayment(createPaymentDto: CreatePaymentDto, user: any): Promise<Payment> {
+  async createPayment(createPaymentDto: CreatePaymentDto, user: { id: string; email: string }): Promise<Payment> {
     this.logger.log(`Creating payment for booking: ${createPaymentDto.bookingId}`);
 
-    // First get the booking
-    let booking;
-    try {
-      booking = await this.bookingService.getBookingByBookingId(String(createPaymentDto.bookingId));
-    } catch (error) {
-      this.logger.error(`Booking not found: ${createPaymentDto.bookingId}`, error);
-      throw new NotFoundException(`Booking with id ${createPaymentDto.bookingId} not found`);
+    // Validate if booking exists using BookingService helper (better abstraction for unit tests)
+    const booking = await this.bookingService.getBookingById(String(createPaymentDto.bookingId));
+
+    // Validate booking ownership
+    if (booking.user.id !== user.id) {
+      throw new ForbiddenException("You can only create payments for your own bookings");
     }
 
-    // Verify the authenticated user owns this booking
-    if (booking.email !== user.email) {
-      this.logger.warn(`User ${user.email} attempted unauthorized payment for booking ${booking.id}`);
-      throw new ForbiddenException("You do not have permission to make payments for this booking");
-    }
-
-    // Check if payment already exists
+    // Check if payment already exists for this booking
     const existingPayment = await this.paymentsRepository.findOne({
-      where: { bookingId: booking.id },
+      where: { booking: { id: booking.id } },
     });
 
+    let payment: Payment;
+
     if (existingPayment) {
-      this.logger.log(`Payment already exists for booking: ${booking.id}, updating status`);
-      return this.updatePaymentStatus({
+      // Update existing payment
+      payment = existingPayment;
+      if (createPaymentDto.amount !== undefined) {
+        payment.amount = createPaymentDto.amount;
+      }
+      if (createPaymentDto.transactionId) {
+        payment.transactionId = createPaymentDto.transactionId;
+      }
+      if (createPaymentDto.paymentMethod) {
+        payment.paymentMethod = createPaymentDto.paymentMethod;
+      }
+    } else {
+      // Create new payment
+      payment = this.paymentsRepository.create({
         bookingId: booking.id,
-        status: createPaymentDto.status || BookingLifecycleStatus.PENDING_PAYMENT,
-        transactionId: createPaymentDto.transactionId,
-        paymentMethod: createPaymentDto.paymentMethod,
+        amount: createPaymentDto.amount ?? booking.deposit,
+        transactionId: createPaymentDto.transactionId ?? `TXN-${Date.now()}`,
+        paymentMethod: createPaymentDto.paymentMethod ?? "pending",
       });
     }
 
-    // Create new payment
-    const payment = this.paymentsRepository.create({
-      bookingId: booking.id,
-      amount: createPaymentDto.amount || booking.deposit,
-      status: createPaymentDto.status || BookingLifecycleStatus.PENDING_PAYMENT,
-      transactionId: createPaymentDto.transactionId,
-      paymentMethod: createPaymentDto.paymentMethod,
-    });
-
-    try {
-      const savedPayment = await this.paymentsRepository.save(payment);
-      this.logger.log(`Payment created for booking: ${booking.id}`);
-      return savedPayment;
-    } catch (error) {
-      console.error("Payment processing failed:", error);
-      throw new Error(`Payment failed: ${error.message}`);
-    }
+    const savedPayment = await this.paymentsRepository.save(payment);
+    this.logger.log(`Payment record processed for booking: ${booking.id}`);
+    return savedPayment;
   }
 
   async updatePaymentStatus(updateDto: UpdatePaymentStatusDto): Promise<Payment> {
-    this.logger.log(`Updating payment status for booking: ${updateDto.bookingId} to ${updateDto.status}`);
+    this.logger.log(`Updating payment for booking: ${updateDto.bookingId}`);
 
-    // Try to find booking by numeric ID first
-    let booking;
-    try {
-      // If it's a number, try direct lookup
-      if (typeof updateDto.bookingId === "number") {
-        booking = await this.bookingRepository.findOne({
-          where: { id: updateDto.bookingId },
-        });
-      }
-      // If it's a string, check if it's a UUID
-      else {
-        booking = await this.bookingService.getBookingByBookingId(updateDto.bookingId);
-      }
-    } catch (err) {
-      this.logger.error(`Failed to find booking: ${updateDto.bookingId}`, err.message);
-      throw new NotFoundException(`Booking with id ${updateDto.bookingId} not found`);
-    }
+    // 1. Retrieve the booking (bookingService throws if not found)
+    const booking = await this.bookingService.getBookingById(String(updateDto.bookingId));
 
-    if (!booking) {
-      throw new NotFoundException(`Booking with id ${updateDto.bookingId} not found`);
-    }
+    // 2. Retrieve or create payment linked to booking
+    let payment = await this.paymentsRepository.findOne({ where: { bookingId: booking.id } });
 
-    let payment = await this.paymentsRepository.findOne({
-      where: { bookingId: booking.id },
+    payment ??= this.paymentsRepository.create({
+      bookingId: booking.id,
+      amount: booking.deposit,
     });
 
-    if (!payment) {
-      this.logger.warn(`No payment found for booking: ${booking.id}, creating one`);
-      payment = this.paymentsRepository.create({
-        bookingId: booking.id,
-        amount: booking.deposit,
-        status: BookingLifecycleStatus.PENDING_PAYMENT,
-      });
-    }
-
-    // Update payment
-    payment.status = updateDto.status;
+    // 3. Apply updates to payment fields only
     if (updateDto.transactionId) {
       payment.transactionId = updateDto.transactionId;
     }
     if (updateDto.paymentMethod) {
       payment.paymentMethod = updateDto.paymentMethod;
     }
-    booking.status =
-      updateDto.status === BookingLifecycleStatus.PAYMENT_COMPLETED
-        ? BookingLifecycleStatus.CONFIRMED
-        : BookingLifecycleStatus.PENDING_PAYMENT;
-    await this.bookingRepository.save(booking);
+    payment.modifiedAt = new Date();
 
-    const updatedPayment = await this.paymentsRepository.save(payment);
-    this.logger.log(`Payment status updated for booking: ${booking.id}`);
+    // 4. Persist changes
+    const savedPayment = await this.paymentsRepository.save(payment);
 
-    return updatedPayment;
+    this.logger.log(`Payment updated successfully for booking: ${updateDto.bookingId}`);
+    return savedPayment;
   }
 
   async getPaymentsByUserId(userId: string): Promise<Payment[]> {
@@ -145,9 +109,9 @@ export class PaymentsService {
       return [];
     }
 
-    // Find bookings by email
+    // Find bookings linked to user
     const bookings = await this.bookingRepository.find({
-      where: { email: user.email },
+      where: { user: { id: user.id } as User },
       select: ["id"],
     });
 
@@ -171,23 +135,9 @@ export class PaymentsService {
     return payments;
   }
 
-  async getPaymentByBookingId(bookingId: number): Promise<Payment> {
-    // First try to find the booking, which could be stored with a UUID
-    let booking;
-    try {
-      booking = await this.bookingService.getBookingById(bookingId);
-    } catch (err) {
-      this.logger.warn(`Booking with numeric ID ${bookingId} not found, trying UUID lookup: ${err.message}`);
-      try {
-        // Try with string in case it's a UUID
-        booking = await this.bookingService.getBookingByBookingId(String(bookingId));
-      } catch (err2) {
-        this.logger.error(`Payment lookup failed: Booking ${bookingId} not found: ${err2.message}`);
-        throw new NotFoundException(`Payment for booking ${bookingId} not found - booking does not exist`);
-      }
-    }
+  async getPaymentByBookingId(bookingId: string): Promise<Payment> {
+    const booking = await this.bookingService.getBookingById(bookingId);
 
-    // Now get the payment using the booking's numeric ID
     const payment = await this.paymentsRepository.findOne({
       where: { bookingId: booking.id },
     });

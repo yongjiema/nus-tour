@@ -1,6 +1,7 @@
 import axiosInstance from "./axiosConfig";
-import { HttpError } from "@refinedev/core";
-import { UserRole, LoginResponse } from "./types/auth.types";
+import type { HttpError } from "@refinedev/core";
+import { UserRole } from "./types/auth.types";
+import type { LoginResponse } from "./types/auth.types";
 
 // Add a flag to prevent cascading refresh attempts
 let isRefreshing = false;
@@ -8,6 +9,23 @@ let isRefreshing = false;
 interface LoginCredentials {
   email: string;
   password: string;
+}
+
+interface AxiosErrorWithConfig {
+  config: {
+    _retry?: boolean;
+    headers: Record<string, string>;
+  };
+  response?: {
+    status: number;
+  };
+  message?: string;
+}
+
+interface UserData {
+  id: string;
+  roles: UserRole[];
+  [key: string]: unknown;
 }
 
 interface ApiError extends HttpError {
@@ -29,14 +47,14 @@ axiosInstance.interceptors.request.use((config) => {
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  async (error: AxiosErrorWithConfig) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       // Don't try to refresh if we're already doing so
       if (isRefreshing) {
-        return Promise.reject(error);
+        return Promise.reject(new Error(error.message ?? "Authentication failed"));
       }
 
       try {
@@ -44,16 +62,16 @@ axiosInstance.interceptors.response.use(
         if (refreshResponse.success) {
           const token = localStorage.getItem("access_token");
           originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
+          return await axiosInstance(originalRequest);
         }
-        return Promise.reject(error);
+        return await Promise.reject(new Error(error.message ?? "Authentication failed"));
       } catch (refreshError) {
         localStorage.removeItem("access_token");
         window.location.href = "/login";
-        return Promise.reject(refreshError);
+        return Promise.reject(new Error(refreshError instanceof Error ? refreshError.message : "Refresh failed"));
       }
     }
-    return Promise.reject(error);
+    return Promise.reject(new Error(error.message ?? "Request failed"));
   },
 );
 
@@ -66,81 +84,94 @@ export const authProvider = {
       });
 
       if (response.data.access_token) {
-        // Normalize the role to uppercase to match enum
-        const normalizedRole = response.data.user.role.toUpperCase() as UserRole;
+        // Normalize the roles to uppercase to match enum values
+        const normalizedRoles = response.data.user.roles.map((r: string) => r.toUpperCase()) as UserRole[];
 
+        // Persist auth info
         localStorage.setItem("access_token", response.data.access_token);
-        localStorage.setItem("role", normalizedRole);
-        localStorage.setItem("username", response.data.user.username);
-        localStorage.setItem("userId", response.data.user.id);
+        localStorage.setItem("user", JSON.stringify({ ...response.data.user, roles: normalizedRoles }));
 
-        console.log("Stored auth data:", {
-          token: response.data.access_token,
-          role: normalizedRole,
-          username: response.data.user.username,
-          userId: response.data.user.id,
-        });
+        // Auth data stored successfully (logging disabled for cleaner output)
 
-        if (normalizedRole === UserRole.ADMIN) {
+        if (normalizedRoles.includes(UserRole.ADMIN)) {
           return {
             success: true,
             redirectTo: "/admin",
           };
-        } else {
-          return {
-            success: true,
-            redirectTo: "/user-dashboard",
-          };
         }
+        return {
+          success: true,
+          redirectTo: "/dashboard/user",
+        };
       }
 
       return {
         success: false,
         error: {
           name: "LoginError",
-          message: "Invalid username or password",
+          message: "Invalid email or password",
         },
       };
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (err) {
+      let message = "Invalid email or password";
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const safeErr = err as { response?: { data?: { message?: string } } };
+        message = safeErr.response?.data?.message ?? message;
+      }
+
       return {
         success: false,
         error: {
           name: "LoginError",
-          message: "Invalid username or password",
+          message,
         },
       };
     }
   },
 
-  logout: async () => {
+  logout: () => {
     localStorage.removeItem("access_token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("username");
-    localStorage.removeItem("userId");
+    localStorage.removeItem("user");
 
-    return {
+    return Promise.resolve({
       success: true,
       redirectTo: "/login",
-    };
+    });
   },
 
   check: async () => {
     const pathname = window.location.pathname;
     const token = localStorage.getItem("access_token");
-    const storedRole = localStorage.getItem("role");
-    const id = localStorage.getItem("userId");
 
-    // Normalize the role to match enum
-    const role = storedRole ? (storedRole.toUpperCase() as UserRole) : null;
-
-    // If no token, user is not authenticated
+    // Quick exit: if no token, treat as unauthenticated immediately
     if (!token) {
       return {
         authenticated: false,
         redirectTo: "/login",
-      };
+        roles: [],
+      } as const;
     }
+
+    // Validate token by calling backend profile endpoint
+    let user: UserData | null = null;
+    try {
+      const response = await axiosInstance.get<UserData>("/auth/profile");
+      user = response.data;
+      // Persist latest user payload for quick access next time
+      localStorage.setItem("user", JSON.stringify(user));
+    } catch {
+      // Token invalid or server unreachable – treat as unauthenticated
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user");
+      return {
+        authenticated: false,
+        redirectTo: "/login",
+        roles: [],
+      } as const;
+    }
+
+    const roles = user.roles;
+    const id = user.id;
 
     // Public routes - still return auth data if available
     if (
@@ -153,37 +184,37 @@ export const authProvider = {
     ) {
       return {
         authenticated: true,
-        role,
+        roles,
         id,
-      };
+      } as const;
     }
 
     // Check if user is trying to access admin routes without admin role
-    if (pathname.startsWith("/admin") && role !== UserRole.ADMIN) {
+    if (pathname.startsWith("/admin") && !roles.includes(UserRole.ADMIN)) {
       return {
         authenticated: true,
-        redirectTo: "/user-dashboard",
-        role,
+        redirectTo: "/dashboard/user",
+        roles,
         id,
-      };
+      } as const;
     }
 
-    // Check if user is trying to access user routes with admin role
-    if (pathname === "/user-dashboard" && role === UserRole.ADMIN) {
+    // Check if user is trying to access user routes with only admin role
+    if (pathname === "/dashboard/user" && roles.includes(UserRole.ADMIN) && !roles.includes(UserRole.USER)) {
       return {
         authenticated: true,
         redirectTo: "/admin",
-        role,
+        roles,
         id,
-      };
+      } as const;
     }
 
     // For all other authenticated routes, return full auth data
     return {
       authenticated: true,
-      role,
+      roles,
       id,
-    };
+    } as const;
   },
 
   refresh: async () => {
@@ -191,9 +222,10 @@ export const authProvider = {
     isRefreshing = true;
 
     try {
-      const response = await axiosInstance.post("/auth/refresh");
-      if (response.data.access_token) {
-        localStorage.setItem("access_token", response.data.access_token);
+      const response = await axiosInstance.post<{ access_token: string }>("/auth/refresh");
+      const data = response.data;
+      if (data.access_token) {
+        localStorage.setItem("access_token", data.access_token);
         return { success: true };
       }
       return { success: false };
@@ -203,7 +235,7 @@ export const authProvider = {
   },
 
   onError: async (error: ApiError) => {
-    const status = error?.response?.status;
+    const status = error.response?.status;
 
     if (status === 401) {
       try {
@@ -233,7 +265,8 @@ export const authProvider = {
   getPermissions: async () => {
     try {
       const response = await axiosInstance.get("/auth/profile");
-      return response.data.role;
+      const roles = (response.data as { roles?: UserRole[] }).roles;
+      return roles?.[0] ?? null;
     } catch {
       return null;
     }
@@ -241,12 +274,10 @@ export const authProvider = {
 
   getIdentity: async () => {
     try {
-      const response = await axiosInstance.get("/auth/profile");
+      const response = await axiosInstance.get<UserData>("/auth/profile");
       return response.data;
     } catch {
       return null;
     }
   },
 };
-
-export default authProvider;

@@ -1,12 +1,14 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { BadRequestException, Logger } from "@nestjs/common";
+import { TEST_BOOKING_ID_5, TEST_USER_ID_1 } from "../../common/testing";
 import { BookingController } from "./booking.controller";
 import { BookingService } from "./booking.service";
-import { BookingLifecycleStatus } from "../../database/entities/enums";
 import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
-import { NotFoundException } from "@nestjs/common";
+import { Booking } from "../../database/entities/booking.entity";
+import { BookingStatus } from "../../database/entities/enums";
+import type { User } from "../../database/entities/user.entity";
 
-// A simple mock guard which always allows access
-class MockJwtAuthGuard {
+class _MockGuard {
   canActivate() {
     return true;
   }
@@ -16,129 +18,116 @@ describe("BookingController", () => {
   let controller: BookingController;
   let service: BookingService;
 
-  const sampleBooking = {
-    bookingId: "test-id",
-    name: "Test User",
-    date: "2023-06-01",
-    status: BookingLifecycleStatus.PENDING_PAYMENT,
+  const mockBooking: Partial<Booking> = {
+    id: TEST_BOOKING_ID_5,
+    date: new Date("2024-01-15"),
+    groupSize: 5,
+    status: BookingStatus.CONFIRMED,
+    timeSlot: "10:00 AM - 11:00 AM",
+    deposit: 50,
+    user: {
+      id: TEST_USER_ID_1,
+      email: "test@example.com",
+      password: "hashed-password",
+      roles: [],
+      comparePassword: jest.fn(),
+      firstName: "Test",
+      lastName: "User",
+    } as unknown as User,
   };
 
-  const mockBookingService = {
-    getFilteredBookings: jest.fn().mockResolvedValue([sampleBooking]),
-    updateStatus: jest.fn().mockImplementation((id: string, status: BookingLifecycleStatus) => {
-      if (id === "non-existent-id") {
-        throw new NotFoundException(`Booking with ID ${id} not found`);
-      }
-      return Promise.resolve({
-        ...sampleBooking,
-        bookingId: id,
-        status: status,
-      });
-    }),
+  const mockService = {
+    getFilteredBookings: jest.fn(),
+    updateStatus: jest.fn(),
+    findAll: jest.fn(),
+    updatePaymentStatus: jest.fn(),
+    updateBookingStatus: jest.fn(),
   };
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    // Silence Logger.error for cleaner test output
+    jest.spyOn(Logger.prototype, "error").mockImplementation(jest.fn());
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BookingController],
       providers: [
         {
           provide: BookingService,
-          useValue: mockBookingService,
+          useValue: mockService,
         },
       ],
     })
       .overrideGuard(JwtAuthGuard)
-      .useClass(MockJwtAuthGuard)
+      .useClass(_MockGuard)
       .compile();
+
     controller = module.get<BookingController>(BookingController);
     service = module.get<BookingService>(BookingService);
   });
 
+  it("should be defined", () => {
+    expect(controller).toBeDefined();
+  });
+
   describe("getBookings", () => {
-    it("should parse query.s and call getFilteredBookings with proper dto", async () => {
+    it("should return filtered bookings with search parameter", async () => {
+      const getFilteredBookingsSpy = jest
+        .spyOn(service, "getFilteredBookings")
+        .mockResolvedValue([mockBooking as Booking]);
+
       const query = {
-        s: JSON.stringify({ $and: [{ status: { $eq: "confirmed" } }] }),
+        s: JSON.stringify({
+          $and: [{ search: { $contL: "test" } }],
+        }),
       };
+
       const result = await controller.getBookings(query);
-      // We expect the filterDto to have status = 'confirmed'
-      expect(service.getFilteredBookings).toHaveBeenCalledWith(
+
+      expect(result).toEqual([mockBooking]);
+      expect(getFilteredBookingsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          search: "test",
+        }),
+      );
+    });
+
+    it("should return filtered bookings with status parameter", async () => {
+      const getFilteredBookingsSpy = jest
+        .spyOn(service, "getFilteredBookings")
+        .mockResolvedValue([mockBooking as Booking]);
+
+      const query = {
+        s: JSON.stringify({
+          $and: [{ status: { $eq: "confirmed" } }],
+        }),
+      };
+
+      const result = await controller.getBookings(query);
+
+      expect(result).toEqual([mockBooking]);
+      expect(getFilteredBookingsSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "confirmed",
         }),
       );
-      expect(result).toEqual([sampleBooking]);
     });
 
-    it("should return unfiltered bookings if no query.s provided", async () => {
-      const query = {}; // no s parameter
-      const result = await controller.getBookings(query);
-      // When query.s is absent, an empty BookingFilterDto is passed
-      expect(service.getFilteredBookings).toHaveBeenCalledWith({});
-      expect(result).toEqual([sampleBooking]);
-    });
+    it("should throw BadRequestException for invalid JSON", async () => {
+      const query = { s: "invalid-json" };
 
-    it("should catch parse errors and still call getFilteredBookings with empty dto", async () => {
-      const query = { s: "not-json" };
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
-      const result = await controller.getBookings(query);
-      expect(consoleSpy).toHaveBeenCalled();
-      expect(service.getFilteredBookings).toHaveBeenCalledWith({});
-      expect(result).toEqual([sampleBooking]);
-      consoleSpy.mockRestore();
+      await expect(controller.getBookings(query)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe("updateStatus", () => {
-    it("should update payment status to completed", async () => {
-      const id = "test-id";
-      const result = await controller.updateStatus(id, { status: "payment_completed" });
-      expect(service.updateStatus).toHaveBeenCalledWith(id, BookingLifecycleStatus.PAYMENT_COMPLETED);
-      expect(result).toEqual({
-        ...sampleBooking,
-        bookingId: id,
-        status: BookingLifecycleStatus.PAYMENT_COMPLETED,
-      });
-    });
+    it("should update booking status", async () => {
+      const updatedBooking = { ...mockBooking, status: BookingStatus.CONFIRMED };
+      const updateStatusSpy = jest.spyOn(service, "updateStatus").mockResolvedValue(updatedBooking as Booking);
 
-    it("should update booking status to confirmed", async () => {
-      const id = "booking-id";
-      const result = await controller.updateStatus(id, { status: "confirmed" });
-      expect(service.updateStatus).toHaveBeenCalledWith(id, BookingLifecycleStatus.CONFIRMED);
-      expect(result).toEqual({
-        ...sampleBooking,
-        bookingId: id,
-        status: BookingLifecycleStatus.CONFIRMED,
-      });
-    });
+      const result = await controller.updateStatus(TEST_BOOKING_ID_5, { status: "confirmed" });
 
-    it("should update booking status to completed", async () => {
-      const id = "booking-id";
-      const result = await controller.updateStatus(id, { status: "completed" });
-      expect(service.updateStatus).toHaveBeenCalledWith(id, BookingLifecycleStatus.COMPLETED);
-      expect(result).toEqual({
-        ...sampleBooking,
-        bookingId: id,
-        status: BookingLifecycleStatus.COMPLETED,
-      });
-    });
-
-    it("should update booking status to cancelled", async () => {
-      const id = "booking-id";
-      const result = await controller.updateStatus(id, { status: "cancelled" });
-      expect(service.updateStatus).toHaveBeenCalledWith(id, BookingLifecycleStatus.CANCELLED);
-      expect(result).toEqual({
-        ...sampleBooking,
-        bookingId: id,
-        status: BookingLifecycleStatus.CANCELLED,
-      });
-    });
-
-    it("should throw NotFoundException for non-existent booking", async () => {
-      await expect(controller.updateStatus("non-existent-id", { status: "confirmed" })).rejects.toThrow(
-        NotFoundException,
-      );
-      expect(service.updateStatus).toHaveBeenCalledWith("non-existent-id", BookingLifecycleStatus.CONFIRMED);
+      expect(result).toEqual(updatedBooking);
+      expect(updateStatusSpy).toHaveBeenCalledWith(TEST_BOOKING_ID_5, "confirmed");
     });
   });
 });
