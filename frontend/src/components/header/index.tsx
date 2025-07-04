@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useGetIdentity } from "@refinedev/core";
 import { ColorModeContext } from "../../contexts/color-mode";
 import type { AuthUser } from "../../types/auth.types";
+import { useTheme } from "@mui/material/styles";
 
 interface RefineLayoutHeaderProps {
   sticky?: boolean;
@@ -11,6 +12,7 @@ interface RefineLayoutHeaderProps {
 
 const RefineLayoutHeader: React.FC<RefineLayoutHeaderProps> = ({ sticky = true }) => {
   const { mode: _mode, setMode: _setMode } = useContext(ColorModeContext);
+  const theme = useTheme();
 
   const { pathname } = useLocation();
   const { data: user } = useGetIdentity<AuthUser>();
@@ -37,9 +39,23 @@ const RefineLayoutHeader: React.FC<RefineLayoutHeaderProps> = ({ sticky = true }
   }
 
   return (
-    <AppBar position={sticky ? "sticky" : "static"} elevation={0} sx={{ bgcolor: "background.paper" }}>
+    <AppBar position={sticky ? "sticky" : "static"} color="primary" enableColorOnDark>
       <Toolbar>
-        <Typography variant="h6" color="text.primary" sx={{ flexGrow: 1 }}>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            flexGrow: 1,
+            fontWeight: "bold",
+            color: theme.palette.secondary.main,
+            cursor: "pointer",
+            "&:hover": {
+              color: theme.palette.secondary.light,
+            },
+          }}
+          onClick={() => {
+            window.location.href = "/";
+          }}
+        >
           NUS Tour
         </Typography>
 
@@ -50,7 +66,11 @@ const RefineLayoutHeader: React.FC<RefineLayoutHeaderProps> = ({ sticky = true }
                 <Typography variant="body2" color="text.secondary">
                   {displayName}
                 </Typography>
-                <Avatar src={user.avatar} alt={displayName} sx={{ width: 32, height: 32 }}>
+                <Avatar
+                  src={user.avatar}
+                  alt={displayName}
+                  sx={{ width: 32, height: 32, border: `2px solid ${theme.palette.secondary.main}` }}
+                >
                   {displayName.charAt(0).toUpperCase()}
                 </Avatar>
               </Box>

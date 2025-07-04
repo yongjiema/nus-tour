@@ -60,9 +60,8 @@ export const Subtitle = styled(Typography)(({ theme }) => ({
   fontSize: "1.1rem",
   color: theme.palette.text.secondary,
   textAlign: "center",
-  marginBottom: theme.spacing(3),
   maxWidth: "600px",
-  margin: "0 auto",
+  margin: `0 auto ${theme.spacing(3)}`,
   [theme.breakpoints.down("sm")]: {
     fontSize: "1rem",
   },

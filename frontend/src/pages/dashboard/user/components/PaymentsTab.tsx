@@ -157,7 +157,12 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ payments, isLoading, i
             You haven't made any payments yet. Complete a booking to see your payment history here.
           </Typography>
         </Box>
-        <ActionButton color="primary" variant="contained" size="large" onClick={() => void navigate("/booking")}>
+        <ActionButton
+          color="primary"
+          variant="contained"
+          size="large"
+          onClick={() => void navigate("/u?tab=book-tour")}
+        >
           Book a Tour Now
         </ActionButton>
       </EmptyStateContainer>

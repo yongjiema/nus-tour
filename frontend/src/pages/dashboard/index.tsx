@@ -18,11 +18,11 @@ const DashboardRoot: React.FC = () => {
 
   // Prioritize admin dashboard if user has ADMIN role
   if (roles.includes(UserRole.ADMIN)) {
-    return <Navigate to="/dashboard/admin" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   // Otherwise, default to user dashboard
-  return <Navigate to="/dashboard/user" replace />;
+  return <Navigate to="/u" replace />;
 };
 
 export default DashboardRoot;

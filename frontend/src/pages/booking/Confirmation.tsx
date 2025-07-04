@@ -52,7 +52,7 @@ const BookingConfirmation: React.FC = () => {
             Booking not found. Please check your booking details.
           </Typography>
           <Box sx={{ textAlign: "center", mt: 2 }}>
-            <ActionButton variant="contained" onClick={() => void navigate("/booking")}>
+            <ActionButton variant="contained" onClick={() => void navigate("/u?tab=book-tour")}>
               Return to Booking
             </ActionButton>
           </Box>

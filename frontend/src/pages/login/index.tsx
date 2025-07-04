@@ -88,14 +88,14 @@ const Login: React.FC = () => {
   return (
     <>
       <AuthHeader />
-      <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
-        <AuthPaper>
+      <Container maxWidth="xs" sx={{ mt: 6, mb: 6 }}>
+        <AuthPaper sx={{ maxWidth: 400, mx: "auto" }}>
           <PageTitle variant="h4" gutterBottom>
             Login
           </PageTitle>
 
           <form onSubmit={handleFormSubmit} noValidate>
-            <Grid container spacing={3}>
+            <Grid container spacing={1.5}>
               <Grid size={12}>{error && <Alert severity="error">{error}</Alert>}</Grid>
 
               <Grid size={12}>
