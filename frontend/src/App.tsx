@@ -14,7 +14,6 @@ import Register from "./pages/register";
 import { Home } from "./pages/home";
 import { Information, AcademicPrograms, BusRoutes, Canteens, ConvenienceStores } from "./pages/information";
 import { BookingConfirmation } from "./pages/booking";
-import { PaymentPage, PaymentSuccessPage } from "./pages/payment";
 import { dataProviders } from "./dataProviders";
 import { AdminRoute, UserRoute, AuthenticatedRoute } from "./components/AccessControlledRoute";
 import { TestimonialsPage } from "./pages/testimonial";
@@ -95,7 +94,6 @@ const RefineApp = () => {
           <Route path="/canteens" element={<Canteens />} />
           <Route path="/convenience-stores" element={<ConvenienceStores />} />
           <Route path="/testimonials" element={<TestimonialsPage />} />
-          <Route path="/payment/success" element={<PaymentSuccessPage />} />
         </Route>
 
         {/* Auth Routes */}
@@ -129,8 +127,6 @@ const RefineApp = () => {
             {/* Add more user routes as needed */}
           </Route>
         </Route>
-
-        <Route path="/payment/:bookingId" element={<PaymentPage />} />
       </Routes>
     </Refine>
   );

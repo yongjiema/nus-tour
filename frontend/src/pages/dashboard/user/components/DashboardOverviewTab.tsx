@@ -1,8 +1,23 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
-import { Box, Typography, Card, CardContent, CardActions, Button, Grid2 as Grid } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
+  Grid2 as Grid,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Skeleton,
+  Alert,
+} from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useGetIdentity } from "@refinedev/core";
+import { useUserDashboardStats, useUserActivity } from "../../../../hooks";
 
 // Icons
 import BookOnlineIcon from "@mui/icons-material/BookOnline";
@@ -11,8 +26,10 @@ import HistoryIcon from "@mui/icons-material/History";
 import EventIcon from "@mui/icons-material/Event";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PaymentIcon from "@mui/icons-material/Payment";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 
 import type { AuthUser } from "../../../../types/auth.types";
+import type { UserDashboardStats } from "../../../../types/api.types";
 
 const QuickActionCard = styled(Card)(({ theme }) => ({
   height: "100%",
@@ -44,7 +61,84 @@ interface QuickAction {
 
 export const DashboardOverviewTab: React.FC = () => {
   const [, setSearchParams] = useSearchParams();
-  const { data: _user } = useGetIdentity<AuthUser>();
+  const { data: user, isLoading: userLoading, error: userError } = useGetIdentity<AuthUser>();
+
+  const { data: statsResponse, isLoading: statsLoading, error: statsError } = useUserDashboardStats();
+
+  const { data: activityData, isLoading: activityLoading, error: activityError } = useUserActivity();
+
+  // Default stats for loading/error states
+  const defaultStats: UserDashboardStats = {
+    upcomingTours: 0,
+    completedTours: 0,
+    totalBookings: 0,
+    pendingPayments: 0,
+  };
+
+  // Extract activity data safely
+  const activities = Array.isArray(activityData?.data.data) ? activityData.data.data : [];
+
+  // Extract stats safely - handle the nested data structure from Refine useCustom hook
+  const userStats: UserDashboardStats = statsResponse?.data.data ?? defaultStats;
+
+  // Utility function to safely convert numbers to strings
+  const safeToString = (value: unknown): string => {
+    if (typeof value === "number" && !isNaN(value)) {
+      return value.toString();
+    }
+    return "0";
+  };
+
+  // Utility function to safely get numeric value
+  const safeNumber = (value: unknown, fallback = 0): number => {
+    if (typeof value === "number" && !isNaN(value)) {
+      return value;
+    }
+    return fallback;
+  };
+
+  // Handle errors
+  if (statsError) {
+    console.warn("Error loading dashboard stats:", statsError);
+  }
+  if (activityError) {
+    console.warn("Error loading user activity:", activityError);
+  }
+
+  // Show loading state while checking authentication
+  if (userLoading) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Skeleton variant="text" width="200px" height={40} sx={{ mb: 3 }} />
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          {Array.from({ length: 3 }, (_, index) => (
+            <Grid key={index} size={{ xs: 12, sm: 4 }}>
+              <Card sx={{ textAlign: "center", p: 2 }}>
+                <Skeleton variant="circular" width={40} height={40} sx={{ mx: "auto", mb: 1 }} />
+                <Skeleton variant="text" width="60%" sx={{ mx: "auto" }} />
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    );
+  }
+
+  // If authentication error or no user found, show message
+  if (userError || !user) {
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography variant="h6" color="text.secondary">
+          {userError ? "Authentication error. Please try logging in again." : "Please log in to view your dashboard."}
+        </Typography>
+        {userError ? (
+          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+            Unable to verify your authentication status.
+          </Typography>
+        ) : null}
+      </Box>
+    );
+  }
 
   // Quick actions to navigate to different tabs
   const quickActions: QuickAction[] = [
@@ -65,6 +159,7 @@ export const DashboardOverviewTab: React.FC = () => {
         setSearchParams({ tab: "payments" });
       },
       color: "info",
+      disabled: safeNumber(userStats.pendingPayments) === 0,
     },
     {
       title: "Check In",
@@ -86,23 +181,23 @@ export const DashboardOverviewTab: React.FC = () => {
     },
   ];
 
-  // Quick stats/info cards
+  // Quick stats/info cards with real data
   const quickStats = [
     {
       label: "Upcoming Tours",
-      value: "2", // This would come from actual data
+      value: statsLoading || statsError ? "..." : safeToString(userStats.upcomingTours),
       icon: <EventIcon />,
       color: "info" as const,
     },
     {
       label: "Completed Tours",
-      value: "5", // This would come from actual data
+      value: statsLoading || statsError ? "..." : safeToString(userStats.completedTours),
       icon: <CheckCircleIcon />,
       color: "success" as const,
     },
     {
       label: "Total Bookings",
-      value: "7", // This would come from actual data
+      value: statsLoading || statsError ? "..." : safeToString(userStats.totalBookings),
       icon: <HistoryIcon />,
       color: "primary" as const,
     },
@@ -110,6 +205,20 @@ export const DashboardOverviewTab: React.FC = () => {
 
   return (
     <Box>
+      {/* Error Alert - Show if there are API errors */}
+      {/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing */}
+      {(statsError || activityError) && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            {statsError && activityError
+              ? "Unable to load dashboard data. Some information may be unavailable."
+              : statsError
+              ? "Unable to load dashboard statistics. Stats may be unavailable."
+              : "Unable to load recent activity. Activity feed may be unavailable."}
+          </Typography>
+        </Alert>
+      )}
+
       {/* Quick Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {quickStats.map((stat, index) => (
@@ -193,9 +302,72 @@ export const DashboardOverviewTab: React.FC = () => {
       </Typography>
       <Card>
         <CardContent>
-          <Typography variant="body1" color="text.secondary" sx={{ textAlign: "center", py: 3 }}>
-            Your recent tour activities will appear here.
-          </Typography>
+          {activityLoading || activityError ? (
+            // Loading skeleton or error state
+            <Box>
+              {activityError ? (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 3 }}>
+                  Unable to load recent activities. Please try again later.
+                </Typography>
+              ) : (
+                // Loading skeleton
+                Array.from({ length: 3 }, (_, index) => (
+                  <Box key={index} sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <Skeleton variant="circular" width={8} height={8} sx={{ mr: 2 }} />
+                    <Skeleton variant="text" width="80%" height={20} />
+                  </Box>
+                ))
+              )}
+            </Box>
+          ) : activities.length > 0 ? (
+            // Show real activities
+            <List disablePadding>
+              {activities.slice(0, 5).map((activity, index) => {
+                // Safe date parsing with error handling
+                let formattedDate = "Unknown date";
+                try {
+                  if (activity.timestamp) {
+                    const date = new Date(activity.timestamp);
+                    if (!isNaN(date.getTime())) {
+                      formattedDate = date.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    }
+                  }
+                } catch (error) {
+                  console.warn("Invalid date format for activity:", activity.timestamp, error);
+                }
+
+                return (
+                  <ListItem
+                    key={activity.id || `activity-${index}`}
+                    disablePadding
+                    sx={{ mb: index < activities.length - 1 ? 1 : 0 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 24 }}>
+                      <FiberManualRecordIcon sx={{ fontSize: 8, color: "primary.main" }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={activity.description || "No description available"}
+                      secondary={formattedDate}
+                      slotProps={{
+                        primary: { fontSize: "0.9rem" },
+                        secondary: { fontSize: "0.8rem" },
+                      }}
+                    />
+                  </ListItem>
+                );
+              })}
+            </List>
+          ) : (
+            // No activities message
+            <Typography variant="body1" color="text.secondary" sx={{ textAlign: "center", py: 3 }}>
+              Your recent tour activities will appear here.
+            </Typography>
+          )}
         </CardContent>
       </Card>
     </Box>

@@ -172,7 +172,11 @@ describe("BookingService", () => {
       leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       getCount: jest.fn().mockResolvedValue(1), // Mock for countCompleted
+      select: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGroupSize: "0" }),
     }),
+    update: jest.fn().mockResolvedValue({ affected: 0 }), // Add missing update method
   };
 
   // Mock TimeSlot repository
@@ -423,7 +427,7 @@ describe("BookingService", () => {
       const result = await service.getAvailableTimeSlots(date);
 
       expect(result.length).toBe(6); // 6 slots total
-      expect(mockRepository.count).toHaveBeenCalledTimes(6); // One call per slot
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
 
       // Each result should have slot and available properties
       result.forEach((item) => {

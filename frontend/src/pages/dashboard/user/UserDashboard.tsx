@@ -1,6 +1,8 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
-import { Box, Tabs, Tab, Card } from "@mui/material";
+import { Box, Tabs, Tab, Card, Tooltip } from "@mui/material";
+import { useList } from "@refinedev/core";
+import { useUserDashboardStats } from "../../../hooks";
 
 // Icons
 import HomeIcon from "@mui/icons-material/Home";
@@ -13,10 +15,14 @@ import PaymentIcon from "@mui/icons-material/Payment";
 // Components
 import { DashboardOverviewTab } from "./components/DashboardOverviewTab";
 import { BookingsTab } from "./components/BookingsTab";
-import { PaymentsTab } from "./components/PaymentsTab";
+import { PaymentTab } from "./components/PaymentTab";
 import { FeedbackTab } from "./components/FeedbackTab";
-import { BookingForm } from "../../booking";
+import { ErrorBoundary } from "../../../components/ErrorBoundary";
+import ReservationForm from "../../booking/ReservationForm";
 import Checkin from "../../checkin";
+
+// Types
+import type { Booking } from "../../../types/api.types";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -30,10 +36,17 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   </div>
 );
 
-const tabConfig = [
+interface TabConfig {
+  label: string;
+  icon: React.ReactElement;
+  value: string;
+  disabled?: boolean;
+}
+
+const getTabConfig = (hasPendingPayments: boolean): TabConfig[] => [
   { label: "Overview", icon: <HomeIcon />, value: "overview" },
   { label: "Book Tour", icon: <BookOnlineIcon />, value: "book-tour" },
-  { label: "Payments", icon: <PaymentIcon />, value: "payments" },
+  { label: "Payment", icon: <PaymentIcon />, value: "payment", disabled: !hasPendingPayments },
   { label: "Check In", icon: <HowToRegIcon />, value: "check-in" },
   { label: "My Bookings", icon: <HistoryIcon />, value: "bookings" },
   { label: "Feedback", icon: <FeedbackIcon />, value: "feedback" },
@@ -42,13 +55,60 @@ const tabConfig = [
 export const UserDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Fetch user dashboard stats to determine tab availability
+  const { data: statsResponse } = useUserDashboardStats();
+  const userStats = statsResponse?.data.data;
+  const hasPendingPayments = (userStats?.pendingPayments ?? 0) > 0;
+
+  // Generate tab configuration based on user stats
+  const tabConfig = getTabConfig(hasPendingPayments);
+
   // Get active tab from URL parameters, default to overview
   const activeTab = searchParams.get("tab") ?? "overview";
   const activeTabIndex = tabConfig.findIndex((tab) => tab.value === activeTab);
-  const currentTabIndex = activeTabIndex >= 0 ? activeTabIndex : 0;
+
+  // If the active tab is disabled (like payment with no pending payments), redirect to overview
+  const currentTabIndex = activeTabIndex >= 0 && !tabConfig[activeTabIndex].disabled ? activeTabIndex : 0;
+
+  // If we redirected to overview because the tab was disabled, update the URL
+  React.useEffect(() => {
+    if (activeTabIndex >= 0 && tabConfig[activeTabIndex].disabled && activeTab !== "overview") {
+      setSearchParams({ tab: "overview" });
+    }
+  }, [activeTab, activeTabIndex, tabConfig, setSearchParams]);
+
+  // Also redirect if user tries to access payment tab directly without pending payments
+  React.useEffect(() => {
+    if (activeTab === "payment" && !hasPendingPayments && userStats) {
+      setSearchParams({ tab: "overview" });
+    }
+  }, [activeTab, hasPendingPayments, userStats, setSearchParams]);
+
+  // Fetch user's bookings
+  const {
+    data: bookingsData,
+    isLoading: isBookingsLoading,
+    isError: isBookingsError,
+  } = useList<Booking>({
+    resource: "bookings/user",
+    meta: {
+      select: "id,date,timeSlot,status,groupSize,deposit,createdAt,expiresAt",
+    },
+  });
+
+  const bookings = bookingsData?.data ?? [];
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setSearchParams({ tab: tabConfig[newValue].value });
+    const targetTab = tabConfig[newValue];
+
+    // Prevent navigation to disabled tabs
+    if (targetTab.disabled) {
+      // Optionally show a brief message or just ignore the click
+      console.log(`Cannot navigate to ${targetTab.label} - feature is disabled`);
+      return;
+    }
+
+    setSearchParams({ tab: targetTab.value });
   };
 
   return (
@@ -89,30 +149,60 @@ export const UserDashboard: React.FC = () => {
             },
           }}
         >
-          {tabConfig.map((tab, index) => (
-            <Tab
-              key={tab.value}
-              icon={tab.icon}
-              label={tab.label}
-              iconPosition="start"
-              id={`dashboard-tab-${index}`}
-              aria-controls={`dashboard-tabpanel-${index}`}
-            />
-          ))}
+          {tabConfig.map((tab, index) => {
+            const tabProps = {
+              key: tab.value,
+              icon: tab.icon,
+              label: tab.label,
+              iconPosition: "start" as const,
+              id: `dashboard-tab-${index}`,
+              "aria-controls": `dashboard-tabpanel-${index}`,
+              disabled: tab.disabled,
+              sx: {
+                ...(tab.disabled && {
+                  opacity: 0.5,
+                  cursor: "not-allowed",
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                }),
+              },
+            };
+
+            // For disabled payment tab, wrap in Tooltip
+            if (tab.disabled && tab.value === "payment") {
+              return (
+                <Tooltip
+                  key={tab.value}
+                  title="No pending payments. Complete a booking first to access payment options."
+                  arrow
+                >
+                  <div style={{ display: "inline-block" }}>
+                    <Tab {...tabProps} disabled={true} />
+                  </div>
+                </Tooltip>
+              );
+            }
+
+            // Regular tab without tooltip
+            return <Tab {...tabProps} />;
+          })}
         </Tabs>
       </Card>
 
       {/* Tab Content */}
       <TabPanel value={currentTabIndex} index={0}>
-        <DashboardOverviewTab />
+        <ErrorBoundary>
+          <DashboardOverviewTab />
+        </ErrorBoundary>
       </TabPanel>
 
       <TabPanel value={currentTabIndex} index={1}>
-        <BookingForm />
+        <ReservationForm />
       </TabPanel>
 
       <TabPanel value={currentTabIndex} index={2}>
-        <PaymentsTab payments={[]} isLoading={false} isError={false} />
+        <PaymentTab />
       </TabPanel>
 
       <TabPanel value={currentTabIndex} index={3}>
@@ -120,14 +210,19 @@ export const UserDashboard: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={currentTabIndex} index={4}>
-        <BookingsTab bookings={[]} isLoading={false} isError={false} onFeedbackClick={() => undefined} />
+        <BookingsTab
+          bookings={bookings}
+          isLoading={isBookingsLoading}
+          isError={isBookingsError}
+          onFeedbackClick={() => undefined}
+        />
       </TabPanel>
 
       <TabPanel value={currentTabIndex} index={5}>
         <FeedbackTab
           feedbacks={[]}
-          bookings={[]}
-          isBookingsLoading={false}
+          bookings={bookings}
+          isBookingsLoading={isBookingsLoading}
           isFeedbacksLoading={false}
           isFeedbacksError={false}
           onFeedbackClick={() => undefined}

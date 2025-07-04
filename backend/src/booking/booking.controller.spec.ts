@@ -154,7 +154,7 @@ describe("BookingController", () => {
 
       const result = await controller.getAvailableTimeSlots(date);
       expect(result).toEqual(availableSlots);
-      expect(mockBookingService.getAvailableTimeSlots).toHaveBeenCalledWith(date);
+      expect(mockBookingService.getAvailableTimeSlots).toHaveBeenCalledWith(date, undefined);
     });
   });
 

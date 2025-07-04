@@ -1,9 +1,6 @@
 // Authentication hooks
 export * from "./useAuth";
 
-// Payment hooks
-export * from "./usePayment";
-
 // Booking hooks
 export * from "./useBookings";
 export * from "./useBookingAdmin";
