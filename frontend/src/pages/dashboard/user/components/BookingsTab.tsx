@@ -22,6 +22,7 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import PeopleIcon from "@mui/icons-material/People";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RateReviewIcon from "@mui/icons-material/RateReview";
+import PaymentIcon from "@mui/icons-material/Payment";
 import { useNavigate } from "react-router-dom";
 import type { Booking } from "../../../../types/api.types";
 import {
@@ -79,6 +80,52 @@ const getBookingStatus = (booking: unknown): string => {
   return typeof booking.status === "string" ? booking.status : "";
 };
 
+// Helper function to check if booking has expired
+const isBookingExpired = (booking: unknown): boolean => {
+  if (!isValidBooking(booking)) {
+    return false;
+  }
+
+  const status = getBookingStatus(booking);
+  if (status === "slot_expired") {
+    return true;
+  }
+
+  // Check if slot_reserved booking has passed expiration time
+  if (status === "slot_reserved" && booking.expiresAt) {
+    try {
+      const expiresAt = new Date(booking.expiresAt);
+      return new Date() > expiresAt;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+};
+
+// Helper function to check if booking allows payment
+const canProceedToPayment = (booking: unknown): boolean => {
+  if (!isValidBooking(booking)) {
+    return false;
+  }
+
+  const status = getBookingStatus(booking);
+  const allowedStatuses = ["slot_reserved", "awaiting_payment"];
+
+  // Don't allow payment for expired, cancelled, or already paid bookings
+  if (!allowedStatuses.includes(status)) {
+    return false;
+  }
+
+  // Don't allow payment for expired bookings
+  if (isBookingExpired(booking)) {
+    return false;
+  }
+
+  return true;
+};
+
 // Helper function to safely get booking hasFeedback
 const getBookingHasFeedback = (booking: unknown): boolean => {
   if (!isValidBooking(booking)) {
@@ -124,6 +171,32 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
 
   // Get unique statuses for filter chips with type safety
   const uniqueStatuses = [...new Set(bookings.filter(isValidBooking).map((booking) => booking.status))];
+
+  // Helper function to get user-friendly status labels
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case "slot_reserved":
+        return "Payment Required";
+      case "slot_expired":
+        return "Expired";
+      case "awaiting_payment":
+        return "Awaiting Payment";
+      case "paid":
+        return "Payment Complete";
+      case "confirmed":
+        return "Confirmed";
+      case "completed":
+        return "Completed";
+      case "cancelled":
+        return "Cancelled";
+      case "no_show":
+        return "No Show";
+      case "checked_in":
+        return "Checked In";
+      default:
+        return status;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -233,7 +306,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
           {uniqueStatuses.map((status) => (
             <Chip
               key={status}
-              label={status}
+              label={getStatusLabel(status)}
               color={statusFilter === status ? "primary" : "default"}
               onClick={() => {
                 setStatusFilter(status === statusFilter ? null : status);
@@ -269,51 +342,113 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
             const bookingStatus = getBookingStatus(booking);
             const bookingGroupSize = typeof booking.groupSize === "number" ? booking.groupSize : 0;
             const bookingHasFeedback = getBookingHasFeedback(booking);
+            const isExpired = isBookingExpired(booking);
+            const isInactive =
+              isExpired ||
+              bookingStatus === "slot_expired" ||
+              bookingStatus === "cancelled" ||
+              bookingStatus === "completed" ||
+              bookingStatus === "no_show";
+
+            // Debug logging
+            console.log(
+              `Booking ${booking.id}: status=${bookingStatus}, isExpired=${isExpired}, isInactive=${isInactive}`,
+            );
 
             return (
-              <Grid size={{ xs: 12, md: 6 }} key={booking.id}>
-                <DashboardCard>
-                  <StyledCardContent>
+              <Grid size={{ xs: 12, md: isInactive ? 4 : 6 }} key={booking.id}>
+                <DashboardCard sx={{ opacity: isInactive ? 0.7 : 1 }}>
+                  <StyledCardContent sx={{ pb: isInactive ? 2 : 3 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
                       <Box display="flex" alignItems="center">
                         <EventAvailableIcon sx={{ color: theme.palette.primary.main, mr: 1 }} />
-                        <Typography variant="h6" fontWeight="500">
+                        <Typography variant={isInactive ? "body1" : "h6"} fontWeight="500">
                           Tour on {formatDateDisplay(bookingDate)}
                         </Typography>
                       </Box>
                       <StatusChip
-                        label={bookingStatus}
+                        label={
+                          isBookingExpired(booking)
+                            ? "Expired"
+                            : bookingStatus === "slot_reserved"
+                            ? "Payment Required"
+                            : bookingStatus === "slot_expired"
+                            ? "Expired"
+                            : bookingStatus === "awaiting_payment"
+                            ? "Awaiting Payment"
+                            : bookingStatus === "paid"
+                            ? "Payment Complete"
+                            : bookingStatus === "confirmed"
+                            ? "Confirmed"
+                            : bookingStatus === "completed"
+                            ? "Completed"
+                            : bookingStatus === "cancelled"
+                            ? "Cancelled"
+                            : bookingStatus === "no_show"
+                            ? "No Show"
+                            : bookingStatus === "checked_in"
+                            ? "Checked In"
+                            : bookingStatus
+                        }
                         color={
-                          bookingStatus === "completed"
+                          isBookingExpired(booking) || bookingStatus === "slot_expired"
+                            ? "error"
+                            : bookingStatus === "completed"
                             ? "success"
                             : bookingStatus === "confirmed"
                             ? "primary"
-                            : bookingStatus === "cancelled"
+                            : bookingStatus === "slot_reserved"
+                            ? "warning"
+                            : bookingStatus === "awaiting_payment" || bookingStatus === "paid"
+                            ? "info"
+                            : bookingStatus === "cancelled" || bookingStatus === "no_show"
                             ? "error"
+                            : bookingStatus === "checked_in"
+                            ? "success"
                             : "default"
                         }
+                        sx={isInactive ? { fontSize: "0.7rem", height: "auto", px: 1, py: 0.5 } : undefined}
                       />
                     </Box>
 
-                    <Divider sx={{ my: 1.5 }} />
+                    {!isInactive && <Divider sx={{ my: 1.5 }} />}
 
-                    <Box display="flex" flexDirection="column" gap={1} my={1.5}>
+                    <Box
+                      display="flex"
+                      flexDirection={isInactive ? "row" : "column"}
+                      gap={isInactive ? 2 : 1}
+                      my={isInactive ? 1 : 1.5}
+                    >
                       <Box display="flex" alignItems="center">
                         <AccessTimeIcon sx={{ fontSize: "1rem", color: "text.secondary", mr: 1 }} />
-                        <Typography variant="body1">
-                          Time: <strong>{bookingTimeSlot}</strong>
+                        <Typography variant="body2">
+                          {isInactive ? bookingTimeSlot : `Time: ${bookingTimeSlot}`}
                         </Typography>
                       </Box>
 
                       <Box display="flex" alignItems="center">
                         <PeopleIcon sx={{ fontSize: "1rem", color: "text.secondary", mr: 1 }} />
-                        <Typography variant="body1">
-                          Group Size: <strong>{bookingGroupSize}</strong>
+                        <Typography variant="body2">
+                          {isInactive ? `${bookingGroupSize} people` : `Group Size: ${bookingGroupSize}`}
                         </Typography>
                       </Box>
                     </Box>
 
                     <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+                      {canProceedToPayment(booking) && (
+                        <Tooltip title="Complete your payment to confirm the booking">
+                          <ActionButton
+                            variant="contained"
+                            color="primary"
+                            onClick={() => void navigate(`/u?tab=payment&id=${booking.id}`)}
+                            size="small"
+                          >
+                            <PaymentIcon sx={{ fontSize: "1rem", mr: 0.5 }} />
+                            {bookingStatus === "slot_reserved" ? "Proceed to Payment" : "Complete Payment"}
+                          </ActionButton>
+                        </Tooltip>
+                      )}
+
                       {bookingStatus === "confirmed" && (
                         <Tooltip title="Check in for your tour">
                           <ActionButton
@@ -335,6 +470,17 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
                             Leave Feedback
                           </ActionButton>
                         </Tooltip>
+                      )}
+
+                      {/* Show informational message for expired/cancelled bookings */}
+                      {(isBookingExpired(booking) ||
+                        bookingStatus === "slot_expired" ||
+                        bookingStatus === "cancelled") && (
+                        <Box sx={{ opacity: 0.6, fontStyle: "italic" }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {bookingStatus === "cancelled" ? "Booking was cancelled" : "Reservation expired"}
+                          </Typography>
+                        </Box>
                       )}
                     </Box>
                   </StyledCardContent>

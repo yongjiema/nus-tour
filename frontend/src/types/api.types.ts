@@ -57,6 +57,7 @@ export interface Booking {
   userId?: string;
   user?: UserProfile;
   updatedAt?: string;
+  expiresAt?: string; // Expiration time for slot reservations
 }
 
 export interface BookingsResponse {
@@ -102,6 +103,8 @@ export interface AdminBookingStatusUpdateRequest {
 export interface TimeSlotAvailability {
   slot: string;
   available: number;
+  userHasBooking?: boolean;
+  userBookingStatus?: string;
 }
 
 // Payment related types
@@ -168,8 +171,20 @@ export interface DashboardStats {
   feedbacks?: number;
 }
 
+// User-specific dashboard stats
+export interface UserDashboardStats {
+  upcomingTours: number;
+  completedTours: number;
+  totalBookings: number;
+  pendingPayments: number;
+}
+
 export interface DashboardApiResponse {
   data: DashboardStats;
+}
+
+export interface UserDashboardApiResponse {
+  data: UserDashboardStats;
 }
 
 export interface ActivityItem {

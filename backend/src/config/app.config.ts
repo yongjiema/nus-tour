@@ -31,7 +31,7 @@ export default registerAs(
     cors: {
       origin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
       credentials: process.env.CORS_CREDENTIALS === "true",
-      methods: (process.env.CORS_METHODS ?? "GET,POST,PUT,DELETE").split(","),
+      methods: (process.env.CORS_METHODS ?? "GET,POST,PUT,PATCH,DELETE").split(","),
       headers: (process.env.CORS_HEADERS ?? "Content-Type,Authorization").split(","),
     },
     jwt: {

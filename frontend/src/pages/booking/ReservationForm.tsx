@@ -25,7 +25,7 @@ interface BookingFormData {
   groupSize: number;
 }
 
-const BookingForm: React.FC = () => {
+const ReservationForm: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -88,7 +88,7 @@ const BookingForm: React.FC = () => {
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setValue,
     watch,
   } = useForm<BookingFormData>({
@@ -113,7 +113,6 @@ const BookingForm: React.FC = () => {
       }
     }
   }, [watchedDate, selectedDate, setValue, refetchSlots]);
-
   const processSubmit = (data: BookingFormData) => {
     // Prevent double submission
     if (isSubmittingForm || isReserving || isNavigating) {
@@ -139,6 +138,7 @@ const BookingForm: React.FC = () => {
       const errorMsg = `You already have a ${selectedSlot.userBookingStatus
         ?.toLowerCase()
         .replace("_", " ")} booking for this time slot. Please check your reservations.`;
+      console.error("User already has booking:", errorMsg);
       setError(errorMsg);
       setIsSubmittingForm(false);
       return;
@@ -154,6 +154,7 @@ const BookingForm: React.FC = () => {
 
     const token = localStorage.getItem("access_token");
     if (!token) {
+      console.error("No access token found");
       logger.error("No access token found");
       setIsSubmittingForm(false);
       void navigate("/login");
@@ -196,7 +197,16 @@ const BookingForm: React.FC = () => {
           // Navigate to payment tab in user dashboard
           try {
             void navigate(`/u?tab=payment&id=${response.id}`, { replace: true });
-          } catch (_navError) {
+
+            // Add a small delay to check if navigation actually happened
+            setTimeout(() => {
+              if (!window.location.pathname.includes("/u")) {
+                console.warn("Navigation may have failed, forcing redirect");
+                window.location.href = `/u?tab=payment&id=${response.id}`;
+              }
+            }, 100);
+          } catch (navError) {
+            console.error("Navigation error:", navError);
             setIsNavigating(false);
             // Fallback: try window.location if navigate fails
             window.location.href = `/u?tab=payment&id=${response.id}`;
@@ -221,7 +231,6 @@ const BookingForm: React.FC = () => {
               status?: number;
             };
           }
-
           const typedError = error as ErrorWithResponse;
 
           if (
@@ -386,13 +395,13 @@ const BookingForm: React.FC = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        gap: 2.5,
+        gap: 3,
         maxWidth: 600,
         mx: "auto",
         p: 3,
       }}
     >
-      <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
+      <Typography variant="h4" component="h1" gutterBottom align="center">
         Book Your Tour
       </Typography>
 
@@ -416,13 +425,11 @@ const BookingForm: React.FC = () => {
             {...field}
             label="Tour Date"
             minDate={tomorrow}
-            sx={{ mb: 1 }}
             slotProps={{
               textField: {
                 error: !!errors.date,
                 helperText: errors.date?.message,
                 fullWidth: true,
-                variant: "outlined",
               },
             }}
           />
@@ -435,7 +442,6 @@ const BookingForm: React.FC = () => {
         render={({ field }) => (
           <FormField
             {...field}
-            label="Time Slot"
             select
             error={!!errors.timeSlot}
             helperText={
@@ -450,13 +456,11 @@ const BookingForm: React.FC = () => {
             }
             disabled={slotsLoading}
             fullWidth
-            variant="outlined"
-            sx={{ mb: 1 }}
             slotProps={{
               select: {
                 displayEmpty: true,
                 renderValue: (value: unknown) => {
-                  if (!value || typeof value !== "string") return "";
+                  if (!value || typeof value !== "string") return "Select a time slot";
                   return value;
                 },
               },
@@ -498,32 +502,36 @@ const BookingForm: React.FC = () => {
               htmlInput: { min: 1, max: 50 },
             }}
             fullWidth
-            variant="outlined"
-            sx={{ mb: 1 }}
           />
         )}
       />
 
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
         <Button
           type="submit"
           variant="contained"
           size="large"
-          disabled={availableSlots.length === 0 || slotsLoading || isSubmittingForm || isReserving || isNavigating}
-          startIcon={isSubmittingForm || isReserving || isNavigating ? <CircularProgress size={20} /> : null}
-          sx={{
-            minWidth: 200,
-            py: 1.5,
-            px: 4,
-            fontSize: "1.1rem",
-            fontWeight: 600,
-          }}
+          disabled={
+            availableSlots.length === 0 ||
+            slotsLoading ||
+            isSubmitting ||
+            isReserving ||
+            isNavigating ||
+            isSubmittingForm
+          }
+          startIcon={
+            isSubmitting || isReserving || isNavigating || isSubmittingForm ? <CircularProgress size={20} /> : null
+          }
         >
-          {isNavigating ? "Redirecting..." : isSubmittingForm || isReserving ? "Reserving..." : "Reserve Slot"}
+          {isNavigating
+            ? "Redirecting..."
+            : isSubmitting || isReserving || isSubmittingForm
+            ? "Reserving..."
+            : "Reserve Slot"}
         </Button>
       </Box>
     </Box>
   );
 };
 
-export { BookingForm };
+export default ReservationForm;

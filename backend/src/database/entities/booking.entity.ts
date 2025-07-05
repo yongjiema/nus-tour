@@ -16,7 +16,7 @@ import { User } from "./user.entity";
 
 @Entity("booking")
 @Check("CHK_groupSize_range", '"groupSize" > 0 AND "groupSize" <= 50')
-@Index("IDX_booking_date_timeslot_unique", ["date", "timeSlot"], { unique: true })
+@Index("IDX_booking_date_timeslot", ["date", "timeSlot"]) // Non-unique index for performance
 export class Booking {
   /**
    * Primary identifier – exposed to clients. Using UUID prevents row-count inference.
@@ -51,6 +51,9 @@ export class Booking {
 
   @UpdateDateColumn()
   modifiedAt!: Date;
+
+  @Column({ type: "timestamp", nullable: true })
+  expiresAt?: Date; // When the slot reservation expires (for SLOT_RESERVED status)
 
   @OneToOne(() => Checkin, (checkin) => checkin.booking, { nullable: true })
   checkin!: Checkin | null;

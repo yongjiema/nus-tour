@@ -9,9 +9,11 @@ import {
   Request,
   Logger,
   ForbiddenException,
+  Patch,
 } from "@nestjs/common";
 import { BookingService } from "./booking.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
+import { ReserveSlotDto } from "./dto/reserve-slot.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Booking } from "../database/entities/booking.entity";
 import { Public } from "../auth/decorators/public.decorator";
@@ -38,8 +40,10 @@ export class BookingController {
   }
 
   @Get("available-slots")
-  async getAvailableTimeSlots(@Query("date") date: string) {
-    return await this.bookingService.getAvailableTimeSlots(date);
+  async getAvailableTimeSlots(@Query("date") date: string, @Request() req?: AuthenticatedRequest) {
+    // Extract user context if authenticated, but don't require auth
+    const userContext = req?.user ? { id: req.user.id, email: req.user.email } : undefined;
+    return await this.bookingService.getAvailableTimeSlots(date, userContext);
   }
 
   @Get()
@@ -56,6 +60,28 @@ export class BookingController {
     return {
       data: bookings,
       total: bookings.length,
+    };
+  }
+
+  @Get("user/stats")
+  @UseGuards(JwtAuthGuard)
+  async getUserDashboardStats(@Request() req: AuthenticatedRequest) {
+    this.logger.log(`Getting dashboard stats for user: ${req.user.email}`);
+    const stats = await this.bookingService.getUserDashboardStats(req.user.id);
+    this.logger.log(`User dashboard stats: ${JSON.stringify(stats)}`);
+    return {
+      data: stats,
+    };
+  }
+
+  @Get("user/activity")
+  @UseGuards(JwtAuthGuard)
+  async getUserActivity(@Request() req: AuthenticatedRequest) {
+    this.logger.log(`Getting recent activity for user: ${req.user.email}`);
+    const activity = await this.bookingService.getUserActivity(req.user.id);
+    this.logger.log(`User activity: ${JSON.stringify(activity)}`);
+    return {
+      data: activity,
     };
   }
 
@@ -104,5 +130,54 @@ export class BookingController {
       method: "paynow",
       userId: parseInt(req.user.id, 10),
     });
+  }
+
+  @Post("reserve")
+  @UseGuards(JwtAuthGuard)
+  async reserveSlot(@Body() reserveSlotDto: ReserveSlotDto, @Request() req: AuthenticatedRequest): Promise<Booking> {
+    this.logger.log(`Reserving slot for user: ${req.user.email}`);
+
+    const reservation = await this.bookingService.reserveSlot(reserveSlotDto, req.user);
+    this.logger.log(`Slot reserved with ID: ${reservation.id}`);
+
+    return reservation;
+  }
+
+  @Patch(":bookingId/confirm-reservation")
+  @UseGuards(JwtAuthGuard)
+  async confirmReservation(
+    @Param("bookingId") bookingId: string,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<Booking> {
+    this.logger.log(`Confirming reservation: ${bookingId}`);
+
+    // Verify booking belongs to user
+    const booking = await this.bookingService.getBookingById(bookingId);
+    if (booking.user.id !== req.user.id) {
+      throw new ForbiddenException("You do not have access to this booking");
+    }
+
+    const confirmedBooking = await this.bookingService.confirmReservation(bookingId);
+    this.logger.log(`Reservation confirmed: ${bookingId}`);
+    return confirmedBooking;
+  }
+
+  @Patch(":bookingId/cancel-reservation")
+  @UseGuards(JwtAuthGuard)
+  async cancelReservation(
+    @Param("bookingId") bookingId: string,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<Booking> {
+    this.logger.log(`Canceling reservation: ${bookingId}`);
+
+    // Verify booking belongs to user
+    const booking = await this.bookingService.getBookingById(bookingId);
+    if (booking.user.id !== req.user.id) {
+      throw new ForbiddenException("You do not have access to this booking");
+    }
+
+    const cancelledBooking = await this.bookingService.cancelReservation(bookingId);
+    this.logger.log(`Reservation cancelled: ${bookingId}`);
+    return cancelledBooking;
   }
 }
