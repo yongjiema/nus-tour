@@ -17,9 +17,9 @@ import { DashboardOverviewTab } from "./components/DashboardOverviewTab";
 import { BookingsTab } from "./components/BookingsTab";
 import { PaymentTab } from "./components/PaymentTab";
 import { FeedbackTab } from "./components/FeedbackTab";
+import { CheckInTab } from "./components/CheckInTab";
 import { ErrorBoundary } from "../../../components/ErrorBoundary";
 import ReservationForm from "../../booking/ReservationForm";
-import Checkin from "../../checkin";
 
 // Types
 import type { Booking } from "../../../types/api.types";
@@ -206,7 +206,7 @@ export const UserDashboard: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={currentTabIndex} index={3}>
-        <Checkin />
+        <CheckInTab bookings={bookings} isLoading={isBookingsLoading} isError={isBookingsError} />
       </TabPanel>
 
       <TabPanel value={currentTabIndex} index={4}>

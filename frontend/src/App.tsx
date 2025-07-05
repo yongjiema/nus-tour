@@ -137,7 +137,16 @@ function App() {
     <ColorModeContextProvider>
       <CssBaseline />
       <GlobalStyles styles={{ html: { WebkitFontSmoothing: "auto" } }} />
-      <RefineSnackbarProvider>
+      <RefineSnackbarProvider
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        style={{
+          marginTop: "64px",
+        }}
+        maxSnack={3}
+      >
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <BrowserRouter>
             <ErrorBoundary>

@@ -67,7 +67,8 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    return Promise.reject(new Error(axiosError.message || "Request failed"));
+    // For non-401 errors, preserve the original axios error structure
+    return Promise.reject(axiosError);
   },
 );
 
