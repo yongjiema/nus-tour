@@ -87,14 +87,27 @@ export const getErrorMessage = (error: unknown): string => {
       return ERROR_MESSAGES[resData.error as keyof typeof BUSINESS_ERROR_CODES];
     }
 
-    // HTTP status code mapping
-    if (status && status in ERROR_MESSAGES) {
-      return ERROR_MESSAGES[status as keyof typeof ERROR_MESSAGES];
+    // NestJS validation errors (400 with message property) - handle multiple formats
+    if (status === 400) {
+      // Try different possible message formats from NestJS
+      let errorMessage = "";
+
+      if (resData?.message) {
+        errorMessage = Array.isArray(resData.message) ? resData.message.join(", ") : resData.message;
+      } else if (resData?.error) {
+        errorMessage = resData.error;
+      } else if (typeof resData === "string") {
+        errorMessage = resData;
+      }
+
+      if (errorMessage) {
+        return errorMessage;
+      }
     }
 
-    // Validation errors (array of messages)
-    if (status === 400 && resData?.message) {
-      return Array.isArray(resData.message) ? resData.message.join(", ") : resData.message;
+    // HTTP status code mapping (fallback)
+    if (status && status in ERROR_MESSAGES) {
+      return ERROR_MESSAGES[status as keyof typeof ERROR_MESSAGES];
     }
 
     // Network timeout
