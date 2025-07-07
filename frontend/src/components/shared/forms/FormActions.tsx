@@ -1,4 +1,4 @@
-import { Box, Button } from "@mui/material";
+import { Box, Button, CircularProgress } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import type { ButtonProps } from "@mui/material";
 
@@ -45,9 +45,26 @@ export const FormActions = ({
         onClick={onSubmit}
         disabled={disabled || isLoading}
         type="submit"
+        sx={{
+          minWidth: 120, // Ensure consistent button width
+          position: "relative", // For spinner positioning
+        }}
         {...submitButtonProps}
       >
-        {isLoading ? "Loading..." : submitText}
+        {isLoading && (
+          <CircularProgress
+            size={20}
+            sx={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              marginLeft: "-10px",
+              marginTop: "-10px",
+              color: "inherit",
+            }}
+          />
+        )}
+        <span style={{ visibility: isLoading ? "hidden" : "visible" }}>{submitText}</span>
       </Button>
     </ActionsContainer>
   );

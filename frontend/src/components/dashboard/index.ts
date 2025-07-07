@@ -14,7 +14,7 @@ export {
 } from "./StyledComponents";
 
 // Re-export ActionButton from shared UI
-export { ActionButton } from "../shared/ui";
+export { ActionButton, DestructiveButton } from "../shared/ui";
 
 // Re-export types
 export type { StatCardProps, StatCardContainerProps } from "./StatCard";

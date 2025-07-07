@@ -89,12 +89,41 @@ export const AccessControlledRoute: React.FC<AccessControlledRouteProps> = ({
 export const AdminRoute: React.FC = () => (
   <AccessControlledRoute
     resource="dashboard"
-    action="create" // Admins typically have create permissions
+    action="create"
     fallback={
-      <Box sx={{ p: 3, textAlign: "center" }}>
-        <Alert severity="warning" sx={{ maxWidth: 600, mx: "auto" }}>
+      <Box
+        sx={{
+          p: 3,
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 2,
+          height: "100vh",
+          justifyContent: "center",
+        }}
+      >
+        <Alert severity="warning" sx={{ maxWidth: 600, mx: "auto", mb: 2 }}>
           This area is restricted to administrators only.
         </Alert>
+        <a href="/login" style={{ textDecoration: "none" }}>
+          <Box
+            component="button"
+            sx={{
+              px: 3,
+              py: 1.5,
+              fontSize: 16,
+              borderRadius: 2,
+              backgroundColor: "primary.main",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              "&:hover": { backgroundColor: "primary.dark" },
+            }}
+          >
+            Go to Login
+          </Box>
+        </a>
       </Box>
     }
   />
@@ -108,10 +137,39 @@ export const UserRoute: React.FC = () => (
     resource="user-bookings"
     action="list"
     fallback={
-      <Box sx={{ p: 3, textAlign: "center" }}>
-        <Alert severity="info" sx={{ maxWidth: 600, mx: "auto" }}>
+      <Box
+        sx={{
+          p: 3,
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 2,
+          height: "100vh",
+          justifyContent: "center",
+        }}
+      >
+        <Alert severity="info" sx={{ maxWidth: 600, mx: "auto", mb: 2 }}>
           Please log in to access your user dashboard.
         </Alert>
+        <a href="/login" style={{ textDecoration: "none" }}>
+          <Box
+            component="button"
+            sx={{
+              px: 3,
+              py: 1.5,
+              fontSize: 16,
+              borderRadius: 2,
+              backgroundColor: "primary.main",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              "&:hover": { backgroundColor: "primary.dark" },
+            }}
+          >
+            Go to Login
+          </Box>
+        </a>
       </Box>
     }
   />

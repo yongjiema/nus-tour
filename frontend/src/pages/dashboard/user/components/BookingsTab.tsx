@@ -13,6 +13,11 @@ import {
   Divider,
   Tooltip,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
@@ -23,16 +28,28 @@ import PeopleIcon from "@mui/icons-material/People";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import PaymentIcon from "@mui/icons-material/Payment";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { useNavigate } from "react-router-dom";
 import type { Booking } from "../../../../types/api.types";
+import { useCustomMutation, useNotification } from "@refinedev/core";
 import {
   DashboardCard,
   StatusChip,
   ActionButton,
+  DestructiveButton,
   EmptyStateContainer,
   CardContent as StyledCardContent,
 } from "../../../../components/dashboard";
 import { getElevatedShadow } from "../../../../theme/constants";
+import {
+  isValidBooking,
+  getEffectiveBookingStatus,
+  canCancelBooking,
+  canProceedToPayment,
+  getBookingHasFeedback,
+  getBookingProperty,
+  isBookingExpired,
+} from "../../../../utils/bookingHelpers";
 
 // Helper function to safely format date
 const formatDateDisplay = (dateString: string): string => {
@@ -49,103 +66,77 @@ const formatDateDisplay = (dateString: string): string => {
   }
 };
 
-// Type guard to ensure booking has required properties
-const isValidBooking = (booking: unknown): booking is Booking => {
-  return (
-    typeof booking === "object" &&
-    booking !== null &&
-    "id" in booking &&
-    "date" in booking &&
-    "timeSlot" in booking &&
-    "status" in booking &&
-    "groupSize" in booking &&
-    "hasFeedback" in booking
-  );
-};
-
-// Helper function to safely get booking property
-const getBookingProperty = (booking: unknown, property: string): string => {
-  if (!isValidBooking(booking)) {
-    return "";
-  }
-  const value = booking[property as keyof Booking];
-  return typeof value === "string" ? value : "";
-};
-
-// Helper function to safely get booking status
-const getBookingStatus = (booking: unknown): string => {
-  if (!isValidBooking(booking)) {
-    return "";
-  }
-  return typeof booking.status === "string" ? booking.status : "";
-};
-
-// Helper function to check if booking has expired
-const isBookingExpired = (booking: unknown): boolean => {
-  if (!isValidBooking(booking)) {
-    return false;
-  }
-
-  const status = getBookingStatus(booking);
-  if (status === "slot_expired") {
-    return true;
-  }
-
-  // Check if slot_reserved booking has passed expiration time
-  if (status === "slot_reserved" && booking.expiresAt) {
-    try {
-      const expiresAt = new Date(booking.expiresAt);
-      return new Date() > expiresAt;
-    } catch {
-      return false;
-    }
-  }
-
-  return false;
-};
-
-// Helper function to check if booking allows payment
-const canProceedToPayment = (booking: unknown): boolean => {
-  if (!isValidBooking(booking)) {
-    return false;
-  }
-
-  const status = getBookingStatus(booking);
-  const allowedStatuses = ["slot_reserved", "awaiting_payment"];
-
-  // Don't allow payment for expired, cancelled, or already paid bookings
-  if (!allowedStatuses.includes(status)) {
-    return false;
-  }
-
-  // Don't allow payment for expired bookings
-  if (isBookingExpired(booking)) {
-    return false;
-  }
-
-  return true;
-};
-
-// Helper function to safely get booking hasFeedback
-const getBookingHasFeedback = (booking: unknown): boolean => {
-  if (!isValidBooking(booking)) {
-    return false;
-  }
-  return typeof booking.hasFeedback === "boolean" ? booking.hasFeedback : false;
-};
-
 interface BookingsTabProps {
   bookings: Booking[];
   isLoading: boolean;
   isError: boolean;
   onFeedbackClick: () => void;
+  invalidateQueries?: () => void;
 }
 
-export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, isError, onFeedbackClick }) => {
+export const BookingsTab: React.FC<BookingsTabProps> = ({
+  bookings,
+  isLoading,
+  isError,
+  onFeedbackClick,
+  invalidateQueries,
+}) => {
   const navigate = useNavigate();
+  const { open } = useNotification();
+  const { mutate: cancelBooking, isPending: isCancelling } = useCustomMutation();
   const theme = useTheme();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
+
+  // Handle cancel booking confirmation
+  const handleCancelClick = (bookingId: string) => {
+    setBookingToCancel(bookingId);
+    setCancelDialogOpen(true);
+  };
+
+  // Handle cancel booking
+  const handleCancelConfirm = () => {
+    if (!bookingToCancel) return;
+
+    cancelBooking(
+      {
+        url: `bookings/${bookingToCancel}`,
+        method: "delete",
+        values: {},
+        successNotification: false,
+        errorNotification: false,
+      },
+      {
+        onSuccess: () => {
+          open?.({
+            message: "Booking cancelled successfully",
+            type: "success",
+          });
+          setCancelDialogOpen(false);
+          setBookingToCancel(null);
+          // Invalidate and refetch the bookings data
+          invalidateQueries?.();
+        },
+        onError: (error) => {
+          console.error("Cancel booking error:", error);
+          open?.({
+            message: "Failed to cancel booking. Please try again.",
+            type: "error",
+          });
+          setCancelDialogOpen(false);
+          setBookingToCancel(null);
+        },
+      },
+    );
+  };
+
+  const handleCancelDialogClose = () => {
+    setCancelDialogOpen(false);
+    setBookingToCancel(null);
+  };
 
   // Filter bookings based on search term and status filter with type safety
   const filteredBookings = bookings.filter((booking) => {
@@ -156,7 +147,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
     const searchLower = searchTerm.toLowerCase();
     const bookingDate = getBookingProperty(booking, "date");
     const bookingTimeSlot = getBookingProperty(booking, "timeSlot");
-    const bookingStatus = getBookingStatus(booking);
+    const bookingStatus = getEffectiveBookingStatus(booking); // Use database status
 
     const matchesSearch =
       searchTerm === "" ||
@@ -339,7 +330,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
 
             const bookingDate = getBookingProperty(booking, "date");
             const bookingTimeSlot = getBookingProperty(booking, "timeSlot");
-            const bookingStatus = getBookingStatus(booking);
+            const bookingStatus = getEffectiveBookingStatus(booking); // Use database status
             const bookingGroupSize = typeof booking.groupSize === "number" ? booking.groupSize : 0;
             const bookingHasFeedback = getBookingHasFeedback(booking);
             const isExpired = isBookingExpired(booking);
@@ -356,96 +347,136 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
             );
 
             return (
-              <Grid size={{ xs: 12, md: isInactive ? 4 : 6 }} key={booking.id}>
-                <DashboardCard sx={{ opacity: isInactive ? 0.7 : 1 }}>
-                  <StyledCardContent sx={{ pb: isInactive ? 2 : 3 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-                      <Box display="flex" alignItems="center">
+              <Grid size={{ xs: 12, md: 6, lg: 4 }} key={booking.id}>
+                <DashboardCard
+                  sx={{
+                    opacity: isInactive ? 0.7 : 1,
+                    height: "100%",
+                    minHeight: "300px", // Ensure consistent minimum height
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <StyledCardContent
+                    sx={{
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between", // Ensure consistent layout
+                    }}
+                  >
+                    <Box>
+                      {/* Status chip at top right */}
+                      <Box display="flex" justifyContent="flex-end" mb={1}>
+                        <StatusChip
+                          size="small"
+                          label={
+                            isBookingExpired(booking)
+                              ? "Expired"
+                              : bookingStatus === "slot_reserved"
+                              ? "Payment Required"
+                              : bookingStatus === "slot_expired"
+                              ? "Expired"
+                              : bookingStatus === "awaiting_payment"
+                              ? "Awaiting Payment"
+                              : bookingStatus === "paid"
+                              ? "Payment Complete"
+                              : bookingStatus === "confirmed"
+                              ? "Confirmed"
+                              : bookingStatus === "completed"
+                              ? "Completed"
+                              : bookingStatus === "cancelled"
+                              ? "Cancelled"
+                              : bookingStatus === "no_show"
+                              ? "No Show"
+                              : bookingStatus === "checked_in"
+                              ? "Checked In"
+                              : bookingStatus
+                          }
+                          color={
+                            isBookingExpired(booking) || bookingStatus === "slot_expired"
+                              ? "error"
+                              : bookingStatus === "completed"
+                              ? "success"
+                              : bookingStatus === "confirmed"
+                              ? "primary"
+                              : bookingStatus === "slot_reserved"
+                              ? "warning"
+                              : bookingStatus === "awaiting_payment" || bookingStatus === "paid"
+                              ? "info"
+                              : bookingStatus === "cancelled" || bookingStatus === "no_show"
+                              ? "error"
+                              : bookingStatus === "checked_in"
+                              ? "success"
+                              : "default"
+                          }
+                        />
+                      </Box>
+
+                      {/* Title on its own line */}
+                      <Box display="flex" alignItems="center" mb={2}>
                         <EventAvailableIcon sx={{ color: theme.palette.primary.main, mr: 1 }} />
-                        <Typography variant={isInactive ? "body1" : "h6"} fontWeight="500">
-                          Tour on {formatDateDisplay(bookingDate)}
+                        <Typography variant="h6" fontWeight="500">
+                          {formatDateDisplay(bookingDate)}
                         </Typography>
                       </Box>
-                      <StatusChip
-                        label={
-                          isBookingExpired(booking)
-                            ? "Expired"
-                            : bookingStatus === "slot_reserved"
-                            ? "Payment Required"
-                            : bookingStatus === "slot_expired"
-                            ? "Expired"
-                            : bookingStatus === "awaiting_payment"
-                            ? "Awaiting Payment"
-                            : bookingStatus === "paid"
-                            ? "Payment Complete"
-                            : bookingStatus === "confirmed"
-                            ? "Confirmed"
-                            : bookingStatus === "completed"
-                            ? "Completed"
-                            : bookingStatus === "cancelled"
-                            ? "Cancelled"
-                            : bookingStatus === "no_show"
-                            ? "No Show"
-                            : bookingStatus === "checked_in"
-                            ? "Checked In"
-                            : bookingStatus
-                        }
-                        color={
-                          isBookingExpired(booking) || bookingStatus === "slot_expired"
-                            ? "error"
-                            : bookingStatus === "completed"
-                            ? "success"
-                            : bookingStatus === "confirmed"
-                            ? "primary"
-                            : bookingStatus === "slot_reserved"
-                            ? "warning"
-                            : bookingStatus === "awaiting_payment" || bookingStatus === "paid"
-                            ? "info"
-                            : bookingStatus === "cancelled" || bookingStatus === "no_show"
-                            ? "error"
-                            : bookingStatus === "checked_in"
-                            ? "success"
-                            : "default"
-                        }
-                        sx={isInactive ? { fontSize: "0.7rem", height: "auto", px: 1, py: 0.5 } : undefined}
-                      />
+
+                      <Divider sx={{ my: 1.5 }} />
+
+                      <Box display="flex" flexDirection="column" gap={1} my={1.5}>
+                        <Box display="flex" alignItems="center">
+                          <AccessTimeIcon sx={{ fontSize: "1rem", color: "text.secondary", mr: 1 }} />
+                          <Typography variant="body2">Time: {bookingTimeSlot}</Typography>
+                        </Box>
+
+                        <Box display="flex" alignItems="center">
+                          <PeopleIcon sx={{ fontSize: "1rem", color: "text.secondary", mr: 1 }} />
+                          <Typography variant="body2">Group Size: {bookingGroupSize}</Typography>
+                        </Box>
+                      </Box>
                     </Box>
 
-                    {!isInactive && <Divider sx={{ my: 1.5 }} />}
-
+                    {/* Action buttons and messages - always at bottom with consistent spacing */}
                     <Box
+                      mt={2}
                       display="flex"
-                      flexDirection={isInactive ? "row" : "column"}
-                      gap={isInactive ? 2 : 1}
-                      my={isInactive ? 1 : 1.5}
+                      flexDirection="row"
+                      gap={1}
+                      alignItems="center"
+                      justifyContent="flex-end"
+                      flexWrap="wrap"
                     >
-                      <Box display="flex" alignItems="center">
-                        <AccessTimeIcon sx={{ fontSize: "1rem", color: "text.secondary", mr: 1 }} />
-                        <Typography variant="body2">
-                          {isInactive ? bookingTimeSlot : `Time: ${bookingTimeSlot}`}
-                        </Typography>
-                      </Box>
-
-                      <Box display="flex" alignItems="center">
-                        <PeopleIcon sx={{ fontSize: "1rem", color: "text.secondary", mr: 1 }} />
-                        <Typography variant="body2">
-                          {isInactive ? `${bookingGroupSize} people` : `Group Size: ${bookingGroupSize}`}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
                       {canProceedToPayment(booking) && (
                         <Tooltip title="Complete your payment to confirm the booking">
                           <ActionButton
-                            variant="contained"
+                            variant="outlined"
                             color="primary"
-                            onClick={() => void navigate(`/u?tab=payment&id=${booking.id}`)}
+                            onClick={() => {
+                              void navigate(`/u?tab=payment&id=${booking.id}`);
+                            }}
                             size="small"
+                            sx={{ minWidth: 90, px: 1.5, fontWeight: 600 }}
                           >
-                            <PaymentIcon sx={{ fontSize: "1rem", mr: 0.5 }} />
-                            {bookingStatus === "slot_reserved" ? "Proceed to Payment" : "Complete Payment"}
+                            <PaymentIcon sx={{ fontSize: "0.875rem", mr: 0.5 }} />
+                            Pay it now
                           </ActionButton>
+                        </Tooltip>
+                      )}
+
+                      {canCancelBooking(booking) && (
+                        <Tooltip title="Cancel this booking">
+                          <DestructiveButton
+                            variant="outlined"
+                            onClick={() => {
+                              handleCancelClick(booking.id.toString());
+                            }}
+                            size="small"
+                            disabled={isCancelling}
+                            sx={{ minWidth: 90, px: 1.5 }}
+                          >
+                            <CancelIcon sx={{ fontSize: "0.875rem", mr: 0.5 }} />
+                            Cancel
+                          </DestructiveButton>
                         </Tooltip>
                       )}
 
@@ -454,10 +485,13 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
                           <ActionButton
                             variant="outlined"
                             color="primary"
-                            onClick={() => void navigate("/u?tab=check-in")}
+                            onClick={() => {
+                              void navigate("/u?tab=check-in");
+                            }}
                             size="small"
+                            sx={{ minWidth: 90, px: 1.5 }}
                           >
-                            <CheckCircleIcon sx={{ fontSize: "1rem", mr: 0.5 }} />
+                            <CheckCircleIcon sx={{ fontSize: "0.875rem", mr: 0.5 }} />
                             Check In
                           </ActionButton>
                         </Tooltip>
@@ -465,24 +499,30 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
 
                       {bookingStatus === "completed" && !bookingHasFeedback && (
                         <Tooltip title="Leave feedback for your tour">
-                          <ActionButton variant="outlined" color="secondary" onClick={onFeedbackClick} size="small">
-                            <RateReviewIcon sx={{ fontSize: "1rem", mr: 0.5 }} />
-                            Leave Feedback
+                          <ActionButton
+                            variant="outlined"
+                            color="secondary"
+                            onClick={onFeedbackClick}
+                            size="small"
+                            sx={{ minWidth: 90, px: 1.5 }}
+                          >
+                            <RateReviewIcon sx={{ fontSize: "0.875rem", mr: 0.5 }} />
+                            Feedback
                           </ActionButton>
                         </Tooltip>
                       )}
-
-                      {/* Show informational message for expired/cancelled bookings */}
-                      {(isBookingExpired(booking) ||
-                        bookingStatus === "slot_expired" ||
-                        bookingStatus === "cancelled") && (
-                        <Box sx={{ opacity: 0.6, fontStyle: "italic" }}>
-                          <Typography variant="caption" color="text.secondary">
-                            {bookingStatus === "cancelled" ? "Booking was cancelled" : "Reservation expired"}
-                          </Typography>
-                        </Box>
-                      )}
                     </Box>
+
+                    {/* Show informational message for expired/cancelled bookings */}
+                    {(isBookingExpired(booking) ||
+                      bookingStatus === "slot_expired" ||
+                      bookingStatus === "cancelled") && (
+                      <Box mt={1}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
+                          {bookingStatus === "cancelled" ? "Booking was cancelled" : "Reservation expired"}
+                        </Typography>
+                      </Box>
+                    )}
                   </StyledCardContent>
                 </DashboardCard>
               </Grid>
@@ -490,6 +530,32 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, isLoading, i
           })}
         </Grid>
       )}
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={handleCancelDialogClose}
+        aria-labelledby="cancel-dialog-title"
+        aria-describedby="cancel-dialog-description"
+      >
+        <DialogTitle id="cancel-dialog-title">Cancel Booking</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="cancel-dialog-description">
+            Are you sure you want to cancel this booking? This action cannot be undone.
+            {bookingToCancel &&
+              bookings.find((b) => b.id.toString() === bookingToCancel)?.status === "confirmed" &&
+              " You may be eligible for a refund according to our cancellation policy."}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDialogClose} color="primary">
+            Keep Booking
+          </Button>
+          <Button onClick={handleCancelConfirm} color="error" variant="contained" disabled={isCancelling}>
+            {isCancelling ? <CircularProgress size={16} /> : "Cancel Booking"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

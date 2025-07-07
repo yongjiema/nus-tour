@@ -2,8 +2,22 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { Box, MenuItem, Alert, CircularProgress, Typography, Button, Chip } from "@mui/material";
-import { Timer as TimerIcon } from "@mui/icons-material";
+import {
+  Box,
+  MenuItem,
+  Alert,
+  CircularProgress,
+  Typography,
+  Button,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
+  Tooltip,
+} from "@mui/material";
+import { Timer as TimerIcon, Cancel as CancelIcon } from "@mui/icons-material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +28,7 @@ import { useReserveSlot } from "../../hooks/useReservation";
 import { useBookingSession } from "../../hooks/useBookingSession";
 import type { TimeSlotAvailability } from "../../types/api.types";
 import { FormField } from "../../components/shared/forms/FormField";
+import { DestructiveButton } from "../../components/shared/ui";
 
 // Constants
 const tomorrow = dayjs().add(1, "day");
@@ -32,6 +47,7 @@ const BookingForm: React.FC = () => {
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(tomorrow.format("YYYY-MM-DD"));
   const [availableSlots, setAvailableSlots] = useState<TimeSlotAvailability[]>([]);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const navigate = useNavigate();
@@ -196,7 +212,16 @@ const BookingForm: React.FC = () => {
           // Navigate to payment tab in user dashboard
           try {
             void navigate(`/u?tab=payment&id=${response.id}`, { replace: true });
+
+            // Add a small delay to check if navigation actually happened
+            setTimeout(() => {
+              if (!window.location.pathname.includes("/u") || !window.location.search.includes("tab=payment")) {
+                console.warn("Navigation may have failed, forcing redirect");
+                window.location.href = `/u?tab=payment&id=${response.id}`;
+              }
+            }, 200); // Increased timeout for better reliability
           } catch (_navError) {
+            console.error("Navigation error:", _navError);
             setIsNavigating(false);
             // Fallback: try window.location if navigate fails
             window.location.href = `/u?tab=payment&id=${response.id}`;
@@ -313,6 +338,20 @@ const BookingForm: React.FC = () => {
     };
   }, []);
 
+  // Handle cancel reservation confirmation
+  const handleCancelReservationClick = () => {
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelReservationConfirm = () => {
+    clearReservation(true);
+    setCancelDialogOpen(false);
+  };
+
+  const handleCancelDialogClose = () => {
+    setCancelDialogOpen(false);
+  };
+
   // Format time remaining for display
   const formatTimeRemaining = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -359,169 +398,198 @@ const BookingForm: React.FC = () => {
             >
               Proceed to Payment
             </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => {
-                clearReservation(true);
-              }}
-            >
-              Cancel Reservation
-            </Button>
+            <Tooltip title="Cancel your current reservation">
+              <DestructiveButton
+                variant="outlined"
+                onClick={handleCancelReservationClick}
+                size="medium"
+                startIcon={<CancelIcon sx={{ fontSize: "1rem" }} />}
+              >
+                Cancel Reservation
+              </DestructiveButton>
+            </Tooltip>
           </Box>
         </Alert>
       </Box>
     );
   };
 
-  return hasActiveReservation ? (
-    renderActiveReservation()
-  ) : (
-    <Box
-      component="form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void handleSubmit(processSubmit)(e);
-      }}
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 2.5,
-        maxWidth: 600,
-        mx: "auto",
-        p: 3,
-      }}
-    >
-      <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
-        Book Your Tour
-      </Typography>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Slot reserved successfully! Redirecting to payment...
-        </Alert>
-      )}
-
-      <Controller
-        name="date"
-        control={control}
-        render={({ field }) => (
-          <DatePicker
-            {...field}
-            label="Tour Date"
-            minDate={tomorrow}
-            sx={{ mb: 1 }}
-            slotProps={{
-              textField: {
-                error: !!errors.date,
-                helperText: errors.date?.message,
-                fullWidth: true,
-                variant: "outlined",
-              },
-            }}
-          />
-        )}
-      />
-
-      <Controller
-        name="timeSlot"
-        control={control}
-        render={({ field }) => (
-          <FormField
-            {...field}
-            label="Time Slot"
-            select
-            error={!!errors.timeSlot}
-            helperText={
-              errors.timeSlot?.message ??
-              (slotsLoading
-                ? "Loading available slots..."
-                : availableSlots.length === 0
-                ? "No available slots for this date"
-                : availableSlots.every((slot) => slot.available <= 0 && !slot.userHasBooking)
-                ? "All slots are fully booked for this date"
-                : "Select your preferred time slot")
-            }
-            disabled={slotsLoading}
-            fullWidth
-            variant="outlined"
-            sx={{ mb: 1 }}
-            slotProps={{
-              select: {
-                displayEmpty: true,
-                renderValue: (value: unknown) => {
-                  if (!value || typeof value !== "string") return "";
-                  return value;
-                },
-              },
-            }}
-          >
-            {!slotsLoading && availableSlots.length === 0 && (
-              <MenuItem disabled>No slots available for this date</MenuItem>
-            )}
-            {availableSlots.map((slot) => {
-              const isDisabled = slot.available <= 0 && !slot.userHasBooking;
-              const displayText = slot.userHasBooking
-                ? `${slot.slot} - You have a ${slot.userBookingStatus?.toLowerCase().replace("_", " ")} booking`
-                : slot.available > 0
-                ? `${slot.slot} - ${slot.available} spots available`
-                : `${slot.slot} - Fully booked`;
-
-              return (
-                <MenuItem key={slot.slot} value={slot.slot} disabled={isDisabled}>
-                  {displayText}
-                  {slot.userHasBooking && <Chip size="small" label="Your Booking" color="warning" sx={{ ml: 1 }} />}
-                </MenuItem>
-              );
-            })}
-          </FormField>
-        )}
-      />
-
-      <Controller
-        name="groupSize"
-        control={control}
-        render={({ field }) => (
-          <FormField
-            {...field}
-            label="Group Size"
-            type="number"
-            error={!!errors.groupSize}
-            helperText={errors.groupSize?.message ?? "Number of people in your group (max 50)"}
-            slotProps={{
-              htmlInput: { min: 1, max: 50 },
-            }}
-            fullWidth
-            variant="outlined"
-            sx={{ mb: 1 }}
-          />
-        )}
-      />
-
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-        <Button
-          type="submit"
-          variant="contained"
-          size="large"
-          disabled={availableSlots.length === 0 || slotsLoading || isSubmittingForm || isReserving || isNavigating}
-          startIcon={isSubmittingForm || isReserving || isNavigating ? <CircularProgress size={20} /> : null}
+  return (
+    <Box>
+      {hasActiveReservation ? (
+        renderActiveReservation()
+      ) : (
+        <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSubmit(processSubmit)(e);
+          }}
           sx={{
-            minWidth: 200,
-            py: 1.5,
-            px: 4,
-            fontSize: "1.1rem",
-            fontWeight: 600,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2.5,
+            maxWidth: 600,
+            mx: "auto",
+            p: 3,
           }}
         >
-          {isNavigating ? "Redirecting..." : isSubmittingForm || isReserving ? "Reserving..." : "Reserve Slot"}
-        </Button>
-      </Box>
+          <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
+            Book Your Tour
+          </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Slot reserved successfully! Redirecting to payment...
+            </Alert>
+          )}
+
+          <Controller
+            name="date"
+            control={control}
+            render={({ field }) => (
+              <DatePicker
+                {...field}
+                label="Tour Date"
+                minDate={tomorrow}
+                sx={{ mb: 1 }}
+                slotProps={{
+                  textField: {
+                    error: !!errors.date,
+                    helperText: errors.date?.message,
+                    fullWidth: true,
+                    variant: "outlined",
+                  },
+                }}
+              />
+            )}
+          />
+
+          <Controller
+            name="timeSlot"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                {...field}
+                label="Time Slot"
+                select
+                error={!!errors.timeSlot}
+                helperText={
+                  errors.timeSlot?.message ??
+                  (slotsLoading
+                    ? "Loading available slots..."
+                    : availableSlots.length === 0
+                    ? "No available slots for this date"
+                    : availableSlots.every((slot) => slot.available <= 0 && !slot.userHasBooking)
+                    ? "All slots are fully booked for this date"
+                    : "Select your preferred time slot")
+                }
+                disabled={slotsLoading}
+                fullWidth
+                variant="outlined"
+                sx={{ mb: 1 }}
+                slotProps={{
+                  select: {
+                    displayEmpty: true,
+                    renderValue: (value: unknown) => {
+                      if (!value || typeof value !== "string") return "";
+                      return value;
+                    },
+                  },
+                }}
+              >
+                {!slotsLoading && availableSlots.length === 0 && (
+                  <MenuItem disabled>No slots available for this date</MenuItem>
+                )}
+                {availableSlots.map((slot) => {
+                  const isDisabled = slot.available <= 0 && !slot.userHasBooking;
+                  const displayText = slot.userHasBooking
+                    ? `${slot.slot} - You have a ${slot.userBookingStatus?.toLowerCase().replace("_", " ")} booking`
+                    : slot.available > 0
+                    ? `${slot.slot} - ${slot.available} spots available`
+                    : `${slot.slot} - Fully booked`;
+
+                  return (
+                    <MenuItem key={slot.slot} value={slot.slot} disabled={isDisabled}>
+                      {displayText}
+                      {slot.userHasBooking && <Chip size="small" label="Your Booking" color="warning" sx={{ ml: 1 }} />}
+                    </MenuItem>
+                  );
+                })}
+              </FormField>
+            )}
+          />
+
+          <Controller
+            name="groupSize"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                {...field}
+                label="Group Size"
+                type="number"
+                error={!!errors.groupSize}
+                helperText={errors.groupSize?.message ?? "Number of people in your group (max 50)"}
+                slotProps={{
+                  htmlInput: { min: 1, max: 50 },
+                }}
+                fullWidth
+                variant="outlined"
+                sx={{ mb: 1 }}
+              />
+            )}
+          />
+
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={availableSlots.length === 0 || slotsLoading || isSubmittingForm || isReserving || isNavigating}
+              startIcon={isSubmittingForm || isReserving || isNavigating ? <CircularProgress size={20} /> : null}
+              sx={{
+                minWidth: 200,
+                py: 1.5,
+                px: 4,
+                fontSize: "1.1rem",
+                fontWeight: 600,
+              }}
+            >
+              {isNavigating ? "Redirecting..." : isSubmittingForm || isReserving ? "Reserving..." : "Reserve Slot"}
+            </Button>
+          </Box>
+        </Box>
+      )}
+
+      {/* Cancel Reservation Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={handleCancelDialogClose}
+        aria-labelledby="cancel-reservation-dialog-title"
+        aria-describedby="cancel-reservation-dialog-description"
+      >
+        <DialogTitle id="cancel-reservation-dialog-title">Cancel Reservation</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="cancel-reservation-dialog-description">
+            Are you sure you want to cancel your current reservation? This action cannot be undone and you'll need to
+            make a new reservation.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDialogClose} color="primary" variant="outlined">
+            Keep Reservation
+          </Button>
+          <Button onClick={handleCancelReservationConfirm} color="error" variant="contained" startIcon={<CancelIcon />}>
+            Cancel Reservation
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
