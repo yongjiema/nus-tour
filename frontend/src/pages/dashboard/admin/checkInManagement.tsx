@@ -31,7 +31,7 @@ import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EmailIcon from "@mui/icons-material/Email";
 import { useAdminBookings } from "../../../hooks";
-import { useCustomMutation, useNotification } from "@refinedev/core";
+import { useCustomMutation, useNotification, useInvalidate } from "@refinedev/core";
 import { DashboardContainer } from "../../../components/shared/dashboard";
 import { handleRefineError } from "../../../utils/errorHandler";
 
@@ -46,6 +46,7 @@ export const AdminCheckInManagement: React.FC = () => {
   const { data: bookingsData, isLoading, error } = useAdminBookings();
   const { mutate: checkinMutation, isPending: isCheckinPending } = useCustomMutation();
   const { open } = useNotification();
+  const invalidate = useInvalidate();
 
   const bookings = bookingsData?.data ?? [];
 
@@ -84,8 +85,15 @@ export const AdminCheckInManagement: React.FC = () => {
             type: "success",
           });
           setManualCheckinData({ bookingId: "", email: "" });
-          // Refetch bookings data to update the list
-          // Note: You might need to add refetch functionality here
+          // Invalidate relevant caches to refresh data
+          void invalidate({
+            resource: "admin/bookings",
+            invalidates: ["list"],
+          });
+          void invalidate({
+            resource: "bookings/user",
+            invalidates: ["list"],
+          });
         },
         onError: (error) => {
           handleRefineError(error, open);
@@ -127,6 +135,15 @@ export const AdminCheckInManagement: React.FC = () => {
               open?.({
                 message: "QR Code check-in successful!",
                 type: "success",
+              });
+              // Invalidate relevant caches to refresh data
+              void invalidate({
+                resource: "admin/bookings",
+                invalidates: ["list"],
+              });
+              void invalidate({
+                resource: "bookings/user",
+                invalidates: ["list"],
               });
             },
             onError: (error) => {
@@ -354,6 +371,17 @@ export const AdminCheckInManagement: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredBookings.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                        {searchTerm ? (
+                          <>No confirmed bookings found matching "{searchTerm}"</>
+                        ) : (
+                          <>No confirmed bookings available for check-in</>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>

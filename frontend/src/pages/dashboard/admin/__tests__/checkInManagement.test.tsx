@@ -15,6 +15,7 @@ vi.mock("@refinedev/core", () => ({
   useCustomMutation: (): unknown => mockUseCustomMutation(),
   useNotification: (): unknown => mockUseNotification(),
   useList: (): unknown => mockUseAdminBookings(),
+  useInvalidate: (): unknown => vi.fn(),
 }));
 
 vi.mock("../../../utils/errorHandler", () => ({

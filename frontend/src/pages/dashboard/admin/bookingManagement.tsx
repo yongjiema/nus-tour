@@ -16,16 +16,26 @@ import {
   Button,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import { useAdminBookings, useAdminUpdateBookingStatus } from "../../../hooks";
 import { DashboardContainer } from "../../../components/shared/dashboard";
+import { DestructiveButton } from "../../../components/shared/ui";
+import type { Booking } from "../../../types/api.types";
 
 export const AdminBookingManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [pendingAction, setPendingAction] = useState<{ bookingId: string; action: string; booking: Booking } | null>(
+    null,
+  );
 
   const { data: bookingsData, isLoading, error } = useAdminBookings();
   const { updateStatus, isPending: isUpdating } = useAdminUpdateBookingStatus();
@@ -42,10 +52,21 @@ export const AdminBookingManagement: React.FC = () => {
     );
   });
 
-  const handleStatusUpdate = (bookingId: string, newStatus: string) => {
-    updateStatus(bookingId, {
-      status: newStatus,
-    });
+  const handleStatusUpdate = (bookingId: string, newStatus: string, booking: Booking) => {
+    setPendingAction({ bookingId, action: newStatus, booking });
+  };
+
+  const handleConfirmAction = () => {
+    if (pendingAction) {
+      updateStatus(pendingAction.bookingId, {
+        status: pendingAction.action,
+      });
+    }
+    setPendingAction(null);
+  };
+
+  const handleCancelAction = () => {
+    setPendingAction(null);
   };
 
   const handleChangePage = (_event: unknown, newPage: number) => {
@@ -155,7 +176,7 @@ export const AdminBookingManagement: React.FC = () => {
                           variant="outlined"
                           color="success"
                           onClick={() => {
-                            handleStatusUpdate(booking.id.toString(), "completed");
+                            handleStatusUpdate(booking.id.toString(), "completed", booking);
                           }}
                           disabled={isUpdating}
                         >
@@ -163,22 +184,28 @@ export const AdminBookingManagement: React.FC = () => {
                         </Button>
                       )}
                       {booking.status !== "cancelled" && (
-                        <Button
+                        <DestructiveButton
                           size="small"
                           variant="outlined"
-                          color="error"
                           onClick={() => {
-                            handleStatusUpdate(booking.id.toString(), "cancelled");
+                            handleStatusUpdate(booking.id.toString(), "cancelled", booking);
                           }}
                           disabled={isUpdating}
                         >
                           Cancel
-                        </Button>
+                        </DestructiveButton>
                       )}
                     </Box>
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredBookings.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                    {searchTerm ? <>No bookings found matching "{searchTerm}"</> : <>No bookings available</>}
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -192,6 +219,50 @@ export const AdminBookingManagement: React.FC = () => {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Paper>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={!!pendingAction}
+        onClose={handleCancelAction}
+        aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-description"
+      >
+        <DialogTitle id="confirm-dialog-title">Confirm Action</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="confirm-dialog-description">
+            {pendingAction?.action === "cancelled" ? (
+              <>
+                Are you sure you want to cancel booking #{pendingAction.bookingId}?
+                {pendingAction.booking.status === "confirmed" && (
+                  <> This will permanently cancel the confirmed booking and may require refund processing.</>
+                )}
+                <br />
+                <strong>This action cannot be undone.</strong>
+              </>
+            ) : pendingAction?.action === "completed" ? (
+              <>
+                Are you sure you want to mark booking #{pendingAction.bookingId} as completed? This indicates that the
+                tour has been successfully completed.
+              </>
+            ) : (
+              `Are you sure you want to change the status of booking #${pendingAction?.bookingId} to "${pendingAction?.action}"?`
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelAction} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmAction}
+            color={pendingAction?.action === "cancelled" ? "error" : "primary"}
+            variant="contained"
+            disabled={isUpdating}
+          >
+            {isUpdating ? <CircularProgress size={16} /> : "Confirm"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </DashboardContainer>
   );
 };

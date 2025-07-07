@@ -139,7 +139,7 @@ const Login: React.FC = () => {
               </Grid>
 
               <Grid size={12}>
-                <FormActions isLoading={isSubmitting} submitText={isSubmitting ? "Logging in..." : "Login"} />
+                <FormActions isLoading={isSubmitting} submitText="Login" />
               </Grid>
             </Grid>
           </form>

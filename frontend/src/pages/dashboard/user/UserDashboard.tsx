@@ -1,7 +1,7 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { Box, Tabs, Tab, Card, Tooltip } from "@mui/material";
-import { useList } from "@refinedev/core";
+import { useList, useInvalidate } from "@refinedev/core";
 import { useUserDashboardStats } from "../../../hooks";
 
 // Icons
@@ -43,10 +43,10 @@ interface TabConfig {
   disabled?: boolean;
 }
 
-const getTabConfig = (hasPendingPayments: boolean): TabConfig[] => [
+const getTabConfig = (hasPendingPayments: boolean, hasBookingId: boolean): TabConfig[] => [
   { label: "Overview", icon: <HomeIcon />, value: "overview" },
   { label: "Book Tour", icon: <BookOnlineIcon />, value: "book-tour" },
-  { label: "Payment", icon: <PaymentIcon />, value: "payment", disabled: !hasPendingPayments },
+  { label: "Payment", icon: <PaymentIcon />, value: "payment", disabled: !hasPendingPayments && !hasBookingId },
   { label: "Check In", icon: <HowToRegIcon />, value: "check-in" },
   { label: "My Bookings", icon: <HistoryIcon />, value: "bookings" },
   { label: "Feedback", icon: <FeedbackIcon />, value: "feedback" },
@@ -54,14 +54,16 @@ const getTabConfig = (hasPendingPayments: boolean): TabConfig[] => [
 
 export const UserDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const invalidate = useInvalidate();
 
   // Fetch user dashboard stats to determine tab availability
-  const { data: statsResponse } = useUserDashboardStats();
+  const { data: statsResponse, refetch: refetchStats } = useUserDashboardStats();
   const userStats = statsResponse?.data.data;
   const hasPendingPayments = (userStats?.pendingPayments ?? 0) > 0;
+  const hasBookingId = !!searchParams.get("id"); // Check if there's a booking ID in URL
 
   // Generate tab configuration based on user stats
-  const tabConfig = getTabConfig(hasPendingPayments);
+  const tabConfig = getTabConfig(hasPendingPayments, hasBookingId);
 
   // Get active tab from URL parameters, default to overview
   const activeTab = searchParams.get("tab") ?? "overview";
@@ -78,23 +80,46 @@ export const UserDashboard: React.FC = () => {
   }, [activeTab, activeTabIndex, tabConfig, setSearchParams]);
 
   // Also redirect if user tries to access payment tab directly without pending payments
+  // But allow access if there's a booking ID in the URL (for new reservations)
   React.useEffect(() => {
-    if (activeTab === "payment" && !hasPendingPayments && userStats) {
+    const bookingId = searchParams.get("id");
+    if (activeTab === "payment" && !hasPendingPayments && userStats && !bookingId) {
+      console.log("Redirecting from payment tab to overview - no pending payments and no booking ID");
       setSearchParams({ tab: "overview" });
     }
-  }, [activeTab, hasPendingPayments, userStats, setSearchParams]);
+  }, [activeTab, hasPendingPayments, userStats, searchParams, setSearchParams]);
 
   // Fetch user's bookings
   const {
     data: bookingsData,
     isLoading: isBookingsLoading,
     isError: isBookingsError,
+    refetch: refetchBookings,
   } = useList<Booking>({
     resource: "bookings/user",
     meta: {
       select: "id,date,timeSlot,status,groupSize,deposit,createdAt,expiresAt",
     },
+    queryOptions: {
+      // Enable background refetching for better UX
+      refetchOnWindowFocus: true,
+      staleTime: 30000, // Consider data fresh for 30 seconds
+    },
   });
+
+  // Automatically refetch bookings when switching to bookings tab
+  React.useEffect(() => {
+    if (activeTab === "bookings") {
+      void refetchBookings();
+    }
+  }, [activeTab, refetchBookings]);
+
+  // Refetch stats when switching to overview or payment tabs
+  React.useEffect(() => {
+    if (activeTab === "overview" || activeTab === "payment") {
+      void refetchStats();
+    }
+  }, [activeTab, refetchStats]);
 
   const bookings = bookingsData?.data ?? [];
 
@@ -174,7 +199,11 @@ export const UserDashboard: React.FC = () => {
               return (
                 <Tooltip
                   key={tab.value}
-                  title="No pending payments. Complete a booking first to access payment options."
+                  title={
+                    hasBookingId
+                      ? "Complete your reservation to access payment"
+                      : "No pending payments. Complete a booking first to access payment options."
+                  }
                   arrow
                 >
                   <div style={{ display: "inline-block" }}>
@@ -215,6 +244,17 @@ export const UserDashboard: React.FC = () => {
           isLoading={isBookingsLoading}
           isError={isBookingsError}
           onFeedbackClick={() => undefined}
+          invalidateQueries={() => {
+            void invalidate({
+              resource: "bookings/user",
+              invalidates: ["list"],
+            });
+            // Also invalidate dashboard stats as cancelling might affect stats
+            void invalidate({
+              resource: "dashboard/user",
+              invalidates: ["list"],
+            });
+          }}
         />
       </TabPanel>
 

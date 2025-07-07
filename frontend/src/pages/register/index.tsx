@@ -208,7 +208,7 @@ const Register: React.FC = () => {
               </Grid>
 
               <Grid size={12}>
-                <FormActions isLoading={isSubmitting} submitText={isSubmitting ? "Registering..." : "Register"} />
+                <FormActions isLoading={isSubmitting} submitText="Register" />
               </Grid>
             </Grid>
           </form>

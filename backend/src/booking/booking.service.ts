@@ -680,11 +680,74 @@ export class BookingService {
   }
 
   /**
-   * Cron job to clean up expired reservations every minute
+   * Auto-mark confirmed bookings as no_show if tour time has passed
+   */
+  async autoMarkNoShowBookings(): Promise<void> {
+    const now = new Date();
+
+    // Find all confirmed bookings where the tour time has passed
+    const confirmedBookings = await this.bookingRepository.find({
+      where: {
+        status: BookingStatus.CONFIRMED,
+      },
+    });
+
+    const noShowBookings = [];
+
+    for (const booking of confirmedBookings) {
+      try {
+        // Parse the time slot (e.g., "09:00 AM - 10:00 AM")
+        const timeSlotMatch = /- (\d{1,2}:\d{2} [AP]M)$/.exec(booking.timeSlot);
+        if (!timeSlotMatch) {
+          continue; // Skip if can't parse time slot
+        }
+
+        const endTimeStr = timeSlotMatch[1];
+        const dateStr = booking.date instanceof Date ? booking.date.toISOString().slice(0, 10) : booking.date;
+        const bookingDateTime = new Date(`${dateStr} ${endTimeStr}`);
+
+        // If current time is past the tour end time, mark as no_show
+        if (now > bookingDateTime) {
+          noShowBookings.push(booking.id);
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to process booking ${booking.id} for auto no-show: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+        continue;
+      }
+    }
+
+    if (noShowBookings.length > 0) {
+      await this.bookingRepository.update(
+        {
+          id: In(noShowBookings),
+          status: BookingStatus.CONFIRMED,
+        },
+        {
+          status: BookingStatus.NO_SHOW,
+        },
+      );
+
+      this.logger.log(`Auto-marked ${noShowBookings.length} confirmed bookings as no_show`);
+    }
+  }
+
+  /**
+   * Cron job to clean up expired reservations and auto-mark no-shows every minute
    */
   @Cron(CronExpression.EVERY_MINUTE)
   async handleExpiredReservations(): Promise<void> {
     await this.cleanupExpiredReservations();
+  }
+
+  /**
+   * Cron job to auto-mark no-show bookings every 5 minutes
+   * Runs less frequently as this is less time-critical than expired reservations
+   */
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async handleNoShowBookings(): Promise<void> {
+    await this.autoMarkNoShowBookings();
   }
 
   /**

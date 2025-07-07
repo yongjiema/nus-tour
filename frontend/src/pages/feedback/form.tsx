@@ -157,10 +157,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ bookingId, onSuccess }) => 
       />
 
       {/* Submit Button */}
-      <FormActions
-        isLoading={_isSubmitting || formLoading}
-        submitText={_isSubmitting || formLoading ? "Submitting..." : "Submit Feedback"}
-      />
+      <FormActions isLoading={_isSubmitting || formLoading} submitText="Submit Feedback" />
     </Box>
   );
 };

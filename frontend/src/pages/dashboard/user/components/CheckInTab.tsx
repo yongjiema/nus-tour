@@ -25,7 +25,7 @@ import EmailIcon from "@mui/icons-material/Email";
 import { useGetIdentity } from "@refinedev/core";
 import QRCode from "qrcode";
 import type { Booking } from "../../../../types/api.types";
-import { BookingStatus } from "../../../../types/enums";
+import { isValidBooking, getEffectiveBookingStatus, canCheckIn } from "../../../../utils/bookingHelpers";
 
 // Styled components
 const QRContainer = styled(Paper)(({ theme }) => ({
@@ -65,36 +65,27 @@ const formatDateDisplay = (dateString: string): string => {
 };
 
 // Helper function to get status color
-const getStatusColor = (status: BookingStatus): "success" | "primary" | "warning" | "default" => {
+const getStatusColor = (status: string): "success" | "primary" | "warning" | "default" | "error" => {
   switch (status) {
-    case BookingStatus.CONFIRMED:
+    case "confirmed":
       return "success";
-    case BookingStatus.CHECKED_IN:
+    case "checked_in":
       return "primary";
-    case BookingStatus.COMPLETED:
+    case "completed":
       return "success";
+    case "no_show":
+      return "error";
+    case "cancelled":
+      return "default";
+    case "paid":
+      return "success";
+    case "awaiting_payment":
+      return "warning";
+    case "slot_reserved":
+      return "primary";
     default:
       return "default";
   }
-};
-
-// Type guard to ensure booking has required properties
-const isValidBooking = (booking: unknown): booking is Booking => {
-  return (
-    typeof booking === "object" &&
-    booking !== null &&
-    "id" in booking &&
-    "date" in booking &&
-    "timeSlot" in booking &&
-    "status" in booking &&
-    "groupSize" in booking
-  );
-};
-
-// Helper function to check if booking is eligible for check-in
-const canCheckIn = (booking: Booking): boolean => {
-  const allowedStatuses = [BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN, BookingStatus.COMPLETED];
-  return allowedStatuses.includes(booking.status as BookingStatus);
 };
 
 // Helper function to check if booking is today
@@ -125,7 +116,7 @@ export const CheckInTab: React.FC<CheckInTabProps> = ({ bookings, isLoading, isE
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
   const [qrError, setQrError] = useState<string>("");
 
-  // Filter bookings that are eligible for check-in
+  // Filter bookings that are eligible for check-in using effective status
   const checkInEligibleBookings = bookings.filter((booking) => {
     if (!isValidBooking(booking)) return false;
     return canCheckIn(booking);
@@ -222,60 +213,61 @@ export const CheckInTab: React.FC<CheckInTabProps> = ({ bookings, isLoading, isE
       </Alert>
 
       <Grid container spacing={3}>
-        {checkInEligibleBookings.map((booking) => (
-          <Grid size={{ xs: 12, md: 6, lg: 4 }} key={booking.id}>
-            <BookingCard
-              onClick={() => {
-                setSelectedBooking(booking);
-              }}
-            >
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                  <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                    Booking #{booking.id}
-                  </Typography>
-                  <Chip
-                    label={booking.status.replace("_", " ").toUpperCase()}
-                    color={getStatusColor(booking.status as BookingStatus)}
-                    size="small"
-                  />
-                </Box>
+        {checkInEligibleBookings.map((booking) => {
+          const status = getEffectiveBookingStatus(booking);
+          const isCompleted = status === "completed";
 
-                <Box display="flex" alignItems="center" mb={1}>
-                  <EventAvailableIcon sx={{ fontSize: "1rem", mr: 1, color: "text.secondary" }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {formatDateDisplay(booking.date)}
-                  </Typography>
-                  {isBookingToday(booking.date) && <Chip label="TODAY" color="primary" size="small" sx={{ ml: 1 }} />}
-                </Box>
+          return (
+            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={booking.id}>
+              <BookingCard
+                onClick={() => {
+                  setSelectedBooking(booking);
+                }}
+              >
+                <CardContent>
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                      Booking #{booking.id}
+                    </Typography>
+                    <Chip label={status.replace("_", " ").toUpperCase()} color={getStatusColor(status)} size="small" />
+                  </Box>
 
-                <Box display="flex" alignItems="center" mb={1}>
-                  <AccessTimeIcon sx={{ fontSize: "1rem", mr: 1, color: "text.secondary" }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {booking.timeSlot}
-                  </Typography>
-                </Box>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <EventAvailableIcon sx={{ fontSize: "1rem", mr: 1, color: "text.secondary" }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {formatDateDisplay(booking.date)}
+                    </Typography>
+                    {isBookingToday(booking.date) && <Chip label="TODAY" color="primary" size="small" sx={{ ml: 1 }} />}
+                  </Box>
 
-                <Box display="flex" alignItems="center" mb={2}>
-                  <GroupIcon sx={{ fontSize: "1rem", mr: 1, color: "text.secondary" }} />
-                  <Typography variant="body2" color="text.secondary">
-                    Group Size: {booking.groupSize}
-                  </Typography>
-                </Box>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <AccessTimeIcon sx={{ fontSize: "1rem", mr: 1, color: "text.secondary" }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {booking.timeSlot}
+                    </Typography>
+                  </Box>
 
-                <Button
-                  variant="contained"
-                  startIcon={<QRCodeIcon />}
-                  fullWidth
-                  sx={{ fontWeight: 600 }}
-                  disabled={(booking.status as BookingStatus) === BookingStatus.COMPLETED}
-                >
-                  {(booking.status as BookingStatus) === BookingStatus.COMPLETED ? "Completed" : "Generate QR Code"}
-                </Button>
-              </CardContent>
-            </BookingCard>
-          </Grid>
-        ))}
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <GroupIcon sx={{ fontSize: "1rem", mr: 1, color: "text.secondary" }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Group Size: {booking.groupSize}
+                    </Typography>
+                  </Box>
+
+                  <Button
+                    variant="contained"
+                    startIcon={<QRCodeIcon />}
+                    fullWidth
+                    sx={{ fontWeight: 600 }}
+                    disabled={isCompleted}
+                  >
+                    {isCompleted ? "Completed" : "Generate QR Code"}
+                  </Button>
+                </CardContent>
+              </BookingCard>
+            </Grid>
+          );
+        })}
       </Grid>
 
       {/* QR Code Dialog */}

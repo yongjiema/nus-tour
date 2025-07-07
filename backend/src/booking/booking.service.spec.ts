@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 import { BookingService } from "./booking.service";
-import { Repository, DataSource } from "typeorm";
+import { Repository, DataSource, UpdateResult } from "typeorm";
 import { Booking } from "../database/entities/booking.entity";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException, Logger, BadRequestException } from "@nestjs/common";
@@ -604,6 +604,76 @@ describe("BookingService", () => {
 
       const result = await service.getBookingByUuid(bookingId);
       expect(result).toBeNull();
+    });
+  });
+
+  describe("autoMarkNoShowBookings", () => {
+    it("should mark confirmed bookings as no_show when tour time has passed", async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      const expiredBooking = createMockBooking({
+        id: "expired-booking-1",
+        status: BookingStatus.CONFIRMED,
+        date: yesterday,
+        timeSlot: "09:00 AM - 10:00 AM",
+      });
+
+      const futureBooking = createMockBooking({
+        id: "future-booking-1",
+        status: BookingStatus.CONFIRMED,
+        date: new Date("2025-12-25"),
+        timeSlot: "09:00 AM - 10:00 AM",
+      });
+
+      mockRepository.find.mockResolvedValueOnce([expiredBooking, futureBooking]);
+      mockRepository.update.mockResolvedValueOnce({ affected: 1 } as UpdateResult);
+
+      await service.autoMarkNoShowBookings();
+
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { status: BookingStatus.CONFIRMED },
+      });
+
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: BookingStatus.CONFIRMED,
+        }),
+        {
+          status: BookingStatus.NO_SHOW,
+        },
+      );
+    });
+
+    it("should not mark bookings with unparseable time slots", async () => {
+      const expiredBooking = createMockBooking({
+        id: "invalid-slot-booking",
+        status: BookingStatus.CONFIRMED,
+        date: new Date("2025-01-01"),
+        timeSlot: "invalid-time-format",
+      });
+
+      mockRepository.find.mockResolvedValueOnce([expiredBooking]);
+      mockRepository.update.mockResolvedValueOnce({ affected: 0 } as UpdateResult);
+
+      await service.autoMarkNoShowBookings();
+
+      expect(mockRepository.update).not.toHaveBeenCalled();
+    });
+
+    it("should only process confirmed bookings", async () => {
+      const _paidBooking = createMockBooking({
+        id: "paid-booking-1",
+        status: BookingStatus.PAID,
+        date: new Date("2025-01-01"),
+        timeSlot: "09:00 AM - 10:00 AM",
+      });
+
+      mockRepository.find.mockResolvedValueOnce([]);
+
+      await service.autoMarkNoShowBookings();
+
+      expect(mockRepository.update).not.toHaveBeenCalled();
     });
   });
 });

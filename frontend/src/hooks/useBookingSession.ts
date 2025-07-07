@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useCancelReservation } from "./useReservation";
+import { useNotification } from "@refinedev/core";
 
 interface ReservationData {
   bookingId: string;
-  expiresAt: string;
+  expiresAt: string | null;
   groupSize: number;
   date: string;
   timeSlot: string;
@@ -28,6 +29,7 @@ export const useBookingSession = (): UseBookingSessionResult => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const { mutate: cancelReservationAPI } = useCancelReservation();
+  const { open: notify } = useNotification();
 
   // Load reservation from localStorage on mount
   useEffect(() => {
@@ -36,35 +38,49 @@ export const useBookingSession = (): UseBookingSessionResult => {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const data = JSON.parse(stored) as ReservationData;
-          const expiresAt = new Date(data.expiresAt);
+          const expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
           const now = new Date();
-
-          if (expiresAt > now) {
+          if (expiresAt && expiresAt > now) {
             setReservation(data);
             setTimeRemaining(Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+            setIsExpired(false);
           } else {
-            // Reservation has expired, clean it up
-            localStorage.removeItem(STORAGE_KEY);
+            setReservation(null);
+            setTimeRemaining(0);
             setIsExpired(true);
+            localStorage.removeItem(STORAGE_KEY);
           }
         }
-      } catch (error) {
-        console.error("Failed to load reservation from storage:", error);
+      } catch (_error) {
+        setReservation(null);
+        setTimeRemaining(0);
+        setIsExpired(true);
         localStorage.removeItem(STORAGE_KEY);
+        notify?.({
+          type: "error",
+          message: "Failed to load your booking session. Please try again or contact support.",
+        });
       }
     };
 
     loadReservation();
-  }, []);
+  }, [notify]);
 
   // Countdown timer
   useEffect(() => {
-    if (reservation && timeRemaining > 0) {
+    if (reservation && timeRemaining > 0 && !isExpired) {
       intervalRef.current = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
             setIsExpired(true);
-            clearReservation(false); // Don't call backend when timer expires naturally
+            // Clear reservation when timer expires
+            try {
+              localStorage.removeItem(STORAGE_KEY);
+              setReservation(null);
+              setTimeRemaining(0);
+            } catch (error) {
+              console.error("Failed to clear expired reservation:", error);
+            }
             return 0;
           }
           return prev - 1;
@@ -83,8 +99,7 @@ export const useBookingSession = (): UseBookingSessionResult => {
         intervalRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reservation, isExpired, timeRemaining]);
 
   const saveReservation = useCallback((data: ReservationData) => {
     try {
@@ -96,21 +111,17 @@ export const useBookingSession = (): UseBookingSessionResult => {
         newExpiresAt.setMinutes(newExpiresAt.getMinutes() + 15); // 15 minutes from now
         validExpiresAt = newExpiresAt.toISOString();
       }
-
-      const validatedData = {
+      setReservation({
         ...data,
         expiresAt: validExpiresAt,
-      };
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(validatedData));
-      setReservation(validatedData);
-
-      const expiresAt = new Date(validExpiresAt);
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, expiresAt: validExpiresAt }));
+      // Update time remaining
+      const expiresAt = validExpiresAt ? new Date(validExpiresAt) : null;
       const now = new Date();
-      const remaining = Math.floor((expiresAt.getTime() - now.getTime()) / 1000);
-
-      setTimeRemaining(Math.max(remaining, 0));
-      setIsExpired(false);
+      const remaining = expiresAt ? Math.floor((expiresAt.getTime() - now.getTime()) / 1000) : 0;
+      setTimeRemaining(remaining);
+      setIsExpired(remaining <= 0);
     } catch (error) {
       console.error("Failed to save reservation to storage:", error);
     }

@@ -6,28 +6,69 @@ import type { ButtonProps } from "@mui/material";
 // Base button component with theme integration
 export const Button = styled(MuiButton)<ButtonProps>(({ theme }) => ({
   textTransform: "none",
-  fontWeight: 600,
+  fontWeight: 500,
   borderRadius: theme.spacing(1),
-  padding: theme.spacing(1.5, 3),
+  padding: theme.spacing(1, 2),
+  minHeight: 36,
+  fontSize: 14,
   transition: "all 0.2s ease-in-out",
   "&:hover": {
     transform: "translateY(-1px)",
-    boxShadow: theme.shadows[4],
   },
 }));
 
 // Action button variant - used in dashboards and forms
 export const ActionButton = styled(Button)(({ theme }) => ({
-  backgroundColor: theme.palette.primary.main,
-  color: theme.palette.primary.contrastText,
+  fontWeight: 500,
+  transition: "all 0.2s ease-in-out",
   "&:hover": {
-    backgroundColor: theme.palette.primary.dark,
     transform: "translateY(-1px)",
-    boxShadow: theme.shadows[6],
+  },
+  // Enhanced hover state for outlined primary buttons (like Check In button)
+  "&.MuiButton-outlined.MuiButton-colorPrimary": {
+    "&:hover": {
+      backgroundColor: theme.palette.primary.main,
+      color: theme.palette.primary.contrastText,
+      borderColor: theme.palette.primary.main,
+      transform: "translateY(-1px)",
+      boxShadow: theme.shadows[3],
+    },
+  },
+  // Enhanced hover state for other outlined buttons
+  "&.MuiButton-outlined": {
+    "&:hover": {
+      transform: "translateY(-1px)",
+      boxShadow: theme.shadows[2],
+    },
+  },
+}));
+
+// Destructive button variant - for cancel/delete actions
+export const DestructiveButton = styled(Button)(({ theme }) => ({
+  fontWeight: 500,
+  transition: "all 0.2s ease-in-out",
+  // Outlined variant
+  "&.MuiButton-outlined": {
+    borderColor: theme.palette.error.main,
+    color: theme.palette.error.main,
+    "&:hover": {
+      backgroundColor: theme.palette.error.main,
+      color: theme.palette.error.contrastText,
+      borderColor: theme.palette.error.main,
+    },
+  },
+  // Contained variant
+  "&.MuiButton-contained": {
+    backgroundColor: theme.palette.error.main,
+    color: theme.palette.error.contrastText,
+    "&:hover": {
+      backgroundColor: theme.palette.error.dark,
+    },
   },
   "&:disabled": {
     backgroundColor: theme.palette.action.disabled,
     color: theme.palette.text.disabled,
+    borderColor: theme.palette.action.disabled,
   },
 }));
 
